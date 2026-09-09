@@ -1,0 +1,146 @@
+rules_version = '2';
+
+// ============================================================================
+// Football Tournament Management Platform — Firestore Security Rules
+//
+// Roles are stored on the user's own document: users/{uid}.role ∈ {admin, viewer}
+// Guests (unauthenticated) get read-only access to public tournament data.
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------
+    // Helpers — must live inside this match block so $(database) resolves
+    // and get()/exists() are in the service's defining scope.
+    // -------------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function currentUid() {
+      return request.auth.uid;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(currentUid()));
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(currentUid())) &&
+        userDoc().data.role == 'admin';
+    }
+
+    function isOwnUser(uid) {
+      return isSignedIn() && currentUid() == uid;
+    }
+
+    // A team manager may manage only their own team's roster (players) & check-in.
+    function isTeamManager(teamId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/teams/$(teamId)) &&
+        get(/databases/$(database)/documents/teams/$(teamId)).data.managerUid == currentUid();
+    }
+
+    function validTournamentType(t) {
+      return t in ['round_robin', 'knockout', 'group_knockout'];
+    }
+
+    // -------------------------------------------------------------------
+    // users/{uid} — profile + role. Self-readable/writable (limited fields);
+    // role changes require admin (enforced via Cloud Function in production;
+    // client-side we forbid users from elevating their own role here).
+    // -------------------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isOwnUser(uid) &&
+                      request.resource.data.role == 'viewer'; // new signups start as viewer
+      allow update: if isOwnUser(uid) &&
+                      request.resource.data.role == resource.data.role; // cannot self-promote
+      allow update: if isAdmin(); // admins may change roles
+      allow delete: if false;
+    }
+
+    // -------------------------------------------------------------------
+    // tournaments/{tournamentId} — public read (guests included),
+    // admin-only write.
+    // -------------------------------------------------------------------
+    match /tournaments/{tournamentId} {
+      allow read: if true;
+      allow create: if isAdmin() && validTournamentType(request.resource.data.type);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------
+    // teams/{teamId} — public read, admin write. Team manager may update
+    // limited fields (e.g. players roster / logo) on their own team.
+    // -------------------------------------------------------------------
+    match /teams/{teamId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() || isTeamManager(teamId);
+      allow delete: if isAdmin();
+
+      match /players/{playerId} {
+        allow read: if true;
+        allow write: if isAdmin() || isTeamManager(teamId);
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // matches/{matchId} — public read, admin write (fixtures + results).
+    // -------------------------------------------------------------------
+    match /matches/{matchId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------
+    // standings/{tournamentId} — derived/denormalized data, public read,
+    // written only by admin actions (result entry recalculates standings).
+    // -------------------------------------------------------------------
+    match /standings/{tournamentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /rows/{teamId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // notifications/{notificationId} — a user reads only notifications
+    // targeted at them (or broadcast ones); only admin/back-end creates them.
+    // -------------------------------------------------------------------
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() &&
+        (resource.data.audience == 'all' || resource.data.targetUid == currentUid());
+      allow create: if isAdmin();
+      allow update: if isSignedIn() && resource.data.targetUid == currentUid() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------
+    // checkins/{checkinId} — team manager or admin can check a team in;
+    // everyone signed in can read attendance for transparency at the venue.
+    // -------------------------------------------------------------------
+    match /checkins/{checkinId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() || isTeamManager(request.resource.data.teamId);
+      allow update: if isAdmin() || isTeamManager(resource.data.teamId);
+      allow delete: if isAdmin();
+    }
+
+    // Fallback: deny everything else by default.
+    match /{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}

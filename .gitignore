@@ -1,0 +1,29 @@
+# Build
+/dist
+/tmp
+/out-tsc
+/.angular/cache
+
+# Dependencies
+/node_modules
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*.local
+
+# Environments with real secrets
+src/environments/environment.local.ts
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.iml
+
+# System
+.DS_Store
+Thumbs.db
+*.log
