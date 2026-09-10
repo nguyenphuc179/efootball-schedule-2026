@@ -18,6 +18,11 @@ export class TeamService {
     );
   }
 
+  /** Every team a given user manages, across all tournaments (for the personal Home dashboard). */
+  streamByManager(managerUid: string) {
+    return this.fs.streamCollection<Team>(PATH, where('managerUid', '==', managerUid));
+  }
+
   async getByTournamentOnce(tournamentId: string): Promise<Team[]> {
     return this.fs.getOnce<Team>(PATH, where('tournamentId', '==', tournamentId), orderBy('teamName', 'asc'));
   }

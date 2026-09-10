@@ -60,17 +60,22 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'hall-of-fame',
+    loadComponent: () =>
+      import('./features/hall-of-fame/hall-of-fame.component').then((m) => m.HallOfFameComponent),
+    title: 'Hall of Fame',
+  },
+  {
+    path: 'ranking',
+    loadComponent: () => import('./features/ranking/ranking.component').then((m) => m.RankingComponent),
+    title: 'Ranking',
+  },
+  {
     path: 'matches/:id/result',
     loadComponent: () =>
       import('./features/results/result-entry/result-entry.component').then((m) => m.ResultEntryComponent),
     canActivate: [authGuard, adminGuard],
     data: { fullscreen: true },
-  },
-  {
-    path: 'dashboard',
-    loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
-    canActivate: [authGuard, adminGuard],
-    title: 'Dashboard',
   },
   {
     path: 'notifications',

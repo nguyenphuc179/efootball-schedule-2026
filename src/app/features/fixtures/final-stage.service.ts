@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { MatchService } from './match.service';
 import { StandingsService } from '../standings/standings.service';
 import { TournamentService } from '../tournament/tournament.service';
-import { Match, MatchDraft } from '../../models/match.model';
+import { Match, MatchDraft, matchWinner } from '../../models/match.model';
 import { StandingRow, compareStandingRows } from '../../models/standing.model';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -101,8 +101,8 @@ export class FinalStageService {
 
     if (existing.length > 0) {
       for (const m of existing) {
-        if (m.status === 'completed' && m.homeScore != null && m.homeScore === m.awayScore) {
-          throw new Error('A knockout match is level — enter a decisive score first.');
+        if (m.status === 'completed' && m.homeTeamId && m.awayTeamId && !matchWinner(m)) {
+          throw new Error('A knockout match is level — enter a penalty shootout to decide it.');
         }
       }
       await this.syncFromResults(tournamentId);
@@ -222,13 +222,14 @@ export class FinalStageService {
     };
   }
 
-  /** Winner/loser of a decided match, or null if it isn't resolvable yet. */
+  /** Winner/loser of a decided match (penalties break a level score), or null if not decided. */
   private outcome(m: Match | undefined): { winner: Slot; loser: Slot } | null {
-    if (!m || m.status !== 'completed' || m.homeScore == null || m.awayScore == null) return null;
-    if (!m.homeTeamId || !m.awayTeamId || m.homeScore === m.awayScore) return null;
+    if (!m || m.status !== 'completed' || !m.homeTeamId || !m.awayTeamId) return null;
+    const w = matchWinner(m);
+    if (!w) return null;
     const home: Slot = { id: m.homeTeamId, name: m.homeTeamName ?? 'Home', logo: m.homeTeamLogo ?? null };
     const away: Slot = { id: m.awayTeamId, name: m.awayTeamName ?? 'Away', logo: m.awayTeamLogo ?? null };
-    return m.homeScore > m.awayScore ? { winner: home, loser: away } : { winner: away, loser: home };
+    return w === 'home' ? { winner: home, loser: away } : { winner: away, loser: home };
   }
 }
 

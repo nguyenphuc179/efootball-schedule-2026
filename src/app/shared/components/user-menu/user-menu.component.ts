@@ -1,6 +1,16 @@
-import { ChangeDetectionStrategy, Component, HostListener, computed, effect, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  HostListener,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ThemePref, ThemeService } from '../../../core/services/theme.service';
 import { initialsAvatar } from '../../utils/avatar.util';
 
 /**
@@ -15,7 +25,17 @@ import { initialsAvatar } from '../../utils/avatar.util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (!auth.isSignedIn()) {
-      <a routerLink="/login" class="btn-primary !py-2 !px-4 text-sm">Sign In</a>
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500"
+          [attr.aria-label]="'Theme: ' + theme.preference()"
+          (click)="cycleTheme()"
+        >
+          <span class="material-icons text-[20px]">{{ themeIcon() }}</span>
+        </button>
+        <a routerLink="/login" class="btn-primary !py-2 !px-4 text-sm">Sign In</a>
+      </div>
     } @else {
       <div class="relative">
         <button
@@ -52,12 +72,6 @@ import { initialsAvatar } from '../../utils/avatar.util';
         </button>
 
         @if (open()) {
-          <button
-            type="button"
-            class="fixed inset-0 z-40 cursor-default"
-            aria-label="Close menu"
-            (click)="open.set(false)"
-          ></button>
           <div
             class="absolute right-0 mt-2 w-56 z-50 bg-white rounded-xl shadow-lg border border-gray-100 py-1 text-sm"
           >
@@ -73,11 +87,23 @@ import { initialsAvatar } from '../../utils/avatar.util';
             <a routerLink="/profile" class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50" (click)="open.set(false)">
               <span class="material-icons text-[18px] text-gray-500">person</span> Profile
             </a>
-            @if (auth.isAdmin()) {
-              <a routerLink="/dashboard" class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50" (click)="open.set(false)">
-                <span class="material-icons text-[18px] text-gray-500">dashboard</span> Dashboard
-              </a>
-            }
+
+            <div class="px-3 py-2 border-t border-gray-100">
+              <div class="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
+                @for (o of themeOptions; track o.value) {
+                  <button
+                    type="button"
+                    class="flex-1 flex items-center justify-center py-1 rounded-md"
+                    [class]="theme.preference() === o.value ? 'bg-white shadow-sm text-primary-700' : 'text-gray-500'"
+                    [attr.aria-label]="o.label"
+                    (click)="theme.set(o.value)"
+                  >
+                    <span class="material-icons text-[16px]">{{ o.icon }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+
             <div class="border-t border-gray-100 my-1"></div>
             <button
               type="button"
@@ -94,12 +120,31 @@ import { initialsAvatar } from '../../utils/avatar.util';
 })
 export class UserMenuComponent {
   auth = inject(AuthService);
+  theme = inject(ThemeService);
   private router = inject(Router);
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   open = signal(false);
 
+  readonly themeOptions: { value: ThemePref; icon: string; label: string }[] = [
+    { value: 'light', icon: 'light_mode', label: 'Light theme' },
+    { value: 'dark', icon: 'dark_mode', label: 'Dark theme' },
+    { value: 'system', icon: 'contrast', label: 'Match system theme' },
+  ];
+
+  themeIcon = computed(
+    () => this.themeOptions.find((o) => o.value === this.theme.preference())?.icon ?? 'contrast'
+  );
+
+  cycleTheme(): void {
+    const order: ThemePref[] = ['light', 'dark', 'system'];
+    const next = order[(order.indexOf(this.theme.preference()) + 1) % order.length];
+    this.theme.set(next);
+  }
+
   private fullName = computed(
     () =>
+      this.auth.appUser()?.systemDisplayName?.trim() ||
       this.auth.appUser()?.displayName ||
       this.auth.firebaseUser()?.displayName ||
       this.auth.appUser()?.email ||
@@ -123,6 +168,15 @@ export class UserMenuComponent {
       this.photoURL();
       this.photoFailed.set(false);
     });
+  }
+
+  /** Close when a click lands anywhere outside this component (backdrop elements get trapped
+   *  inside the header's `backdrop-blur` stacking context, so a document listener is safer). */
+  @HostListener('document:click', ['$event'])
+  closeOnOutsideClick(event: MouseEvent): void {
+    if (this.open() && !this.host.nativeElement.contains(event.target as Node)) {
+      this.open.set(false);
+    }
   }
 
   @HostListener('document:keydown.escape')

@@ -138,6 +138,20 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // -------------------------------------------------------------------
+    // champions/{championId} — public Hall of Fame; admin-only write.
+    // managerImages/{slug} — admin-supplied portraits for the Ranking page.
+    // -------------------------------------------------------------------
+    match /champions/{championId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /managerImages/{slug} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Fallback: deny everything else by default.
     match /{document=**} {
       allow read: if false;

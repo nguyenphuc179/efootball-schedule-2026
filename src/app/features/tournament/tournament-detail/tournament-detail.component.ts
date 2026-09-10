@@ -51,15 +51,18 @@ type TabKey =
     } @else {
       <div class="app-content-area">
         <!-- Banner + summary -->
-        <div class="relative h-40 bg-gradient-to-br from-primary-600 to-primary-800 flex items-end">
+        <div class="relative min-h-[11rem] md:min-h-0 bg-gradient-to-br from-primary-600 to-primary-800 overflow-hidden">
           @if (tournament()!.image) {
-            <img [src]="tournament()!.image" class="absolute inset-0 w-full h-full object-cover" alt="" />
-            <div class="absolute inset-0 bg-black/40"></div>
+            <!-- full-width at the image's own ratio: fills the width, no letterbox; capped so a tall image can't take over -->
+            <img [src]="tournament()!.image" class="block w-full h-auto max-h-[30rem] object-cover" alt="" />
+          } @else {
+            <div class="h-44 md:h-56"></div>
           }
+          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent"></div>
           <button class="absolute top-3 left-3 w-9 h-9 rounded-full bg-black/30 flex items-center justify-center text-white z-10" (click)="router.navigate(['/tournaments'])">
             <span class="material-icons">arrow_back</span>
           </button>
-          <div class="relative z-10 text-white p-4">
+          <div class="absolute inset-x-0 bottom-0 z-10 text-white p-4">
             <h1 class="text-xl font-extrabold">{{ tournament()!.name }}</h1>
             <div class="text-xs opacity-90 flex items-center gap-3 mt-1">
               <span class="flex items-center gap-1"><span class="material-icons text-[14px]">place</span>{{ tournament()!.location }}</span>

@@ -38,9 +38,10 @@ export class StandingsService {
   }
 
   async recalculate(tournamentId: string): Promise<void> {
-    const [teams, matches] = await Promise.all([
+    const [teams, matches, existingRows] = await Promise.all([
       this.teamService.getByTournamentOnce(tournamentId),
       this.matchService.getByTournamentOnce(tournamentId),
+      this.getRowsOnce(tournamentId),
     ]);
 
     // Map each team to its group from the group-stage fixtures (null for non-group tournaments).
@@ -118,6 +119,16 @@ export class StandingsService {
     }
 
     const batch = writeBatch(this.firestore);
+
+    // Drop rows whose team no longer exists (deleted, or removed and re-added with a new id).
+    // Without this the table keeps showing "ghost" rows with their last-known stats.
+    const liveTeamIds = new Set(teams.map((t) => t.id));
+    for (const stale of existingRows as (StandingRow & { id: string })[]) {
+      if (!liveTeamIds.has(stale.teamId)) {
+        batch.delete(doc(this.firestore, `${ROWS_SUBPATH(tournamentId)}/${stale.id ?? stale.teamId}`));
+      }
+    }
+
     for (const row of sorted) {
       batch.set(doc(this.firestore, `${ROWS_SUBPATH(tournamentId)}/${row.teamId}`), row);
     }

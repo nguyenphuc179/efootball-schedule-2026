@@ -1,9 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatSelectModule } from '@angular/material/select';
 import { TournamentService } from '../tournament.service';
+import { ImageUrlFieldComponent } from '../../../shared/components/image-url-field/image-url-field.component';
+import { IMAGE_SRC_PATTERN, isImageSrc } from '../../../shared/utils/image-url.util';
 import { TournamentType } from '../../../models/tournament.model';
 
 /**
@@ -17,7 +21,7 @@ import { TournamentType } from '../../../models/tournament.model';
 @Component({
   selector: 'app-tournament-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MatDatepickerModule, MatSelectModule, ImageUrlFieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh flex flex-col bg-white">
@@ -43,16 +47,10 @@ import { TournamentType } from '../../../models/tournament.model';
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Banner Image URL <span class="text-gray-400">(optional)</span></span>
-          <input
-            class="input-field"
-            formControlName="image"
-            inputmode="url"
-            placeholder="https://example.com/banner.jpg"
-            (input)="imgError.set(false)"
-          />
+          <span class="text-sm font-medium text-gray-600">Banner Image <span class="text-gray-400">(optional)</span></span>
+          <app-image-url-field [control]="form.controls.image" (changed)="imgError.set(false)" />
           @if (form.controls.image.invalid && form.controls.image.value) {
-            <span class="text-xs text-red-500">Must start with http:// or https://</span>
+            <span class="text-xs text-red-500">Paste an image link (http/https) or a copied image.</span>
           } @else if (imgError() && form.controls.image.value) {
             <span class="text-xs text-red-500">That image couldn't be loaded — check the link.</span>
           }
@@ -76,11 +74,40 @@ import { TournamentType } from '../../../models/tournament.model';
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium text-gray-600">Start Date</span>
-            <input class="input-field" type="date" formControlName="startDate" />
+            <div class="relative">
+              <input
+                class="input-field !pr-10 cursor-pointer"
+                [matDatepicker]="startPicker"
+                formControlName="startDate"
+                placeholder="Select a date"
+                readonly
+                (click)="startPicker.open()"
+              />
+              <mat-datepicker-toggle
+                [for]="startPicker"
+                class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #startPicker />
+            </div>
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium text-gray-600">End Date</span>
-            <input class="input-field" type="date" formControlName="endDate" />
+            <div class="relative">
+              <input
+                class="input-field !pr-10 cursor-pointer"
+                [matDatepicker]="endPicker"
+                [min]="form.controls.startDate.value"
+                formControlName="endDate"
+                placeholder="Select a date"
+                readonly
+                (click)="endPicker.open()"
+              />
+              <mat-datepicker-toggle
+                [for]="endPicker"
+                class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #endPicker />
+            </div>
           </label>
         </div>
 
@@ -91,11 +118,11 @@ import { TournamentType } from '../../../models/tournament.model';
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-gray-600">Tournament Type</span>
-          <select class="input-field" formControlName="type">
-            <option value="round_robin">Round Robin</option>
-            <option value="knockout">Knockout</option>
-            <option value="group_knockout">Group Stage + Knockout</option>
-          </select>
+          <mat-select class="input-field !flex items-center" formControlName="type">
+            <mat-option value="round_robin">Round Robin</mat-option>
+            <mat-option value="knockout">Knockout</mat-option>
+            <mat-option value="group_knockout">Group Stage + Knockout</mat-option>
+          </mat-select>
         </label>
       </form>
     </div>
@@ -115,20 +142,20 @@ export class TournamentFormComponent {
   form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     description: [''],
-    image: ['', Validators.pattern(/^https?:\/\/.+/i)],
+    image: ['', Validators.pattern(IMAGE_SRC_PATTERN)],
     location: ['', Validators.required],
-    startDate: ['', Validators.required],
-    endDate: ['', Validators.required],
+    startDate: new FormControl<Date | null>(null, Validators.required),
+    endDate: new FormControl<Date | null>(null, Validators.required),
     numberOfTeams: [8, [Validators.required, Validators.min(2)]],
     type: ['round_robin' as TournamentType, Validators.required],
   });
 
-  /** Live preview: only show a valid-looking URL that hasn't failed to load. */
+  /** Live preview: only show a valid-looking image src that hasn't failed to load. */
   imagePreview = signal<string | null>(null);
 
   constructor() {
     this.form.controls.image.valueChanges.pipe(takeUntilDestroyed()).subscribe((url) => {
-      this.imagePreview.set(url && /^https?:\/\/.+/i.test(url) ? url : null);
+      this.imagePreview.set(isImageSrc(url) ? url : null);
     });
 
     if (this.editingId) {
@@ -139,8 +166,8 @@ export class TournamentFormComponent {
           description: t.description,
           image: t.image ?? '',
           location: t.location,
-          startDate: new Date(t.startDate).toISOString().slice(0, 10),
-          endDate: new Date(t.endDate).toISOString().slice(0, 10),
+          startDate: new Date(t.startDate),
+          endDate: new Date(t.endDate),
           numberOfTeams: t.numberOfTeams,
           type: t.type,
         });
@@ -161,8 +188,8 @@ export class TournamentFormComponent {
         name: raw.name,
         description: raw.description,
         location: raw.location,
-        startDate: new Date(raw.startDate).getTime(),
-        endDate: new Date(raw.endDate).getTime(),
+        startDate: raw.startDate!.getTime(),
+        endDate: raw.endDate!.getTime(),
         numberOfTeams: Number(raw.numberOfTeams),
         type: raw.type,
         image: raw.image.trim() || null,

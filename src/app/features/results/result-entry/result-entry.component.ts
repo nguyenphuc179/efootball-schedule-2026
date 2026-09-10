@@ -1,29 +1,40 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { MatchService } from '../../fixtures/match.service';
-import { ResultService } from '../result.service';
-import { TeamService } from '../../teams/team.service';
-import { TournamentService } from '../../tournament/tournament.service';
-import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
-import { Match } from '../../../models/match.model';
-import { Team } from '../../../models/team.model';
-import { TournamentType } from '../../../models/tournament.model';
+import { ActivatedRoute, Router } from "@angular/router";
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
+
+import { CommonModule } from "@angular/common";
+import { LoadingSpinnerComponent } from "../../../shared/components/loading-spinner/loading-spinner.component";
+import { Match } from "../../../models/match.model";
+import { MatchService } from "../../fixtures/match.service";
+import { ResultService } from "../result.service";
+import { Team } from "../../../models/team.model";
+import { TeamAvatarService } from "../../teams/team-avatar.service";
+import { TeamService } from "../../teams/team.service";
+import { TournamentService } from "../../tournament/tournament.service";
+import { TournamentType } from "../../../models/tournament.model";
+import { toSignal } from "@angular/core/rxjs-interop";
 
 /**
  * One-handed result entry: large +/- steppers (no keyboard), thumb-reachable Save button.
  * Matches the spec's mockup exactly: Team A [ score ] VS [ score ] Team B, then Save Result.
  */
 @Component({
-  selector: 'app-result-entry',
+  selector: "app-result-entry",
   standalone: true,
   imports: [CommonModule, LoadingSpinnerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh flex flex-col bg-white">
       <div class="flex items-center h-14 px-4 border-b border-gray-100">
-        <button class="w-9 h-9 flex items-center justify-center" (click)="goBack()">
+        <button
+          class="w-9 h-9 flex items-center justify-center"
+          (click)="goBack()"
+        >
           <span class="material-icons">arrow_back</span>
         </button>
         <h1 class="font-bold ml-1">Enter Result</h1>
@@ -32,23 +43,41 @@ import { TournamentType } from '../../../models/tournament.model';
       @if (!match()) {
         <app-loading-spinner label="Loading match…" />
       } @else {
-        <div class="flex-1 flex flex-col items-center justify-center gap-8 px-6 py-8">
+        <div
+          class="flex-1 flex flex-col items-center justify-center gap-8 px-6 py-8"
+        >
           <div class="flex items-center justify-center gap-8 w-full max-w-sm">
             <div class="flex flex-col items-center gap-3 flex-1">
-              <div class="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center overflow-hidden">
-                @if (homeTeam()?.logo) {
-                  <img [src]="homeTeam()!.logo" class="w-full h-full object-cover" />
+              <div
+                class="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden text-xl font-bold"
+                [style.background-color]="homeAvatar().bg"
+                [style.color]="homeAvatar().fg"
+              >
+                @if (homeAvatar().src; as src) {
+                  <img [src]="src" class="w-full h-full object-cover" referrerpolicy="no-referrer" />
                 } @else {
-                  <span class="material-icons text-primary-400 text-2xl">shield</span>
+                  {{ homeAvatar().initials }}
                 }
               </div>
-              <div class="font-semibold text-sm text-center">{{ match()!.homeTeamName ?? homeTeam()?.teamName }}</div>
+              <div class="font-semibold text-sm text-center">
+                {{ match()!.homeTeamName ?? homeTeam()?.teamName }}
+              </div>
               <div class="flex flex-col items-center gap-1">
-                <button class="w-11 h-11 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200" (click)="inc('home')">
+                <button
+                  class="w-11 h-11 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200"
+                  (click)="inc('home')"
+                >
                   <span class="material-icons">expand_less</span>
                 </button>
-                <div class="text-4xl font-extrabold w-16 text-center tabular-nums">{{ homeScore() }}</div>
-                <button class="w-11 h-11 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200" (click)="dec('home')">
+                <div
+                  class="text-4xl font-extrabold w-16 text-center tabular-nums"
+                >
+                  {{ homeScore() }}
+                </div>
+                <button
+                  class="w-11 h-11 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200"
+                  (click)="dec('home')"
+                >
                   <span class="material-icons">expand_more</span>
                 </button>
               </div>
@@ -57,30 +86,105 @@ import { TournamentType } from '../../../models/tournament.model';
             <div class="font-bold text-gray-300 text-lg">VS</div>
 
             <div class="flex flex-col items-center gap-3 flex-1">
-              <div class="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center overflow-hidden">
-                @if (awayTeam()?.logo) {
-                  <img [src]="awayTeam()!.logo" class="w-full h-full object-cover" />
+              <div
+                class="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden text-xl font-bold"
+                [style.background-color]="awayAvatar().bg"
+                [style.color]="awayAvatar().fg"
+              >
+                @if (awayAvatar().src; as src) {
+                  <img [src]="src" class="w-full h-full object-cover" referrerpolicy="no-referrer" />
                 } @else {
-                  <span class="material-icons text-primary-400 text-2xl">shield</span>
+                  {{ awayAvatar().initials }}
                 }
               </div>
-              <div class="font-semibold text-sm text-center">{{ match()!.awayTeamName ?? awayTeam()?.teamName }}</div>
+              <div class="font-semibold text-sm text-center">
+                {{ match()!.awayTeamName ?? awayTeam()?.teamName }}
+              </div>
               <div class="flex flex-col items-center gap-1">
-                <button class="w-11 h-11 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200" (click)="inc('away')">
+                <button
+                  class="w-11 h-11 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200"
+                  (click)="inc('away')"
+                >
                   <span class="material-icons">expand_less</span>
                 </button>
-                <div class="text-4xl font-extrabold w-16 text-center tabular-nums">{{ awayScore() }}</div>
-                <button class="w-11 h-11 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200" (click)="dec('away')">
+                <div
+                  class="text-4xl font-extrabold w-16 text-center tabular-nums"
+                >
+                  {{ awayScore() }}
+                </div>
+                <button
+                  class="w-11 h-11 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200"
+                  (click)="dec('away')"
+                >
                   <span class="material-icons">expand_more</span>
                 </button>
               </div>
             </div>
           </div>
+
+          @if (showPenalties()) {
+            <div
+              class="flex flex-col items-center gap-3 w-full max-w-sm border-t border-gray-100 pt-6"
+            >
+              <div
+                class="text-xs font-bold uppercase tracking-wide text-gray-400"
+              >
+                Penalty shootout
+              </div>
+              <div class="flex items-center justify-center gap-8 w-full">
+                <div class="flex flex-col items-center gap-1 flex-1">
+                  <button
+                    class="w-9 h-9 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200"
+                    (click)="incPen('home')"
+                  >
+                    <span class="material-icons text-[18px]">expand_less</span>
+                  </button>
+                  <div
+                    class="text-2xl font-extrabold w-12 text-center tabular-nums"
+                  >
+                    {{ penHome() }}
+                  </div>
+                  <button
+                    class="w-9 h-9 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200"
+                    (click)="decPen('home')"
+                  >
+                    <span class="material-icons text-[18px]">expand_more</span>
+                  </button>
+                </div>
+                <div class="text-sm font-bold text-gray-300">PEN</div>
+                <div class="flex flex-col items-center gap-1 flex-1">
+                  <button
+                    class="w-9 h-9 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200"
+                    (click)="incPen('away')"
+                  >
+                    <span class="material-icons text-[18px]">expand_less</span>
+                  </button>
+                  <div
+                    class="text-2xl font-extrabold w-12 text-center tabular-nums"
+                  >
+                    {{ penAway() }}
+                  </div>
+                  <button
+                    class="w-9 h-9 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200"
+                    (click)="decPen('away')"
+                  >
+                    <span class="material-icons text-[18px]">expand_more</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
         </div>
 
         <div class="p-4 border-t border-gray-100">
-          <button class="btn-primary w-full" [disabled]="isSaving()" (click)="save()">
-            {{ isSaving() ? 'Saving…' : 'Save Result' }}
+          <button
+            class="btn-primary w-full"
+            [disabled]="
+              isSaving() || (showPenalties() && penHome() === penAway())
+            "
+            (click)="save()"
+          >
+            {{ isSaving() ? "Saving…" : "Save Result" }}
           </button>
         </div>
       }
@@ -92,18 +196,32 @@ export class ResultEntryComponent {
   router = inject(Router);
   private matchService = inject(MatchService);
   private teamService = inject(TeamService);
+  private teamAvatars = inject(TeamAvatarService);
   private tournamentService = inject(TournamentService);
   private resultService = inject(ResultService);
 
-  private matchId = this.route.snapshot.paramMap.get('id')!;
+  private matchId = this.route.snapshot.paramMap.get("id")!;
   match = signal<Match | undefined>(undefined);
   homeTeam = signal<Team | undefined>(undefined);
   awayTeam = signal<Team | undefined>(undefined);
+  homeAvatar = computed(() => this.teamAvatars.resolve(this.homeTeam()));
+  awayAvatar = computed(() => this.teamAvatars.resolve(this.awayTeam()));
   private tournamentType = signal<TournamentType | undefined>(undefined);
 
   homeScore = signal(0);
   awayScore = signal(0);
+  penHome = signal(0);
+  penAway = signal(0);
   isSaving = signal(false);
+
+  /** Show the shootout entry: a knockout match (no group) that's currently level. */
+  showPenalties = computed(() => {
+    const m = this.match();
+    const type = this.tournamentType();
+    if (!m || m.groupName) return false;
+    if (type !== "knockout" && type !== "group_knockout") return false;
+    return this.homeScore() === this.awayScore();
+  });
 
   constructor() {
     this.load();
@@ -115,6 +233,8 @@ export class ResultEntryComponent {
     this.match.set(found);
     this.homeScore.set(found.homeScore ?? 0);
     this.awayScore.set(found.awayScore ?? 0);
+    this.penHome.set(found.penaltyHome ?? 0);
+    this.penAway.set(found.penaltyAway ?? 0);
 
     const [teams, tournament] = await Promise.all([
       this.teamService.getByTournamentOnce(found.tournamentId),
@@ -127,37 +247,60 @@ export class ResultEntryComponent {
 
   /** The detail-page tab this match lives under, so we return the user right where they were. */
   private originTab(m: Match): string {
-    if (m.groupName) return 'groupStage';
-    if (this.tournamentType() === 'group_knockout') return 'finalStage';
-    return 'results';
+    if (m.groupName) return "groupStage";
+    if (this.tournamentType() === "group_knockout") return "finalStage";
+    return "results";
   }
 
   goBack(): void {
     const m = this.match();
     if (m) {
-      this.router.navigate(['/tournaments', m.tournamentId], { queryParams: { tab: this.originTab(m) } });
+      this.router.navigate(["/tournaments", m.tournamentId], {
+        queryParams: { tab: this.originTab(m) },
+      });
     } else {
-      this.router.navigate(['/tournaments']);
+      this.router.navigate(["/tournaments"]);
     }
   }
 
-  inc(side: 'home' | 'away'): void {
-    if (side === 'home') this.homeScore.update((v) => v + 1);
+  inc(side: "home" | "away"): void {
+    if (side === "home") this.homeScore.update((v) => v + 1);
     else this.awayScore.update((v) => v + 1);
   }
 
-  dec(side: 'home' | 'away'): void {
-    if (side === 'home') this.homeScore.update((v) => Math.max(0, v - 1));
+  dec(side: "home" | "away"): void {
+    if (side === "home") this.homeScore.update((v) => Math.max(0, v - 1));
     else this.awayScore.update((v) => Math.max(0, v - 1));
+  }
+
+  incPen(side: "home" | "away"): void {
+    if (side === "home") this.penHome.update((v) => v + 1);
+    else this.penAway.update((v) => v + 1);
+  }
+
+  decPen(side: "home" | "away"): void {
+    if (side === "home") this.penHome.update((v) => Math.max(0, v - 1));
+    else this.penAway.update((v) => Math.max(0, v - 1));
   }
 
   async save(): Promise<void> {
     const m = this.match();
-    if (!m) return;
+    if (!m || (this.showPenalties() && this.penHome() === this.penAway()))
+      return;
     this.isSaving.set(true);
     try {
-      await this.resultService.saveResult(m, this.homeScore(), this.awayScore());
-      this.router.navigate(['/tournaments', m.tournamentId], { queryParams: { tab: this.originTab(m) } });
+      const penalties = this.showPenalties()
+        ? { home: this.penHome(), away: this.penAway() }
+        : null;
+      await this.resultService.saveResult(
+        m,
+        this.homeScore(),
+        this.awayScore(),
+        penalties,
+      );
+      this.router.navigate(["/tournaments", m.tournamentId], {
+        queryParams: { tab: this.originTab(m) },
+      });
     } finally {
       this.isSaving.set(false);
     }

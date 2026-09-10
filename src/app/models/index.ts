@@ -5,3 +5,5 @@ export * from './player.model';
 export * from './match.model';
 export * from './standing.model';
 export * from './notification.model';
+export * from './champion.model';
+export * from './manager-image.model';

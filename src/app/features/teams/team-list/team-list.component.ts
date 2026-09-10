@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { TeamService } from '../team.service';
+import { TeamAvatarService } from '../team-avatar.service';
+import { StandingsService } from '../../standings/standings.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -31,26 +33,50 @@ import { Team } from '../../../models/team.model';
       @if (teams().length === 0) {
         <app-empty-state icon="groups" title="No teams yet" subtitle="Teams added to this tournament will appear here." />
       } @else {
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           @for (team of teams(); track team.id) {
-            <div class="card flex flex-col items-center text-center gap-2 relative">
+            <div class="card !p-2.5 flex items-center gap-3">
+              <span
+                class="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+                [style.background-color]="avatar(team).bg"
+              >
+                @if (photo(team); as src) {
+                  <img
+                    [src]="src"
+                    [alt]="team.manager || team.teamName"
+                    class="w-full h-full object-cover"
+                    width="40"
+                    height="40"
+                    referrerpolicy="no-referrer"
+                    (error)="markFailed(team.id)"
+                  />
+                } @else {
+                  <span class="text-xs font-bold" [style.color]="avatar(team).fg">{{ avatar(team).initials }}</span>
+                }
+              </span>
+
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-sm truncate">{{ team.teamName }}</div>
+                <div class="text-xs text-gray-400 truncate">
+                  {{ team.manager || 'No manager' }} · {{ team.playersCount }} {{ team.playersCount === 1 ? 'player' : 'players' }}
+                </div>
+              </div>
+
               @if (auth.isAdmin()) {
-                <button class="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-gray-400" (click)="openForm(team)">
+                <button
+                  class="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0"
+                  (click)="openForm(team)"
+                  aria-label="Edit team"
+                >
                   <span class="material-icons text-[18px]">edit</span>
                 </button>
-              }
-              <div class="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center overflow-hidden">
-                @if (team.logo) {
-                  <img [src]="team.logo" [alt]="team.teamName" class="w-full h-full object-cover" width="56" height="56" />
-                } @else {
-                  <span class="material-icons text-primary-400">shield</span>
-                }
-              </div>
-              <div class="font-semibold text-sm leading-tight">{{ team.teamName }}</div>
-              <div class="text-xs text-gray-400">{{ team.manager }}</div>
-              <div class="text-[11px] text-gray-400">{{ team.playersCount }} players</div>
-              @if (auth.isAdmin()) {
-                <button class="text-accent-red text-xs font-semibold" (click)="deleteTeam(team)">Remove</button>
+                <button
+                  class="w-8 h-8 flex items-center justify-center text-accent-red shrink-0"
+                  (click)="deleteTeam(team)"
+                  aria-label="Remove team"
+                >
+                  <span class="material-icons text-[18px]">delete_outline</span>
+                </button>
               }
             </div>
           }
@@ -65,6 +91,8 @@ export class TeamListComponent {
   readonly maxTeams = input<number>(0);
 
   private teamService = inject(TeamService);
+  private teamAvatars = inject(TeamAvatarService);
+  private standingsService = inject(StandingsService);
   private dialog = inject(MatDialog);
   private breakpoints = inject(BreakpointObserver);
   auth = inject(AuthService);
@@ -78,6 +106,21 @@ export class TeamListComponent {
     const cap = this.maxTeams();
     return cap <= 0 || this.teams().length < cap;
   });
+
+  failed = signal<Set<string>>(new Set());
+
+  markFailed(teamId: string): void {
+    this.failed.update((s) => new Set(s).add(teamId));
+  }
+
+  /** Picture + initials for a team — logo → manager's login photo → manager portrait → initials. */
+  avatar(team: Team) {
+    return this.teamAvatars.resolve(team);
+  }
+
+  photo(team: Team): string | null {
+    return this.failed().has(team.id) ? null : this.avatar(team).src;
+  }
 
   openForm(team?: Team): void {
     const isMobile = this.breakpoints.isMatched('(max-width: 767px)');
@@ -108,6 +151,8 @@ export class TeamListComponent {
     const confirmed = await ref.afterClosed().toPromise();
     if (confirmed) {
       await this.teamService.remove(team.id);
+      // Reconcile the standings table so the removed team doesn't linger as a "ghost" row.
+      await this.standingsService.recalculate(this.tournamentId()).catch((err) => console.error('[Teams] recalc after delete', err));
     }
   }
 }

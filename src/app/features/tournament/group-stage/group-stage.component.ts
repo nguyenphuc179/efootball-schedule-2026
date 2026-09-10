@@ -13,10 +13,12 @@ import { CommonModule } from "@angular/common";
 import { EmptyStateComponent } from "../../../shared/components/empty-state/empty-state.component";
 import { FixtureGeneratorService } from "../../fixtures/fixture-generator.service";
 import { LoadingSpinnerComponent } from "../../../shared/components/loading-spinner/loading-spinner.component";
+import { MatSelectModule } from "@angular/material/select";
 import { Match } from "../../../models/match.model";
 import { MatchRowComponent } from "../../../shared/components/match-row/match-row.component";
 import { MatchService } from "../../fixtures/match.service";
 import { Team } from "../../../models/team.model";
+import { TeamAvatarService } from "../../teams/team-avatar.service";
 import { TeamService } from "../../teams/team.service";
 import { TournamentService } from "../tournament.service";
 import { switchMap } from "rxjs";
@@ -38,57 +40,72 @@ function roundNumber(m: Match): number {
     MatchRowComponent,
     EmptyStateComponent,
     LoadingSpinnerComponent,
+    MatSelectModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-4">
-      @if (auth.isAdmin() && !locked()) {
-        <button
-          class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm"
-          [disabled]="isGenerating()"
-          (click)="generateFixtures()"
-        >
-          <span class="material-icons text-[18px]">auto_fix_high</span>
-          {{
-            isGenerating()
-              ? "Generating…"
-              : groupBlocks().length
-                ? "Regenerate Group Stage"
-                : "Generate Group Stage"
-          }}
-        </button>
-      }
-
       @if (isGenerating()) {
         <app-loading-spinner label="Generating fixtures…" />
       } @else if (!groupBlocks().length) {
+        @if (auth.isAdmin() && !locked()) {
+          <button
+            class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm"
+            (click)="generateFixtures()"
+          >
+            <span class="material-icons text-[18px]">auto_fix_high</span> Generate Group Stage
+          </button>
+        }
         <app-empty-state
           icon="grid_view"
           title="No group stage yet"
           subtitle="Fixtures will appear here once generated."
         />
       } @else {
-        <!-- View toggle -->
-        <div
-          class="flex rounded-lg bg-gray-100 p-1 self-start text-sm font-semibold"
-        >
-          @for (m of modes; track m) {
-            <button
-              class="px-4 py-1.5 rounded-md capitalize"
-              [class]="
-                mode() === m
-                  ? 'bg-white shadow-sm text-primary-700'
-                  : 'text-gray-500'
-              "
-              (click)="mode.set(m)"
+        <div class="flex items-center gap-3 flex-wrap">
+          <!-- View toggle -->
+          <div class="flex rounded-lg bg-gray-100 p-1 text-sm font-semibold shrink-0">
+            @for (m of modes; track m) {
+              <button
+                class="px-4 py-1.5 rounded-md capitalize"
+                [class]="
+                  mode() === m
+                    ? 'bg-white shadow-sm text-primary-700'
+                    : 'text-gray-500'
+                "
+                (click)="mode.set(m)"
+              >
+                {{ m }}
+              </button>
+            }
+          </div>
+
+          @if (managerOptions().length) {
+            <mat-select
+              class="input-field !flex items-center !w-auto min-w-[9rem] text-sm shrink-0"
+              [value]="managerFilter()"
+              (selectionChange)="managerFilter.set($event.value)"
+              panelWidth="auto"
             >
-              {{ m }}
+              <mat-option value="">All</mat-option>
+              @for (mgr of managerOptions(); track mgr) {
+                <mat-option [value]="mgr">{{ mgr }}</mat-option>
+              }
+            </mat-select>
+          }
+
+          @if (auth.isAdmin() && !locked()) {
+            <button
+              class="btn-primary ml-auto shrink-0 flex items-center gap-1 !py-2 !px-4 text-sm"
+              (click)="generateFixtures()"
+            >
+              <span class="material-icons text-[18px]">auto_fix_high</span> Regenerate Group Stage
             </button>
           }
         </div>
 
         @if (mode() === "group") {
-          @for (block of groupBlocks(); track block.name) {
+          @for (block of visibleGroupBlocks(); track block.name) {
             <div class="flex flex-col gap-2">
               <h3
                 class="text-sm font-extrabold uppercase tracking-wide text-gray-700"
@@ -130,16 +147,23 @@ function roundNumber(m: Match): number {
                   <app-match-row
                     [match]="mt"
                     [managers]="managerByTeam()"
+                    [avatars]="avatarsByTeam()"
                     [showResultLink]="
                       auth.isAdmin() && mt.status !== 'completed'
                     "
                   />
+                } @empty {
+                  <p class="text-sm text-gray-400 py-2">Không có trận nào khớp bộ lọc.</p>
                 }
               </div>
             </div>
+          } @empty {
+            <p class="text-sm text-gray-400 py-6 text-center">
+              Không có trận nào của "{{ managerFilter() }}".
+            </p>
           }
         } @else {
-          @for (block of roundBlocks(); track block.round) {
+          @for (block of visibleRoundBlocks(); track block.round) {
             <div class="flex flex-col gap-2">
               <h3
                 class="text-sm font-extrabold uppercase tracking-wide text-gray-700"
@@ -177,13 +201,20 @@ function roundNumber(m: Match): number {
                   <app-match-row
                     [match]="mt"
                     [managers]="managerByTeam()"
+                    [avatars]="avatarsByTeam()"
                     [showResultLink]="
                       auth.isAdmin() && mt.status !== 'completed'
                     "
                   />
+                } @empty {
+                  <p class="text-sm text-gray-400 py-2">Không có trận nào khớp bộ lọc.</p>
                 }
               </div>
             </div>
+          } @empty {
+            <p class="text-sm text-gray-400 py-6 text-center">
+              Không có trận nào của "{{ managerFilter() }}".
+            </p>
           }
         }
       }
@@ -198,12 +229,16 @@ export class GroupStageComponent {
   private matchService = inject(MatchService);
   private fixtureGenerator = inject(FixtureGeneratorService);
   private teamService = inject(TeamService);
+  private teamAvatars = inject(TeamAvatarService);
   private tournamentService = inject(TournamentService);
   auth = inject(AuthService);
 
   readonly modes = ["group", "round"] as const;
   mode = signal<"group" | "round">("group");
   isGenerating = signal(false);
+
+  /** '' = show every manager. Otherwise only matches involving that manager's team(s). */
+  managerFilter = signal<string>("");
 
   /** Per-group selected round (0 = all). */
   private roundByGroup = signal<Record<string, number>>({});
@@ -230,6 +265,21 @@ export class GroupStageComponent {
         .map((t) => [t.id, t.manager]),
     ),
   );
+  avatarsByTeam = computed(() => this.teamAvatars.byId(this.teams()));
+
+  managerOptions = computed(() =>
+    [...new Set(this.teams().map((t) => t.manager?.trim()).filter((n): n is string => !!n))].sort((a, b) =>
+      a.localeCompare(b),
+    ),
+  );
+
+  /** True when a match involves the currently-filtered manager (or no filter is set). */
+  private matchHasManager(m: Match): boolean {
+    const mgr = this.managerFilter();
+    if (!mgr) return true;
+    const map = this.managerByTeam();
+    return map[m.homeTeamId] === mgr || map[m.awayTeamId] === mgr;
+  }
 
   private stageMatches = computed(() =>
     this.matches().filter((m) => m.groupName),
@@ -269,6 +319,14 @@ export class GroupStageComponent {
       }));
   });
 
+  /** Blocks that still have at least one match after the manager filter — used for rendering. */
+  visibleGroupBlocks = computed(() =>
+    this.groupBlocks().filter((b) => b.matches.some((m) => this.matchHasManager(m))),
+  );
+  visibleRoundBlocks = computed(() =>
+    this.roundBlocks().filter((b) => b.matches.some((m) => this.matchHasManager(m))),
+  );
+
   selectedRound(group: string): number {
     return this.roundByGroup()[group] ?? 0;
   }
@@ -289,10 +347,8 @@ export class GroupStageComponent {
     const block = this.groupBlocks().find((b) => b.name === group);
     if (!block) return [];
     const round = this.selectedRound(group);
-    const list =
-      round === 0
-        ? block.matches
-        : block.matches.filter((m) => roundNumber(m) === round);
+    const list = block.matches
+      .filter((m) => (round === 0 || roundNumber(m) === round) && this.matchHasManager(m));
     return [...list].sort(
       (a, b) => roundNumber(a) - roundNumber(b) || a.matchDate - b.matchDate,
     );
@@ -302,10 +358,8 @@ export class GroupStageComponent {
     const block = this.roundBlocks().find((b) => b.round === round);
     if (!block) return [];
     const group = this.selectedGroup(round);
-    const list =
-      group === ""
-        ? block.matches
-        : block.matches.filter((m) => m.groupName === group);
+    const list = block.matches
+      .filter((m) => (group === "" || m.groupName === group) && this.matchHasManager(m));
     return [...list].sort(
       (a, b) =>
         (a.groupName ?? "").localeCompare(b.groupName ?? "") ||

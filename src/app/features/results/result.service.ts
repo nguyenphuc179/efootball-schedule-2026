@@ -26,11 +26,20 @@ export class ResultService {
   private notificationService = inject(NotificationService);
   private offlineSync = inject(OfflineSyncService);
 
-  async saveResult(match: Match, homeScore: number, awayScore: number): Promise<void> {
+  async saveResult(
+    match: Match,
+    homeScore: number,
+    awayScore: number,
+    penalties?: { home: number; away: number } | null
+  ): Promise<void> {
+    const usePens = homeScore === awayScore && !!penalties;
     await this.offlineSync.trackWrite(
       this.matchService.update(match.id, {
         homeScore,
         awayScore,
+        // Only a level knockout match keeps a shootout; otherwise clear any stale values.
+        penaltyHome: usePens ? penalties!.home : null,
+        penaltyAway: usePens ? penalties!.away : null,
         status: 'completed',
       })
     );

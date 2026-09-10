@@ -5,9 +5,12 @@ import { of, switchMap } from 'rxjs';
 import { StandingsService } from '../standings.service';
 import { TournamentService } from '../../tournament/tournament.service';
 import { TeamService } from '../../teams/team.service';
+import { TeamAvatarService } from '../../teams/team-avatar.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StandingRow } from '../../../models/standing.model';
 import { Team } from '../../../models/team.model';
+import { initialsAvatar } from '../../../shared/utils/avatar.util';
 
 /**
  * Standings as one table per group (GiveTour-style): rank, team, played, W-D-L, goals +/-, points
@@ -23,6 +26,17 @@ import { Team } from '../../../models/team.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-4">
+      @if (canRecalc()) {
+        <button
+          class="btn-secondary !py-1.5 !px-3 text-xs self-end flex items-center gap-1"
+          [disabled]="recalculating()"
+          (click)="recalculate()"
+        >
+          <span class="material-icons text-[16px]">refresh</span>
+          {{ recalculating() ? 'Recalculating…' : 'Recalculate' }}
+        </button>
+      }
+
       @if (!tournamentId()) {
         <div class="flex gap-2 overflow-x-auto pb-1">
           @for (t of tournaments(); track t.id) {
@@ -69,12 +83,14 @@ import { Team } from '../../../models/team.model';
                       </td>
                       <td class="py-2 px-1">
                         <div class="flex items-center gap-2 min-w-0">
-                          @if (row.teamLogo) {
-                            <img [src]="row.teamLogo" [alt]="row.teamName" class="w-6 h-6 rounded-full object-cover shrink-0" width="24" height="24" />
+                          @if (avatar(row).src; as src) {
+                            <img [src]="src" [alt]="row.teamName" class="w-6 h-6 rounded-full object-cover shrink-0" width="24" height="24" />
                           } @else {
-                            <span class="w-6 h-6 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center text-[10px] font-bold shrink-0">
-                              {{ row.teamName.slice(0, 2).toUpperCase() }}
-                            </span>
+                            <span
+                              class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                              [style.background-color]="avatar(row).bg"
+                              [style.color]="avatar(row).fg"
+                            >{{ avatar(row).initials }}</span>
                           }
                           <span class="font-medium truncate">{{ teamLabel(row) }}</span>
                         </div>
@@ -115,9 +131,12 @@ export class StandingsViewComponent {
   private standingsService = inject(StandingsService);
   private tournamentService = inject(TournamentService);
   private teamService = inject(TeamService);
+  private teamAvatars = inject(TeamAvatarService);
+  private auth = inject(AuthService);
 
   selectedTournamentId = signal<string>('');
   tournaments = this.tournamentService.all;
+  recalculating = signal(false);
 
   constructor() {
     // Auto-select the first ongoing (else first) tournament when used as the standalone /standings route.
@@ -132,6 +151,22 @@ export class StandingsViewComponent {
 
   private effectiveTournamentId = computed(() => this.tournamentId() ?? this.selectedTournamentId());
 
+  canRecalc = computed(() => this.auth.isAdmin() && !!this.effectiveTournamentId());
+
+  /** Manual reconcile — also prunes "ghost" rows for teams that were deleted after fixtures existed. */
+  async recalculate(): Promise<void> {
+    const id = this.effectiveTournamentId();
+    if (!id || this.recalculating()) return;
+    this.recalculating.set(true);
+    try {
+      await this.standingsService.recalculate(id);
+    } catch (err) {
+      console.error('[Standings] manual recalculate', err);
+    } finally {
+      this.recalculating.set(false);
+    }
+  }
+
   private rows = toSignal(
     toObservable(this.effectiveTournamentId).pipe(
       switchMap((id) => this.standingsService.streamRows(id || '__none__'))
@@ -145,9 +180,17 @@ export class StandingsViewComponent {
     ),
     { initialValue: [] as Team[] }
   );
+  private teamById = computed(() => new Map(this.teams().map((t) => [t.id, t] as const)));
   private managerByTeam = computed(() =>
     Object.fromEntries(this.teams().filter((t) => t.manager).map((t) => [t.id, t.manager]))
   );
+
+  /** Same picture/initials resolution as the Teams tab, keyed off the live team behind each row. */
+  avatar(row: StandingRow) {
+    const team = this.teamById().get(row.teamId);
+    if (team) return this.teamAvatars.resolve(team);
+    return { ...initialsAvatar(row.teamName), src: row.teamLogo };
+  }
 
   teamLabel(row: StandingRow): string {
     const manager = this.managerByTeam()[row.teamId];

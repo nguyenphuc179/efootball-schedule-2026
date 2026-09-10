@@ -1,5 +1,23 @@
 @use '@angular/material' as mat;
 
+/* Angular Material design tokens (datepicker calendar, dialogs). `light-dark()` follows the
+   `color-scheme` we toggle on <html>, so Material picks up the app's dark mode automatically. */
+html {
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$green-palette,
+        tertiary: mat.$green-palette,
+      ),
+      typography: (
+        plain-family: (Inter, system-ui, sans-serif),
+        brand-family: (Inter, system-ui, sans-serif),
+      ),
+      density: 0,
+    )
+  );
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -64,4 +82,75 @@ button, a, .tap-target {
   .badge {
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold;
   }
+}
+
+/* ---- Dark mode -----------------------------------------------------------------
+   Remaps the light-ground utilities the app uses most (bg-white, grays, borders,
+   tints) + the @apply component classes. `html.dark .x` (0,2,0) always beats `.x`
+   (0,1,0), so no !important is needed except for Material's own container. */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #0f1720;
+  color: #e5e7eb;
+}
+
+html.dark {
+  /* surfaces */
+  .bg-white { background-color: #182430; }
+  .bg-gray-50 { background-color: #1c2a36; }
+  .bg-gray-100 { background-color: #223040; }
+  .bg-gray-200 { background-color: #2b3a49; }
+  .bg-gray-300 { background-color: #37485a; }
+  .bg-surface-muted { background-color: #223040; }
+  .bg-white\/95 { background-color: rgba(24, 36, 48, 0.95); }
+  .bg-white\/80 { background-color: rgba(24, 36, 48, 0.8); }
+  .bg-white\/10 { background-color: rgba(255, 255, 255, 0.08); }
+  .bg-white\/5 { background-color: rgba(255, 255, 255, 0.06); }
+  .hover\:bg-gray-50:hover,
+  .hover\:bg-gray-100:hover,
+  .active\:bg-gray-100:active { background-color: #223040; }
+  .active\:bg-gray-200:active { background-color: #2b3a49; }
+
+  /* soft tints (badges) */
+  .bg-primary-50 { background-color: rgba(15, 168, 99, 0.18); }
+  .bg-amber-50, .bg-amber-100 { background-color: rgba(245, 166, 35, 0.18); }
+  .bg-red-50 { background-color: rgba(229, 72, 77, 0.18); }
+  .text-primary-600, .text-primary-700, .text-primary-800 { color: #63d69a; }
+  .text-amber-700 { color: #f4bd6b; }
+
+  /* text */
+  .text-gray-300 { color: #66727f; }
+  .text-gray-400 { color: #94a2ae; }
+  .text-gray-500 { color: #aab5c0; }
+  .text-gray-600 { color: #c1cad2; }
+  .text-gray-700 { color: #d4dbe1; }
+  .text-gray-800, .text-gray-900 { color: #e8ecef; }
+  .text-surface-dark { color: #e8ecef; }
+
+  /* borders */
+  .border-gray-50 { border-color: #223040; }
+  .border-gray-100 { border-color: #283847; }
+  .border-gray-200 { border-color: #324150; }
+  .border-gray-300 { border-color: #3a4a5a; }
+  .divide-gray-50 > :not([hidden]) ~ :not([hidden]) { border-color: #223040; }
+  .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #283847; }
+
+  /* @apply component classes (class remap above can't reach them) */
+  .card { background-color: #182430; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+  .btn-secondary { background-color: #223040; color: #e8ecef; }
+  .input-field {
+    background-color: #182430;
+    color: #e8ecef;
+    border-color: #324150;
+    &::placeholder { color: #7c8996; }
+  }
+  .sticky-tabs { background: #0f1720; }
+
+  /* Angular Material dialogs (confirm / team form) */
+  .mat-mdc-dialog-surface { background-color: #182430 !important; color: #e8ecef; }
+  .mat-mdc-dialog-surface .mat-mdc-dialog-title,
+  .mat-mdc-dialog-surface [mat-dialog-title] { color: #e8ecef; }
 }

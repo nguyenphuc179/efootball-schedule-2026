@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { Match } from '../../../models/match.model';
+import { Match, matchWinner } from '../../../models/match.model';
 import { roundSortKey } from '../../fixtures/final-stage.service';
 
 const BOX_W = 160;
@@ -92,7 +92,7 @@ interface Node {
         </span>
         <span class="flex-1 truncate text-[11px]" [class.text-gray-400]="!teamId(m, side)">{{ label(m, side) }}</span>
         @if (played(m)) {
-          <span class="text-[11px] font-bold w-4 text-center">{{ side === 'home' ? m.homeScore : m.awayScore }}</span>
+          <span class="text-[11px] font-bold text-right shrink-0 tabular-nums">{{ slotScore(m, side) }}</span>
         }
       </div>
     </ng-template>
@@ -218,9 +218,14 @@ export class FinalBracketComponent {
   }
 
   winner(m: Match): 'home' | 'away' | null {
-    if (!this.played(m)) return null;
-    if ((m.homeScore ?? 0) > (m.awayScore ?? 0)) return 'home';
-    if ((m.awayScore ?? 0) > (m.homeScore ?? 0)) return 'away';
-    return null;
+    return this.played(m) ? matchWinner(m) : null;
+  }
+
+  /** "1", or "1 (4)" for the pen score when a level match was settled on penalties. */
+  slotScore(m: Match, side: 'home' | 'away'): string {
+    const goals = side === 'home' ? m.homeScore : m.awayScore;
+    if (goals == null) return '';
+    const pen = side === 'home' ? m.penaltyHome : m.penaltyAway;
+    return m.homeScore === m.awayScore && pen != null ? `${goals} (${pen})` : `${goals}`;
   }
 }

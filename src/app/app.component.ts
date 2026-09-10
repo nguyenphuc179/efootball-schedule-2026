@@ -31,30 +31,29 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
     <div class="min-h-dvh flex flex-col md:flex-row">
       <!-- Desktop sidenav -->
       @if (!chromeless()) {
-        <aside class="hidden md:flex md:w-56 md:flex-col md:border-r md:border-gray-100 md:py-6 md:px-3 md:gap-1 md:sticky md:top-0 md:h-dvh">
-          <div class="flex items-center gap-2 font-extrabold text-lg px-2 mb-6">
+        <aside class="hidden md:flex md:w-60 md:flex-col bg-white border-r border-gray-100 md:sticky md:top-0 md:h-dvh">
+          <div class="h-14 flex items-center gap-2 px-4 border-b border-gray-100 font-extrabold text-lg">
             <span class="material-icons text-primary-500">sports_soccer</span> PitchPro
           </div>
-          @for (item of desktopNavItems; track item.route) {
-            <a
-              [routerLink]="item.route"
-              routerLinkActive="bg-primary-50 text-primary-700"
-              [routerLinkActiveOptions]="{ exact: item.route === '/' }"
-              class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 font-medium text-sm"
-            >
-              <span class="material-icons text-[20px]">{{ item.icon }}</span>
-              {{ item.label }}
-            </a>
-          }
-          @if (auth.isAdmin()) {
-            <a
-              routerLink="/dashboard"
-              routerLinkActive="bg-primary-50 text-primary-700"
-              class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 font-medium text-sm mt-auto"
-            >
-              <span class="material-icons text-[20px]">dashboard</span> Dashboard
-            </a>
-          }
+          <nav class="flex flex-col gap-1 p-3">
+            @for (item of desktopNavItems; track item.route) {
+              <a
+                [routerLink]="item.route"
+                routerLinkActive
+                #rla="routerLinkActive"
+                [routerLinkActiveOptions]="{ exact: item.route === '/' }"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors"
+                [class]="
+                  rla.isActive
+                    ? 'bg-primary-50 text-primary-700 font-semibold'
+                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                "
+              >
+                <span class="material-icons text-[20px]">{{ item.icon }}</span>
+                {{ item.label }}
+              </a>
+            }
+          </nav>
         </aside>
       }
 
@@ -125,6 +124,7 @@ export class AppComponent {
   desktopNavItems = [
     { label: 'Home', icon: 'home', route: '/' },
     { label: 'Tournaments', icon: 'emoji_events', route: '/tournaments' },
-    { label: 'Profile', icon: 'person', route: '/profile' },
+    { label: 'Ranking', icon: 'leaderboard', route: '/ranking' },
+    { label: 'Hall of Fame', icon: 'military_tech', route: '/hall-of-fame' },
   ];
 }

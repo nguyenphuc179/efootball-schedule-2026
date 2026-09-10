@@ -3,15 +3,16 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { FcmService } from '../../core/services/fcm.service';
+import { MembersComponent } from '../members/members.component';
 import { initialsAvatar } from '../../shared/utils/avatar.util';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MembersComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="app-content-area px-4 pt-6 max-w-md mx-auto">
+    <div class="app-content-area px-4 pt-6 max-w-xl mx-auto">
       <div class="flex flex-col items-center gap-2 mb-6">
         <div
           class="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden"
@@ -48,6 +49,12 @@ import { initialsAvatar } from '../../shared/utils/avatar.util';
       <button class="btn-secondary w-full flex items-center justify-center gap-2 text-accent-red" (click)="logout()">
         <span class="material-icons text-[18px]">logout</span> Sign Out
       </button>
+
+      @if (auth.isAdmin()) {
+        <div class="mt-6">
+          <app-members />
+        </div>
+      }
     </div>
   `,
 })

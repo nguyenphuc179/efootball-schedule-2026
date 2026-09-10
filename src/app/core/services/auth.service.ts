@@ -46,7 +46,11 @@ export class AuthService {
   readonly isSignedIn = computed(() => !!this.firebaseUser());
   readonly isAdmin = computed(() => this.appUser()?.role === 'admin' && !this.appUser()?.disabled);
   readonly displayName = computed(
-    () => this.appUser()?.displayName ?? this.firebaseUser()?.displayName ?? 'Guest'
+    () =>
+      this.appUser()?.systemDisplayName?.trim() ||
+      this.appUser()?.displayName ||
+      this.firebaseUser()?.displayName ||
+      'Guest'
   );
 
   constructor() {
@@ -116,6 +120,16 @@ export class AuthService {
   /** Admin-only lock-out toggle (also enforced server-side by firestore.rules). */
   async setUserDisabled(uid: string, disabled: boolean): Promise<void> {
     await updateDoc(doc(this.firestore, `users/${uid}`), { disabled });
+  }
+
+  /**
+   * Set (or clear, with `null`) the app-wide display-name override. The login `displayName` is
+   * never touched. firestore.rules allow this for an admin editing anyone, or a user editing
+   * their own profile (role/disabled stay frozen).
+   */
+  async setUserSystemDisplayName(uid: string, name: string | null): Promise<void> {
+    const value = name?.trim() ? name.trim() : null;
+    await updateDoc(doc(this.firestore, `users/${uid}`), { systemDisplayName: value });
   }
 
   async registerFcmToken(uid: string, token: string): Promise<void> {

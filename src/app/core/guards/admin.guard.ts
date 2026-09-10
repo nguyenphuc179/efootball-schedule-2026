@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 
-/** Blocks non-admin access to admin-only routes (tournament create/edit, results, dashboard). */
+/** Blocks non-admin access to admin-only routes (tournament create/edit, result entry). */
 export const adminGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);

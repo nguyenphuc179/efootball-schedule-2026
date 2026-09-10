@@ -6,7 +6,9 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { TeamService } from '../team.service';
 import { MemberService } from '../../members/member.service';
 import { Team } from '../../../models/team.model';
-import { AppUser } from '../../../models/user.model';
+import { AppUser, userDisplayName } from '../../../models/user.model';
+import { ImageUrlFieldComponent } from '../../../shared/components/image-url-field/image-url-field.component';
+import { IMAGE_SRC_PATTERN, isImageSrc, isUserImage } from '../../../shared/utils/image-url.util';
 import { initialsAvatarDataUri } from '../../../shared/utils/avatar.util';
 
 export interface TeamFormDialogData {
@@ -15,9 +17,6 @@ export interface TeamFormDialogData {
   /** Seed number for the "Team N" default when adding a new team. */
   nextIndex?: number;
 }
-
-/** A pasted image link — as opposed to an empty value or the generated `data:` avatar. */
-const isExternalLogo = (logo: string | null | undefined): logo is string => /^https?:\/\/.+/i.test(logo ?? '');
 
 /**
  * "Add/Edit Team" as a FULL-SCREEN dialog on mobile (per spec: full-screen dialogs instead of
@@ -31,7 +30,7 @@ const isExternalLogo = (logo: string | null | undefined): logo is string => /^ht
 @Component({
   selector: 'app-team-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh w-full flex flex-col bg-white">
@@ -54,16 +53,10 @@ const isExternalLogo = (logo: string | null | undefined): logo is string => /^ht
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Logo URL <span class="text-gray-400">(optional)</span></span>
-          <input
-            class="input-field"
-            formControlName="logo"
-            inputmode="url"
-            placeholder="https://example.com/logo.png"
-            (input)="imgError.set(false)"
-          />
+          <span class="text-sm font-medium text-gray-600">Logo <span class="text-gray-400">(optional)</span></span>
+          <app-image-url-field [control]="form.controls.logo" (changed)="imgError.set(false)" />
           @if (form.controls.logo.invalid && form.controls.logo.value) {
-            <span class="text-xs text-red-500">Must start with http:// or https://</span>
+            <span class="text-xs text-red-500">Paste an image link (http/https) or a copied image.</span>
           } @else if (imgError() && form.controls.logo.value) {
             <span class="text-xs text-red-500">That image couldn't be loaded — check the link.</span>
           }
@@ -76,7 +69,7 @@ const isExternalLogo = (logo: string | null | undefined): logo is string => /^ht
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-gray-600">Manager</span>
-          <select class="input-field" formControlName="managerUid">
+          <select class="input-field" formControlName="managerUid" (change)="imgError.set(false)">
             <option value="">— No manager —</option>
             @for (m of activeMembers(); track m.uid) {
               <option [value]="m.uid">{{ m.name }}</option>
@@ -103,7 +96,7 @@ export class TeamFormComponent {
   activeMembers = computed(() =>
     this.members()
       .filter((m) => !m.disabled)
-      .map((m) => ({ uid: m.uid, name: m.displayName || m.email || m.uid }))
+      .map((m) => ({ uid: m.uid, name: userDisplayName(m, m.uid), photoURL: m.photoURL ?? null }))
       .sort((a, b) => a.name.localeCompare(b.name))
   );
 
@@ -113,17 +106,19 @@ export class TeamFormComponent {
       Validators.required,
     ],
     managerUid: [this.data.team?.managerUid ?? ''],
-    // Only surface a real pasted URL — the generated `data:` avatar isn't something to edit.
-    logo: [isExternalLogo(this.data.team?.logo) ? this.data.team!.logo! : '', Validators.pattern(/^https?:\/\/.+/i)],
+    // Pre-fill a real logo (pasted URL or bitmap); a generated `data:` avatar isn't something to edit.
+    logo: [isUserImage(this.data.team?.logo) ? this.data.team!.logo! : '', Validators.pattern(IMAGE_SRC_PATTERN)],
   });
 
   private formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
 
-  /** The typed URL if it looks valid and loads, otherwise a generated initials avatar. */
+  /** Pasted image (URL or bitmap, if valid) → manager's login photo → generated initials avatar. */
   logoPreview = computed(() => {
     const value = this.formValue() ?? {};
     const url = (value.logo ?? '').trim();
-    if (/^https?:\/\/.+/i.test(url) && !this.imgError()) return url;
+    if (isImageSrc(url) && !this.imgError()) return url;
+    const managerPhoto = this.activeMembers().find((m) => m.uid === value.managerUid)?.photoURL;
+    if (managerPhoto && !this.imgError()) return managerPhoto;
     return initialsAvatarDataUri(value.teamName || `Team ${this.seedIndex}`);
   });
 
@@ -137,19 +132,23 @@ export class TeamFormComponent {
     this.isSaving.set(true);
     try {
       const raw = this.form.getRawValue();
-      const logo = raw.logo.trim() || initialsAvatarDataUri(raw.teamName);
+      // No pasted URL → leave logo null so the list falls back to the manager's login photo.
+      const logo = raw.logo.trim() || null;
       const managerUid = raw.managerUid || null;
-      const manager = this.activeMembers().find((m) => m.uid === managerUid)?.name ?? '';
+      const member = this.activeMembers().find((m) => m.uid === managerUid);
+      const manager = member?.name ?? '';
+      const managerPhotoURL = member?.photoURL ?? null;
 
       const id = this.data.team?.id;
       if (id) {
-        await this.teamService.update(id, { teamName: raw.teamName, manager, managerUid, logo });
+        await this.teamService.update(id, { teamName: raw.teamName, manager, managerUid, managerPhotoURL, logo });
       } else {
         await this.teamService.create({
           tournamentId: this.data.tournamentId,
           teamName: raw.teamName,
           manager,
           managerUid,
+          managerPhotoURL,
           logo,
         });
       }
