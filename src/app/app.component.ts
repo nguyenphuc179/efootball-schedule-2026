@@ -5,6 +5,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { BottomNavComponent } from './shared/components/bottom-nav/bottom-nav.component';
 import { HeaderComponent } from './shared/components/header/header.component';
+import { UserMenuComponent } from './shared/components/user-menu/user-menu.component';
 import { AuthService } from './core/services/auth.service';
 import { OfflineSyncService } from './core/services/offline-sync.service';
 
@@ -16,7 +17,15 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, BottomNavComponent, HeaderComponent],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    BottomNavComponent,
+    HeaderComponent,
+    UserMenuComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh flex flex-col md:flex-row">
@@ -50,6 +59,22 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
       <div class="flex-1 min-w-0">
         <app-header class="md:hidden" />
 
+        <!-- Desktop top bar: right-aligned account control -->
+        <header
+          class="hidden md:flex items-center justify-end gap-1 h-14 px-6 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur z-20"
+        >
+          @if (auth.isSignedIn()) {
+            <a
+              routerLink="/notifications"
+              class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100"
+              aria-label="Notifications"
+            >
+              <span class="material-icons text-gray-600">notifications</span>
+            </a>
+          }
+          <app-user-menu />
+        </header>
+
         @if (!offlineSync.isOnline()) {
           <div class="bg-accent-amber/10 text-accent-amber text-xs text-center py-1.5 font-medium">
             You're offline — showing cached data. Changes will sync automatically.
@@ -74,8 +99,6 @@ export class AppComponent {
   desktopNavItems = [
     { label: 'Home', icon: 'home', route: '/' },
     { label: 'Tournaments', icon: 'emoji_events', route: '/tournaments' },
-    { label: 'Matches', icon: 'sports_soccer', route: '/matches' },
-    { label: 'Standings', icon: 'leaderboard', route: '/standings' },
     { label: 'Profile', icon: 'person', route: '/profile' },
   ];
 }

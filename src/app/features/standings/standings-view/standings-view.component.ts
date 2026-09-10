@@ -1,30 +1,28 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { switchMap } from 'rxjs';
+import { of, switchMap } from 'rxjs';
 import { StandingsService } from '../standings.service';
 import { TournamentService } from '../../tournament/tournament.service';
-import { StandingRowComponent } from '../../../shared/components/standing-row/standing-row.component';
+import { TeamService } from '../../teams/team.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StandingRow } from '../../../models/standing.model';
-import { Tournament } from '../../../models/tournament.model';
+import { Team } from '../../../models/team.model';
 
 /**
- * Renders standings as stacked cards by default (Sofascore-style, no data table on mobile), with
- * a "Table view" toggle that reveals a horizontally-scrollable table for power users/desktop —
- * exactly the two layouts called for in the spec.
+ * Standings as one table per group (GiveTour-style): rank, team, played, W-D-L, goals +/-, points
+ * and recent form. The two qualifying spots per group are highlighted.
  *
  * With no `tournamentId` input this becomes the `/standings` route: a tournament picker followed
- * by the same rendering, so guests/viewers can check any active tournament's table from the
- * bottom-nav "Standings" tab directly.
+ * by the same rendering, so guests/viewers can check any tournament's table from the bottom-nav.
  */
 @Component({
   selector: 'app-standings-view',
   standalone: true,
-  imports: [CommonModule, StandingRowComponent, EmptyStateComponent],
+  imports: [CommonModule, EmptyStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-4">
       @if (!tournamentId()) {
         <div class="flex gap-2 overflow-x-auto pb-1">
           @for (t of tournaments(); track t.id) {
@@ -39,73 +37,74 @@ import { Tournament } from '../../../models/tournament.model';
         </div>
       }
 
-      @if (groupedRows().length > 1) {
-        <div class="flex gap-2 overflow-x-auto">
-          @for (group of groupedRows(); track group.groupName) {
-            <button
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold"
-              [class]="activeGroup() === group.groupName ? 'bg-primary-50 text-primary-700' : 'bg-gray-100 text-gray-500'"
-              (click)="activeGroup.set(group.groupName)"
-            >
-              {{ group.groupName }}
-            </button>
-          }
-        </div>
-      }
-
-      <div class="flex items-center justify-end">
-        <button
-          class="text-xs font-semibold text-gray-500 flex items-center gap-1"
-          (click)="tableView.set(!tableView())"
-        >
-          <span class="material-icons text-[16px]">{{ tableView() ? 'view_agenda' : 'table_chart' }}</span>
-          {{ tableView() ? 'Card view' : 'Table view' }}
-        </button>
-      </div>
-
-      @if (activeRows().length === 0) {
+      @if (groups().length === 0) {
         <app-empty-state icon="leaderboard" title="No standings yet" subtitle="Standings update automatically once results are entered." />
-      } @else if (tableView()) {
-        <div class="hscroll-table card !p-0">
-          <table class="w-full text-sm min-w-[520px]">
-            <thead class="text-gray-400 text-xs uppercase">
-              <tr class="border-b border-gray-100">
-                <th class="text-left py-2 px-3">#</th>
-                <th class="text-left py-2 px-3">Team</th>
-                <th class="py-2 px-2">P</th>
-                <th class="py-2 px-2">W</th>
-                <th class="py-2 px-2">D</th>
-                <th class="py-2 px-2">L</th>
-                <th class="py-2 px-2">GF</th>
-                <th class="py-2 px-2">GA</th>
-                <th class="py-2 px-2">GD</th>
-                <th class="py-2 px-3 font-bold">Pts</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of activeRows(); track row.teamId) {
-                <tr class="border-b border-gray-50 last:border-0">
-                  <td class="py-2 px-3 font-semibold text-gray-500">{{ row.position }}</td>
-                  <td class="py-2 px-3 font-medium whitespace-nowrap">{{ row.teamName }}</td>
-                  <td class="py-2 px-2 text-center">{{ row.played }}</td>
-                  <td class="py-2 px-2 text-center">{{ row.won }}</td>
-                  <td class="py-2 px-2 text-center">{{ row.drawn }}</td>
-                  <td class="py-2 px-2 text-center">{{ row.lost }}</td>
-                  <td class="py-2 px-2 text-center">{{ row.goalsFor }}</td>
-                  <td class="py-2 px-2 text-center">{{ row.goalsAgainst }}</td>
-                  <td class="py-2 px-2 text-center">{{ row.goalDifference }}</td>
-                  <td class="py-2 px-3 text-center font-bold">{{ row.points }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
       } @else {
-        <div class="flex flex-col gap-2">
-          @for (row of activeRows(); track row.teamId) {
-            <app-standing-row [row]="row" />
-          }
-        </div>
+        @for (group of groups(); track group.name) {
+          <div class="flex flex-col gap-2">
+            @if (group.name) {
+              <h3 class="text-sm font-extrabold uppercase tracking-wide text-gray-700">{{ group.name }}</h3>
+            }
+            <div class="hscroll-table card !p-0">
+              <table class="w-full text-sm min-w-[460px]">
+                <thead class="text-gray-400 text-[11px] uppercase">
+                  <tr class="border-b border-gray-100">
+                    <th class="text-left py-2 pl-3 pr-1 w-9">#</th>
+                    <th class="text-left py-2 px-1">Team</th>
+                    <th class="py-2 px-2">PLD</th>
+                    <th class="py-2 px-2 whitespace-nowrap">W-D-L</th>
+                    <th class="py-2 px-2">+/-</th>
+                    <th class="py-2 px-2 text-gray-500 font-bold">Pts</th>
+                    <th class="py-2 px-3 text-left">Form</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of group.rows; track row.teamId) {
+                    <tr class="border-b border-gray-50 last:border-0">
+                      <td class="py-2 pl-3 pr-1">
+                        <span
+                          class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                          [class]="group.qualifiers && row.position <= group.qualifiers ? 'bg-amber-100 text-amber-700' : 'text-gray-500'"
+                        >{{ row.position }}</span>
+                      </td>
+                      <td class="py-2 px-1">
+                        <div class="flex items-center gap-2 min-w-0">
+                          @if (row.teamLogo) {
+                            <img [src]="row.teamLogo" [alt]="row.teamName" class="w-6 h-6 rounded-full object-cover shrink-0" width="24" height="24" />
+                          } @else {
+                            <span class="w-6 h-6 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+                              {{ row.teamName.slice(0, 2).toUpperCase() }}
+                            </span>
+                          }
+                          <span class="font-medium truncate">{{ teamLabel(row) }}</span>
+                        </div>
+                      </td>
+                      <td class="py-2 px-2 text-center text-gray-600">{{ row.played }}</td>
+                      <td class="py-2 px-2 text-center whitespace-nowrap">{{ row.won }} - {{ row.drawn }} - {{ row.lost }}</td>
+                      <td class="py-2 px-2 text-center whitespace-nowrap">
+                        {{ row.goalsFor }}/{{ row.goalsAgainst }}
+                        <span [class]="row.goalDifference > 0 ? 'text-primary-600' : row.goalDifference < 0 ? 'text-accent-red' : 'text-gray-400'">
+                          ({{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }})
+                        </span>
+                      </td>
+                      <td class="py-2 px-2 text-center font-extrabold">{{ row.points }}</td>
+                      <td class="py-2 px-3">
+                        <div class="flex gap-1">
+                          @for (f of row.form; track $index) {
+                            <span
+                              class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold"
+                              [class]="formClass(f)"
+                            >{{ f }}</span>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
       }
     </div>
   `,
@@ -115,11 +114,9 @@ export class StandingsViewComponent {
 
   private standingsService = inject(StandingsService);
   private tournamentService = inject(TournamentService);
+  private teamService = inject(TeamService);
 
-  tableView = signal(false);
-  activeGroup = signal<string | null>(null);
   selectedTournamentId = signal<string>('');
-
   tournaments = this.tournamentService.all;
 
   constructor() {
@@ -127,7 +124,7 @@ export class StandingsViewComponent {
     queueMicrotask(() => {
       if (!this.tournamentId() && !this.selectedTournamentId()) {
         const list = this.tournaments();
-        const first = list.find((t) => t.status === 'ongoing') ?? list[0];
+        const first = list.find((t) => t.status === 'in_progress') ?? list[0];
         if (first) this.selectedTournamentId.set(first.id);
       }
     });
@@ -142,20 +139,43 @@ export class StandingsViewComponent {
     { initialValue: [] as StandingRow[] }
   );
 
-  groupedRows = computed(() => {
+  private teams = toSignal(
+    toObservable(this.effectiveTournamentId).pipe(
+      switchMap((id) => (id ? this.teamService.streamByTournament(id) : of([] as Team[])))
+    ),
+    { initialValue: [] as Team[] }
+  );
+  private managerByTeam = computed(() =>
+    Object.fromEntries(this.teams().filter((t) => t.manager).map((t) => [t.id, t.manager]))
+  );
+
+  teamLabel(row: StandingRow): string {
+    const manager = this.managerByTeam()[row.teamId];
+    return manager ? `${row.teamName}_${manager}` : row.teamName;
+  }
+
+  /** One block per group (a single unnamed block for non-group tournaments). */
+  groups = computed(() => {
     const byGroup = new Map<string | null, StandingRow[]>();
     for (const row of this.rows()) {
-      const arr = byGroup.get(row.groupName) ?? [];
-      arr.push(row);
-      byGroup.set(row.groupName, arr);
+      const bucket = byGroup.get(row.groupName) ?? [];
+      bucket.push(row);
+      byGroup.set(row.groupName, bucket);
     }
-    return [...byGroup.entries()].map(([groupName, rows]) => ({ groupName, rows }));
+    const multiGroup = byGroup.size > 1;
+    return [...byGroup.entries()]
+      .sort((a, b) => (a[0] ?? '').localeCompare(b[0] ?? ''))
+      .map(([name, rows]) => ({
+        name,
+        rows: [...rows].sort((x, y) => x.position - y.position),
+        // Two qualify per group in a group+knockout tournament; no highlight otherwise.
+        qualifiers: multiGroup && name ? 2 : 0,
+      }));
   });
 
-  activeRows = computed(() => {
-    const groups = this.groupedRows();
-    if (groups.length <= 1) return groups[0]?.rows ?? [];
-    const active = this.activeGroup() ?? groups[0]?.groupName ?? null;
-    return groups.find((g) => g.groupName === active)?.rows ?? [];
-  });
+  formClass(result: 'W' | 'D' | 'L'): string {
+    if (result === 'W') return 'bg-primary-500 text-white';
+    if (result === 'L') return 'bg-accent-red text-white';
+    return 'bg-gray-300 text-gray-700';
+  }
 }

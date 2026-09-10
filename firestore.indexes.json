@@ -67,6 +67,14 @@
       ]
     },
     {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "audience", "order": "ASCENDING" },
+        { "fieldPath": "createdDate", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "checkins",
       "queryScope": "COLLECTION",
       "fields": [

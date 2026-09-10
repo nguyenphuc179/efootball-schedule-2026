@@ -1,8 +1,18 @@
 import { Injectable, inject } from '@angular/core';
-import { orderBy, where } from '@angular/fire/firestore';
+import {
+  Firestore,
+  collection,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  where,
+  writeBatch,
+} from '@angular/fire/firestore';
+import { map } from 'rxjs';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Tournament, TournamentDraft, deriveTournamentStatus } from '../../models/tournament.model';
+import { Tournament, TournamentDraft, normalizeStatus } from '../../models/tournament.model';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 const PATH = 'tournaments';
@@ -10,45 +20,79 @@ const PATH = 'tournaments';
 @Injectable({ providedIn: 'root' })
 export class TournamentService {
   private fs = inject(FirestoreBaseService);
+  private firestore = inject(Firestore);
   private auth = inject(AuthService);
 
   /** Realtime list, newest start date first — powers the Tournaments tab and Home's featured rail. */
-  readonly all = toSignal(this.fs.streamCollection<Tournament>(PATH, orderBy('startDate', 'desc')), {
-    initialValue: [] as Tournament[],
-  });
+  readonly all = toSignal(
+    this.fs
+      .streamCollection<Tournament>(PATH, orderBy('startDate', 'desc'))
+      .pipe(map((list) => list.map((t) => ({ ...t, status: normalizeStatus(t.status) })))),
+    { initialValue: [] as Tournament[] }
+  );
 
   streamOne(id: string) {
-    return this.fs.streamDoc<Tournament>(`${PATH}/${id}`);
-  }
-
-  streamByStatus(status: Tournament['status']) {
-    return this.fs.streamCollection<Tournament>(
-      PATH,
-      where('status', '==', status),
-      orderBy('startDate', 'asc')
-    );
+    return this.fs
+      .streamDoc<Tournament>(`${PATH}/${id}`)
+      .pipe(map((t) => (t ? { ...t, status: normalizeStatus(t.status) } : t)));
   }
 
   async create(draft: TournamentDraft): Promise<string> {
     const uid = this.auth.firebaseUser()?.uid ?? 'unknown';
-    const status = deriveTournamentStatus(draft.startDate, draft.endDate);
     return this.fs.add<Omit<Tournament, 'id' | 'createdDate'>>(PATH, {
       ...draft,
-      status,
+      status: 'in_progress',
       createdBy: uid,
     });
   }
 
   async update(id: string, draft: Partial<TournamentDraft>): Promise<void> {
-    const patch: Partial<Tournament> = { ...draft };
-    if (draft.startDate && draft.endDate) {
-      patch.status = deriveTournamentStatus(draft.startDate, draft.endDate);
-    }
-    await this.fs.update(PATH, id, patch);
+    await this.fs.update(PATH, id, { ...draft });
   }
 
+  /** Admin action: mark the tournament Completed. */
+  async endTournament(id: string): Promise<void> {
+    await this.fs.update(PATH, id, { status: 'completed', endedAt: Date.now() });
+  }
+
+  /** Undo `endTournament` — back to In Progress. */
+  async reopenTournament(id: string): Promise<void> {
+    await this.fs.update(PATH, id, { status: 'in_progress', endedAt: null });
+  }
+
+  /**
+   * Deletes the tournament and every record scoped to it — teams (and their `players`
+   * sub-collection), fixtures, the standings table and check-ins. Firestore has no
+   * server-side cascade, so we fan out with queries and batch-delete (batches cap at 500).
+   */
   async remove(id: string): Promise<void> {
-    await this.fs.remove(PATH, id);
+    const [teams, matches, checkins, standingRows] = await Promise.all([
+      getDocs(query(collection(this.firestore, 'teams'), where('tournamentId', '==', id))),
+      getDocs(query(collection(this.firestore, 'matches'), where('tournamentId', '==', id))),
+      getDocs(query(collection(this.firestore, 'checkins'), where('tournamentId', '==', id))),
+      getDocs(collection(this.firestore, `standings/${id}/rows`)),
+    ]);
+
+    // A team delete doesn't cascade its roster, so collect each team's players too.
+    const playerSnaps = await Promise.all(
+      teams.docs.map((t) => getDocs(collection(this.firestore, `teams/${t.id}/players`)))
+    );
+
+    const refs = [
+      ...teams.docs.map((d) => d.ref),
+      ...matches.docs.map((d) => d.ref),
+      ...checkins.docs.map((d) => d.ref),
+      ...standingRows.docs.map((d) => d.ref),
+      ...playerSnaps.flatMap((snap) => snap.docs.map((d) => d.ref)),
+      doc(this.firestore, `standings/${id}`),
+      doc(this.firestore, `${PATH}/${id}`),
+    ];
+
+    for (let i = 0; i < refs.length; i += 450) {
+      const batch = writeBatch(this.firestore);
+      for (const ref of refs.slice(i, i + 450)) batch.delete(ref);
+      await batch.commit();
+    }
   }
 
   async getOnce(id: string): Promise<Tournament | undefined> {

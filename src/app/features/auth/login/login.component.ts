@@ -78,6 +78,7 @@ export class LoginComponent {
       await this.auth.loginWithEmail(email, password);
       this.redirect();
     } catch (err) {
+      console.error('[Email sign-in]', err);
       this.errorMessage.set(friendlyAuthError(err));
     } finally {
       this.isLoading.set(false);
@@ -91,6 +92,7 @@ export class LoginComponent {
       await this.auth.loginWithGoogle();
       this.redirect();
     } catch (err) {
+      console.error('[Google sign-in]', err);
       this.errorMessage.set(friendlyAuthError(err));
     } finally {
       this.isLoading.set(false);
@@ -104,9 +106,19 @@ export function friendlyAuthError(err: unknown): string {
     'auth/invalid-credential': 'Incorrect email or password.',
     'auth/user-not-found': 'No account found with that email.',
     'auth/wrong-password': 'Incorrect email or password.',
+    'auth/user-disabled': 'This account has been disabled — contact an admin.',
     'auth/email-already-in-use': 'An account with that email already exists.',
     'auth/weak-password': 'Password should be at least 6 characters.',
+    // Google popup / provider configuration
     'auth/popup-closed-by-user': 'Google sign-in was cancelled.',
+    'auth/cancelled-popup-request': 'Google sign-in was cancelled.',
+    'auth/popup-blocked': 'Your browser blocked the sign-in popup — allow popups for this site and try again.',
+    'auth/operation-not-allowed': 'Google sign-in isn’t enabled for this project (Firebase Console → Authentication → Sign-in method).',
+    'auth/unauthorized-domain': 'This address isn’t in Firebase’s authorised domains (Authentication → Settings → Authorized domains).',
+    'auth/internal-error': 'Sign-in failed — the Google provider may not be configured. See the browser console for the exact error.',
+    'auth/network-request-failed': 'Network error — check your connection and try again.',
+    'auth/account-exists-with-different-credential':
+      'That email is already registered with a different sign-in method.',
   };
-  return map[code] ?? 'Something went wrong. Please try again.';
+  return map[code] ?? `Something went wrong. Please try again.${code ? ` (${code})` : ''}`;
 }

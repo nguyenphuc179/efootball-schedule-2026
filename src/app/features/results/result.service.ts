@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { MatchService } from '../fixtures/match.service';
+import { FinalStageService } from '../fixtures/final-stage.service';
 import { StandingsService } from '../standings/standings.service';
 import { NotificationService } from '../notifications/notification.service';
 import { OfflineSyncService } from '../../core/services/offline-sync.service';
@@ -20,6 +21,7 @@ import { Match } from '../../models/match.model';
 @Injectable({ providedIn: 'root' })
 export class ResultService {
   private matchService = inject(MatchService);
+  private finalStageService = inject(FinalStageService);
   private standingsService = inject(StandingsService);
   private notificationService = inject(NotificationService);
   private offlineSync = inject(OfflineSyncService);
@@ -34,6 +36,11 @@ export class ResultService {
     );
 
     await this.standingsService.recalculate(match.tournamentId);
+
+    // Knockout result → push winners/losers into the next round's placeholders.
+    if (!match.groupName) {
+      await this.finalStageService.syncFromResults(match.tournamentId).catch(() => undefined);
+    }
 
     await this.notificationService.broadcast({
       title: 'Result Updated',

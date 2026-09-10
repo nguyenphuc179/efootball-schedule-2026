@@ -24,7 +24,7 @@ interface NavItem {
       role="navigation"
       aria-label="Primary"
     >
-      <ul class="grid grid-cols-5 h-16">
+      <ul class="grid grid-cols-3 h-16">
         @for (item of items; track item.route) {
           <li>
             <a
@@ -49,8 +49,6 @@ export class BottomNavComponent {
     return [
       { label: 'Home', icon: 'home', route: '/' },
       { label: 'Tournaments', icon: 'emoji_events', route: '/tournaments' },
-      { label: 'Matches', icon: 'sports_soccer', route: '/matches' },
-      { label: 'Standings', icon: 'leaderboard', route: '/standings' },
       { label: 'Profile', icon: 'person', route: this.auth.isSignedIn() ? '/profile' : '/login' },
     ];
   }

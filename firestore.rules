@@ -26,8 +26,16 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(currentUid()));
     }
 
+    // An admin can flip `users/{uid}.disabled` to lock someone out app-wide (there is no
+    // client-side way to disable a Firebase Auth account). Every privileged check below
+    // fails for a disabled user, and the app also signs them out on sight.
+    function isDisabled() {
+      return exists(/databases/$(database)/documents/users/$(currentUid())) &&
+        userDoc().data.get('disabled', false) == true;
+    }
+
     function isAdmin() {
-      return isSignedIn() &&
+      return isSignedIn() && !isDisabled() &&
         exists(/databases/$(database)/documents/users/$(currentUid())) &&
         userDoc().data.role == 'admin';
     }
@@ -38,7 +46,7 @@ service cloud.firestore {
 
     // A team manager may manage only their own team's roster (players) & check-in.
     function isTeamManager(teamId) {
-      return isSignedIn() &&
+      return isSignedIn() && !isDisabled() &&
         exists(/databases/$(database)/documents/teams/$(teamId)) &&
         get(/databases/$(database)/documents/teams/$(teamId)).data.managerUid == currentUid();
     }
@@ -53,13 +61,17 @@ service cloud.firestore {
     // client-side we forbid users from elevating their own role here).
     // -------------------------------------------------------------------
     match /users/{uid} {
-      allow read: if isSignedIn();
+      allow get: if isSignedIn();            // any signed-in user can resolve a profile
+      allow list: if isAdmin();              // only admins may enumerate all members
       allow create: if isOwnUser(uid) &&
                       request.resource.data.role == 'viewer'; // new signups start as viewer
+      // Self-edits: profile fields only — never your own role or disabled flag.
       allow update: if isOwnUser(uid) &&
-                      request.resource.data.role == resource.data.role; // cannot self-promote
-      allow update: if isAdmin(); // admins may change roles
-      allow delete: if false;
+                      request.resource.data.role == resource.data.role &&
+                      request.resource.data.get('disabled', false) == resource.data.get('disabled', false);
+      // Admins manage OTHER members' role / disabled flag (not their own).
+      allow update: if isAdmin() && uid != currentUid();
+      allow delete: if false; // members are locked out via `disabled`, not deleted
     }
 
     // -------------------------------------------------------------------
@@ -121,7 +133,7 @@ service cloud.firestore {
       allow read: if isSignedIn() &&
         (resource.data.audience == 'all' || resource.data.targetUid == currentUid());
       allow create: if isAdmin();
-      allow update: if isSignedIn() && resource.data.targetUid == currentUid() &&
+      allow update: if isSignedIn() && !isDisabled() && resource.data.targetUid == currentUid() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
       allow delete: if isAdmin();
     }

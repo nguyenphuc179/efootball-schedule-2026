@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, effect, inject, signal, computed } from '@angular/core';
 import {
   Auth,
   GoogleAuthProvider,
@@ -44,10 +44,19 @@ export class AuthService {
 
   readonly isAuthResolved = computed(() => this.firebaseUser() !== undefined);
   readonly isSignedIn = computed(() => !!this.firebaseUser());
-  readonly isAdmin = computed(() => this.appUser()?.role === 'admin');
+  readonly isAdmin = computed(() => this.appUser()?.role === 'admin' && !this.appUser()?.disabled);
   readonly displayName = computed(
     () => this.appUser()?.displayName ?? this.firebaseUser()?.displayName ?? 'Guest'
   );
+
+  constructor() {
+    // If an admin disables this account (even mid-session), drop it immediately.
+    effect(() => {
+      if (this.firebaseUser() && this.appUser()?.disabled) {
+        signOut(this.auth);
+      }
+    });
+  }
 
   async registerWithEmail(email: string, password: string, displayName: string): Promise<void> {
     const cred = await createUserWithEmailAndPassword(this.auth, email, password);
@@ -56,7 +65,8 @@ export class AuthService {
   }
 
   async loginWithEmail(email: string, password: string): Promise<void> {
-    await signInWithEmailAndPassword(this.auth, email, password);
+    const cred = await signInWithEmailAndPassword(this.auth, email, password);
+    await this.enforceNotDisabled(cred.user.uid);
   }
 
   async loginWithGoogle(): Promise<void> {
@@ -68,6 +78,16 @@ export class AuthService {
       cred.user.displayName,
       cred.user.photoURL
     );
+    await this.enforceNotDisabled(cred.user.uid);
+  }
+
+  /** Signs out + throws a Firebase-style error when the profile is flagged `disabled`. */
+  private async enforceNotDisabled(uid: string): Promise<void> {
+    const snap = await getDoc(doc(this.firestore, `users/${uid}`));
+    if (snap.exists() && snap.data()?.['disabled'] === true) {
+      await signOut(this.auth);
+      throw { code: 'auth/user-disabled', message: 'This account has been disabled.' };
+    }
   }
 
   async logout(): Promise<void> {
@@ -91,6 +111,11 @@ export class AuthService {
   /** Admin-only role change (also enforced server-side by firestore.rules). */
   async setUserRole(uid: string, role: UserRole): Promise<void> {
     await updateDoc(doc(this.firestore, `users/${uid}`), { role });
+  }
+
+  /** Admin-only lock-out toggle (also enforced server-side by firestore.rules). */
+  async setUserDisabled(uid: string, disabled: boolean): Promise<void> {
+    await updateDoc(doc(this.firestore, `users/${uid}`), { disabled });
   }
 
   async registerFcmToken(uid: string, token: string): Promise<void> {

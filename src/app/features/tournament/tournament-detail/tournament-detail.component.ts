@@ -2,19 +2,32 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { MatDialog } from '@angular/material/dialog';
 import { TournamentService } from '../tournament.service';
+import { MatchService } from '../../fixtures/match.service';
 import { QrService } from '../../../core/services/qr.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { TeamListComponent } from '../../teams/team-list/team-list.component';
 import { FixturesListComponent } from '../../fixtures/fixtures-list/fixtures-list.component';
+import { GroupStageComponent } from '../group-stage/group-stage.component';
+import { FinalStageComponent } from '../final-stage/final-stage.component';
 import { StandingsViewComponent } from '../../standings/standings-view/standings-view.component';
 import { StatisticsComponent } from '../../statistics/statistics.component';
 import { SwipeDirective } from '../../../shared/directives/swipe.directive';
-import { TOURNAMENT_TYPE_LABELS } from '../../../models/tournament.model';
+import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_TYPE_LABELS } from '../../../models/tournament.model';
+import { Match } from '../../../models/match.model';
 
-type TabKey = 'overview' | 'teams' | 'fixtures' | 'results' | 'standings' | 'statistics';
-const TAB_ORDER: TabKey[] = ['overview', 'teams', 'fixtures', 'results', 'standings', 'statistics'];
+type TabKey =
+  | 'overview'
+  | 'teams'
+  | 'fixtures'
+  | 'results'
+  | 'groupStage'
+  | 'finalStage'
+  | 'standings'
+  | 'statistics';
 
 @Component({
   selector: 'app-tournament-detail',
@@ -25,6 +38,8 @@ const TAB_ORDER: TabKey[] = ['overview', 'teams', 'fixtures', 'results', 'standi
     LoadingSpinnerComponent,
     TeamListComponent,
     FixturesListComponent,
+    GroupStageComponent,
+    FinalStageComponent,
     StandingsViewComponent,
     StatisticsComponent,
     SwipeDirective,
@@ -62,18 +77,43 @@ const TAB_ORDER: TabKey[] = ['overview', 'teams', 'fixtures', 'results', 'standi
             <span class="material-icons text-[16px]">qr_code_scanner</span> Check-in
           </a>
           @if (auth.isAdmin()) {
+            @if (tournament()!.status === 'completed') {
+              <button
+                class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1"
+                [disabled]="isSavingStatus()"
+                (click)="reopenTournament()"
+              >
+                <span class="material-icons text-[16px]">lock_open</span> {{ isSavingStatus() ? '…' : 'Reopen' }}
+              </button>
+            } @else if (canEndTournament()) {
+              <button
+                class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1 !text-accent-red"
+                [disabled]="isSavingStatus()"
+                (click)="endTournament()"
+              >
+                <span class="material-icons text-[16px]">emoji_events</span> {{ isSavingStatus() ? '…' : 'End' }}
+              </button>
+            }
             <a [routerLink]="['/tournaments', tournament()!.id, 'edit']" class="w-8 h-8 flex items-center justify-center text-gray-400">
               <span class="material-icons text-[18px]">edit</span>
             </a>
+            <button
+              class="w-8 h-8 flex items-center justify-center text-gray-400 disabled:opacity-40"
+              [disabled]="isDeleting()"
+              (click)="deleteTournament()"
+              aria-label="Delete tournament"
+            >
+              <span class="material-icons text-[18px]">delete_outline</span>
+            </button>
           }
         </div>
 
         <!-- Sticky tabs -->
         <div class="sticky-tabs flex overflow-x-auto border-b border-gray-100">
-          @for (tab of tabs; track tab.key) {
+          @for (tab of tabs(); track tab.key) {
             <button
               class="px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2"
-              [class]="activeTab() === tab.key ? 'border-primary-500 text-primary-700' : 'border-transparent text-gray-500'"
+              [class]="visibleTab() === tab.key ? 'border-primary-500 text-primary-700' : 'border-transparent text-gray-500'"
               (click)="activeTab.set(tab.key)"
             >
               {{ tab.label }}
@@ -83,25 +123,37 @@ const TAB_ORDER: TabKey[] = ['overview', 'teams', 'fixtures', 'results', 'standi
 
         <!-- Swipeable panel -->
         <div class="swipe-panel p-4" appSwipe (swipeLeft)="nextTab()" (swipeRight)="prevTab()">
-          @switch (activeTab()) {
+          @switch (visibleTab()) {
             @case ('overview') {
               <div class="card">
                 <h3 class="font-bold mb-2">About</h3>
                 <p class="text-sm text-gray-600 whitespace-pre-line">{{ tournament()!.description || 'No description provided.' }}</p>
                 <div class="grid grid-cols-2 gap-3 mt-4 text-sm">
                   <div><span class="text-gray-400">Teams</span><div class="font-semibold">{{ tournament()!.numberOfTeams }}</div></div>
-                  <div><span class="text-gray-400">Status</span><div class="font-semibold capitalize">{{ tournament()!.status }}</div></div>
+                  <div><span class="text-gray-400">Status</span><div class="font-semibold">{{ statusLabels[tournament()!.status] }}</div></div>
                 </div>
+
+                @if (auth.isAdmin() && tournament()!.status !== 'completed' && !canEndTournament()) {
+                  <p class="text-xs text-gray-400 mt-4 pt-4 border-t border-gray-100">
+                    You can end this tournament (top bar) once the Final result is entered.
+                  </p>
+                }
               </div>
             }
             @case ('teams') {
-              <app-team-list [tournamentId]="tournament()!.id" />
+              <app-team-list [tournamentId]="tournament()!.id" [maxTeams]="tournament()!.numberOfTeams" />
             }
             @case ('fixtures') {
               <app-fixtures-list [tournamentId]="tournament()!.id" filter="upcoming" />
             }
             @case ('results') {
               <app-fixtures-list [tournamentId]="tournament()!.id" filter="completed" />
+            }
+            @case ('groupStage') {
+              <app-group-stage [tournamentId]="tournament()!.id" [locked]="tournament()!.status === 'completed'" />
+            }
+            @case ('finalStage') {
+              <app-final-stage [tournamentId]="tournament()!.id" [locked]="tournament()!.status === 'completed'" />
             }
             @case ('standings') {
               <app-standings-view [tournamentId]="tournament()!.id" />
@@ -119,23 +171,60 @@ export class TournamentDetailComponent {
   private route = inject(ActivatedRoute);
   router = inject(Router);
   private tournamentService = inject(TournamentService);
+  private matchService = inject(MatchService);
   private qrService = inject(QrService);
+  private dialog = inject(MatDialog);
   auth = inject(AuthService);
   typeLabels = TOURNAMENT_TYPE_LABELS;
+  statusLabels = TOURNAMENT_STATUS_LABELS;
 
   private id = this.route.snapshot.paramMap.get('id')!;
   tournament = toSignal(this.tournamentService.streamOne(this.id));
+  private matches = toSignal(this.matchService.streamByTournament(this.id), {
+    initialValue: [] as Match[],
+  });
+  isDeleting = signal(false);
+  isSavingStatus = signal(false);
+
+  /**
+   * Can be ended once the Final is played. Knockout / group+knockout need an actual completed
+   * "Final" match; a plain round-robin (no Final) ends when every match is played.
+   */
+  canEndTournament = computed(() => {
+    const t = this.tournament();
+    const ms = this.matches();
+    if (!t || ms.length === 0) return false;
+    const final = ms.find((m) => m.round === 'Final');
+    if (final) return final.status === 'completed';
+    return t.type === 'round_robin' && ms.every((m) => m.status === 'completed');
+  });
 
   activeTab = signal<TabKey>((this.route.snapshot.queryParamMap.get('tab') as TabKey) ?? 'overview');
 
-  tabs: { key: TabKey; label: string }[] = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'teams', label: 'Teams' },
-    { key: 'fixtures', label: 'Fixtures' },
-    { key: 'results', label: 'Results' },
-    { key: 'standings', label: 'Standings' },
-    { key: 'statistics', label: 'Statistics' },
-  ];
+  /** Group tournaments swap Fixtures/Results for the dedicated Group Stage / Final Stage tabs. */
+  tabs = computed<{ key: TabKey; label: string }[]>(() => {
+    const isGroup = this.tournament()?.type === 'group_knockout';
+    return [
+      { key: 'overview', label: 'Overview' },
+      { key: 'teams', label: 'Teams' },
+      ...(isGroup
+        ? ([
+            { key: 'groupStage', label: 'Group Stage' },
+            { key: 'finalStage', label: 'Final Stage' },
+          ] as { key: TabKey; label: string }[])
+        : ([
+            { key: 'fixtures', label: 'Fixtures' },
+            { key: 'results', label: 'Results' },
+          ] as { key: TabKey; label: string }[])),
+      { key: 'standings', label: 'Standings' },
+      { key: 'statistics', label: 'Statistics' },
+    ];
+  });
+
+  /** Falls back to Overview if the URL's ?tab= doesn't exist for this tournament type. */
+  visibleTab = computed(() =>
+    this.tabs().some((t) => t.key === this.activeTab()) ? this.activeTab() : 'overview'
+  );
 
   dateRange = computed(() => {
     const t = this.tournament();
@@ -145,13 +234,15 @@ export class TournamentDetailComponent {
   });
 
   nextTab(): void {
-    const idx = TAB_ORDER.indexOf(this.activeTab());
-    this.activeTab.set(TAB_ORDER[Math.min(idx + 1, TAB_ORDER.length - 1)]);
+    const order = this.tabs().map((t) => t.key);
+    const idx = order.indexOf(this.visibleTab());
+    this.activeTab.set(order[Math.min(idx + 1, order.length - 1)]);
   }
 
   prevTab(): void {
-    const idx = TAB_ORDER.indexOf(this.activeTab());
-    this.activeTab.set(TAB_ORDER[Math.max(idx - 1, 0)]);
+    const order = this.tabs().map((t) => t.key);
+    const idx = order.indexOf(this.visibleTab());
+    this.activeTab.set(order[Math.max(idx - 1, 0)]);
   }
 
   async share(): Promise<void> {
@@ -162,6 +253,55 @@ export class TournamentDetailComponent {
       await navigator.share({ title: t.name, url }).catch(() => undefined);
     } else {
       await navigator.clipboard.writeText(url).catch(() => undefined);
+    }
+  }
+
+  async endTournament(): Promise<void> {
+    const t = this.tournament();
+    if (!t || this.isSavingStatus()) return;
+    this.isSavingStatus.set(true);
+    try {
+      await this.tournamentService.endTournament(t.id);
+    } finally {
+      this.isSavingStatus.set(false);
+    }
+  }
+
+  async reopenTournament(): Promise<void> {
+    const t = this.tournament();
+    if (!t || this.isSavingStatus()) return;
+    this.isSavingStatus.set(true);
+    try {
+      await this.tournamentService.reopenTournament(t.id);
+    } finally {
+      this.isSavingStatus.set(false);
+    }
+  }
+
+  async deleteTournament(): Promise<void> {
+    const t = this.tournament();
+    if (!t || this.isDeleting()) return;
+
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete tournament?',
+        message: `"${t.name}" and all of its teams, fixtures, results and standings will be permanently deleted. This can't be undone.`,
+        destructive: true,
+        confirmLabel: 'Delete',
+      },
+      width: '90vw',
+      maxWidth: '400px',
+    });
+
+    const confirmed = await ref.afterClosed().toPromise();
+    if (!confirmed) return;
+
+    this.isDeleting.set(true);
+    try {
+      await this.tournamentService.remove(t.id);
+      await this.router.navigate(['/tournaments']);
+    } finally {
+      this.isDeleting.set(false);
     }
   }
 }

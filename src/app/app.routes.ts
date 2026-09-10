@@ -66,22 +66,10 @@ export const routes: Routes = [
     ],
   },
   {
-    path: 'matches',
-    loadComponent: () =>
-      import('./features/fixtures/fixtures-list/fixtures-list.component').then((m) => m.FixturesListComponent),
-    title: 'Matches',
-  },
-  {
     path: 'matches/:id/result',
     loadComponent: () =>
       import('./features/results/result-entry/result-entry.component').then((m) => m.ResultEntryComponent),
     canActivate: [authGuard, adminGuard],
-  },
-  {
-    path: 'standings',
-    loadComponent: () =>
-      import('./features/standings/standings-view/standings-view.component').then((m) => m.StandingsViewComponent),
-    title: 'Standings',
   },
   {
     path: 'dashboard',

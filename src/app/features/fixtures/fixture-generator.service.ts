@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Team } from '../../models/team.model';
 import { MatchDraft } from '../../models/match.model';
 import { MatchService } from './match.service';
+import { StandingsService } from '../standings/standings.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -16,14 +17,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * exactly like a real-world seeded bracket. Round names follow the requested convention:
  * Round of 16 → Quarter Final → Semi Final → Final.
  *
- * Group Stage + Knockout — splits teams into groups of ~4, round-robins each group, then seeds
- * a knockout bracket from the (to-be-determined) top finishers — the knockout stage's matches are
- * generated as TBD-vs-TBD placeholders, to be re-generated (via `generateKnockoutFromStandings`)
- * once the group stage concludes and admin triggers "Generate Knockout Stage".
+ * Group Stage + Knockout — splits teams into two groups, round-robins each. The knockout
+ * ("Final Stage") is built separately by FinalStageService once every group match has a result
+ * and an admin triggers it from the Final Stage tab (semi-finals seeded from the group tables,
+ * then Third Place + Final).
  */
 @Injectable({ providedIn: 'root' })
 export class FixtureGeneratorService {
   private matchService = inject(MatchService);
+  private standingsService = inject(StandingsService);
 
   // ---------------------------------------------------------------------------------------
   // Round Robin
@@ -168,9 +170,10 @@ export class FixtureGeneratorService {
     teams: Team[],
     startDate: number,
     location: string,
-    groupSize = 4
+    groupCount = 2
   ): MatchDraft[] {
-    const groupCount = Math.ceil(teams.length / groupSize);
+    // Two groups by default (matches the standard crossover knockout the Final Stage seeds):
+    // Group A/B round-robins, then the top 2 of each advance.
     const groups: Team[][] = Array.from({ length: groupCount }, () => []);
     teams.forEach((team, idx) => groups[idx % groupCount].push(team)); // snake-distribute for balance
 
@@ -180,8 +183,8 @@ export class FixtureGeneratorService {
       drafts.push(...this.generateRoundRobin(tournamentId, groupTeams, startDate, location, groupName));
     });
 
-    // Knockout stage matches are generated separately once group standings are final —
-    // see `generateAndSave` orchestration below, which only builds the group stage up front.
+    // The knockout ("Final Stage") is generated later by FinalStageService, once every group
+    // match has a result and an admin triggers it — see the Final Stage tab.
     return drafts;
   }
 
@@ -211,6 +214,8 @@ export class FixtureGeneratorService {
     }
 
     await this.matchService.bulkCreate(drafts);
+    // Fresh fixtures = no results yet, so reset the standings table (clears old points/form).
+    await this.standingsService.recalculate(tournamentId);
     return drafts.length;
   }
 }

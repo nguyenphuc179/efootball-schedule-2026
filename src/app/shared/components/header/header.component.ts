@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { UserMenuComponent } from '../user-menu/user-menu.component';
 
 /**
  * App bar shown on mobile (compact, transparent-over-hero on Home) and as part of the
@@ -9,7 +10,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, UserMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-100">
@@ -27,16 +28,8 @@ import { AuthService } from '../../../core/services/auth.service';
             >
               <span class="material-icons text-gray-600">notifications</span>
             </a>
-            <a
-              routerLink="/profile"
-              class="w-11 h-11 flex items-center justify-center rounded-full active:bg-gray-100"
-              aria-label="Profile"
-            >
-              <span class="material-icons text-gray-600">account_circle</span>
-            </a>
-          } @else {
-            <a routerLink="/login" class="btn-primary !py-2 !px-4 text-sm">Sign In</a>
           }
+          <app-user-menu />
         </div>
       </div>
     </header>

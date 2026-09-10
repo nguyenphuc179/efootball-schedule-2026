@@ -5,9 +5,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { MatchService } from '../../fixtures/match.service';
 import { ResultService } from '../result.service';
 import { TeamService } from '../../teams/team.service';
+import { TournamentService } from '../../tournament/tournament.service';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 import { Match } from '../../../models/match.model';
 import { Team } from '../../../models/team.model';
+import { TournamentType } from '../../../models/tournament.model';
 
 /**
  * One-handed result entry: large +/- steppers (no keyboard), thumb-reachable Save button.
@@ -21,7 +23,7 @@ import { Team } from '../../../models/team.model';
   template: `
     <div class="min-h-dvh flex flex-col bg-white">
       <div class="flex items-center h-14 px-4 border-b border-gray-100">
-        <button class="w-9 h-9 flex items-center justify-center" (click)="router.navigate(['..'])">
+        <button class="w-9 h-9 flex items-center justify-center" (click)="goBack()">
           <span class="material-icons">arrow_back</span>
         </button>
         <h1 class="font-bold ml-1">Enter Result</h1>
@@ -90,12 +92,14 @@ export class ResultEntryComponent {
   router = inject(Router);
   private matchService = inject(MatchService);
   private teamService = inject(TeamService);
+  private tournamentService = inject(TournamentService);
   private resultService = inject(ResultService);
 
   private matchId = this.route.snapshot.paramMap.get('id')!;
   match = signal<Match | undefined>(undefined);
   homeTeam = signal<Team | undefined>(undefined);
   awayTeam = signal<Team | undefined>(undefined);
+  private tournamentType = signal<TournamentType | undefined>(undefined);
 
   homeScore = signal(0);
   awayScore = signal(0);
@@ -112,9 +116,29 @@ export class ResultEntryComponent {
     this.homeScore.set(found.homeScore ?? 0);
     this.awayScore.set(found.awayScore ?? 0);
 
-    const teams = await this.teamService.getByTournamentOnce(found.tournamentId);
+    const [teams, tournament] = await Promise.all([
+      this.teamService.getByTournamentOnce(found.tournamentId),
+      this.tournamentService.getOnce(found.tournamentId),
+    ]);
     this.homeTeam.set(teams.find((t) => t.id === found.homeTeamId));
     this.awayTeam.set(teams.find((t) => t.id === found.awayTeamId));
+    this.tournamentType.set(tournament?.type);
+  }
+
+  /** The detail-page tab this match lives under, so we return the user right where they were. */
+  private originTab(m: Match): string {
+    if (m.groupName) return 'groupStage';
+    if (this.tournamentType() === 'group_knockout') return 'finalStage';
+    return 'results';
+  }
+
+  goBack(): void {
+    const m = this.match();
+    if (m) {
+      this.router.navigate(['/tournaments', m.tournamentId], { queryParams: { tab: this.originTab(m) } });
+    } else {
+      this.router.navigate(['/tournaments']);
+    }
   }
 
   inc(side: 'home' | 'away'): void {
@@ -133,7 +157,7 @@ export class ResultEntryComponent {
     this.isSaving.set(true);
     try {
       await this.resultService.saveResult(m, this.homeScore(), this.awayScore());
-      this.router.navigate(['/tournaments', m.tournamentId], { queryParams: { tab: 'results' } });
+      this.router.navigate(['/tournaments', m.tournamentId], { queryParams: { tab: this.originTab(m) } });
     } finally {
       this.isSaving.set(false);
     }

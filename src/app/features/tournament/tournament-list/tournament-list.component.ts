@@ -4,7 +4,11 @@ import { RouterLink } from '@angular/router';
 import { TournamentService } from '../tournament.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
-import { TOURNAMENT_TYPE_LABELS, TournamentStatus } from '../../../models/tournament.model';
+import {
+  TOURNAMENT_STATUS_LABELS,
+  TOURNAMENT_TYPE_LABELS,
+  TournamentStatus,
+} from '../../../models/tournament.model';
 
 type FilterTab = 'all' | TournamentStatus;
 
@@ -55,7 +59,7 @@ type FilterTab = 'all' | TournamentStatus;
                   <span class="material-icons text-[14px]">place</span>{{ t.location }}
                 </div>
                 <div class="flex items-center gap-2 mt-1.5">
-                  <span class="badge" [class]="statusClasses(t.status)">{{ t.status }}</span>
+                  <span class="badge" [class]="statusClasses(t.status)">{{ statusLabels[t.status] }}</span>
                   <span class="text-[11px] text-gray-400">{{ typeLabels[t.type] }}</span>
                 </div>
               </div>
@@ -70,12 +74,12 @@ export class TournamentListComponent {
   private tournamentService = inject(TournamentService);
   auth = inject(AuthService);
   typeLabels = TOURNAMENT_TYPE_LABELS;
+  statusLabels = TOURNAMENT_STATUS_LABELS;
 
   activeTab = signal<FilterTab>('all');
   tabs: { label: string; value: FilterTab }[] = [
     { label: 'All', value: 'all' },
-    { label: 'Ongoing', value: 'ongoing' },
-    { label: 'Upcoming', value: 'upcoming' },
+    { label: 'In Progress', value: 'in_progress' },
     { label: 'Completed', value: 'completed' },
   ];
 
@@ -88,13 +92,8 @@ export class TournamentListComponent {
   });
 
   statusClasses(status: TournamentStatus): string {
-    switch (status) {
-      case 'ongoing':
-        return 'bg-red-50 text-accent-red';
-      case 'upcoming':
-        return 'bg-primary-50 text-primary-700';
-      default:
-        return 'bg-gray-100 text-gray-600';
-    }
+    return status === 'completed'
+      ? 'bg-gray-100 text-gray-600'
+      : 'bg-amber-50 text-accent-amber';
   }
 }

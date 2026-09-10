@@ -7,12 +7,13 @@ import { TournamentService } from '../tournament/tournament.service';
 import { MatchService } from '../fixtures/match.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Match } from '../../models/match.model';
+import { MembersComponent } from '../members/members.component';
 
-/** Admin-only dashboard: KPI widgets + Match Results / Goals Distribution / Team Performance charts. */
+/** Admin-only dashboard: KPI widgets + Match Results / Goals Distribution charts + member management. */
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, BaseChartDirective],
+  imports: [CommonModule, RouterLink, BaseChartDirective, MembersComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-4 max-w-4xl mx-auto">
@@ -55,6 +56,10 @@ import { Match } from '../../models/match.model';
       <div class="mt-6 flex flex-col gap-2">
         <a routerLink="/tournaments/create" class="btn-primary w-full text-center">Create New Tournament</a>
         <a routerLink="/tournaments" class="btn-secondary w-full text-center">Manage Tournaments</a>
+      </div>
+
+      <div class="mt-6">
+        <app-members />
       </div>
     </div>
   `,

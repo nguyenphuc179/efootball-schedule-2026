@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore, collection, doc, orderBy, writeBatch } from '@angular/fire/firestore';
+import { map } from 'rxjs';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { TeamService } from '../teams/team.service';
 import { MatchService } from '../fixtures/match.service';
@@ -23,15 +24,17 @@ export class StandingsService {
   private matchService = inject(MatchService);
 
   streamRows(tournamentId: string) {
-    // Ordering priority (points -> GD -> GF) mirrors compareStandingRows; team name tiebreak is
-    // applied client-side since Firestore can't express a "then alphabetical" 4th orderBy cleanly
-    // across ties without an extra composite index per tiebreak combination.
-    return this.fs.streamCollection<StandingRow>(
-      ROWS_SUBPATH(tournamentId),
-      orderBy('points', 'desc'),
-      orderBy('goalDifference', 'desc'),
-      orderBy('goalsFor', 'desc')
-    );
+    // Order by points server-side (a single-field index Firestore provides automatically), then
+    // apply the full tiebreak chain (GD -> GF -> name, and per-group) in code. A standings table
+    // is at most a few dozen rows, so this is essentially free and needs no composite index.
+    return this.fs
+      .streamCollection<StandingRow>(ROWS_SUBPATH(tournamentId), orderBy('points', 'desc'))
+      .pipe(map((rows) => [...rows].sort(compareStandingRows)));
+  }
+
+  /** One-off read of every standings row (used by the Final Stage generator). */
+  async getRowsOnce(tournamentId: string): Promise<StandingRow[]> {
+    return this.fs.getOnce<StandingRow>(ROWS_SUBPATH(tournamentId));
   }
 
   async recalculate(tournamentId: string): Promise<void> {
@@ -40,12 +43,23 @@ export class StandingsService {
       this.matchService.getByTournamentOnce(tournamentId),
     ]);
 
-    const rows = new Map<string, StandingRow>();
-    for (const team of teams) {
-      rows.set(team.id, emptyStandingRow(team.id, team.teamName, team.logo));
+    // Map each team to its group from the group-stage fixtures (null for non-group tournaments).
+    const teamGroup = new Map<string, string | null>();
+    for (const m of matches) {
+      if (!m.groupName) continue;
+      teamGroup.set(m.homeTeamId, m.groupName);
+      teamGroup.set(m.awayTeamId, m.groupName);
     }
 
+    const rows = new Map<string, StandingRow>();
+    for (const team of teams) {
+      rows.set(team.id, emptyStandingRow(team.id, team.teamName, team.logo, teamGroup.get(team.id) ?? null));
+    }
+
+    // In a group tournament the table is the group stage only — knockout results don't count.
+    const hasGroupStage = matches.some((m) => m.groupName);
     const completed = matches
+      .filter((m) => (hasGroupStage ? !!m.groupName : true))
       .filter((m) => m.status === 'completed' && m.homeScore !== null && m.awayScore !== null)
       .sort((a, b) => a.matchDate - b.matchDate);
 
@@ -89,8 +103,19 @@ export class StandingsService {
       away.goalDifference = away.goalsFor - away.goalsAgainst;
     }
 
-    const sorted = [...rows.values()].sort(compareStandingRows);
-    sorted.forEach((row, idx) => (row.position = idx + 1));
+    // Rank within each group so positions read 1..N per group (1..N overall when ungrouped).
+    const byGroup = new Map<string | null, StandingRow[]>();
+    for (const row of rows.values()) {
+      const bucket = byGroup.get(row.groupName) ?? [];
+      bucket.push(row);
+      byGroup.set(row.groupName, bucket);
+    }
+    const sorted: StandingRow[] = [];
+    for (const bucket of byGroup.values()) {
+      bucket.sort(compareStandingRows);
+      bucket.forEach((row, idx) => (row.position = idx + 1));
+      sorted.push(...bucket);
+    }
 
     const batch = writeBatch(this.firestore);
     for (const row of sorted) {

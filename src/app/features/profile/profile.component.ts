@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { FcmService } from '../../core/services/fcm.service';
+import { initialsAvatar } from '../../shared/utils/avatar.util';
 
 @Component({
   selector: 'app-profile',
@@ -12,11 +13,19 @@ import { FcmService } from '../../core/services/fcm.service';
   template: `
     <div class="app-content-area px-4 pt-6 max-w-md mx-auto">
       <div class="flex flex-col items-center gap-2 mb-6">
-        <div class="w-20 h-20 rounded-full bg-primary-50 flex items-center justify-center overflow-hidden">
-          @if (auth.appUser()?.photoURL) {
-            <img [src]="auth.appUser()!.photoURL" class="w-full h-full object-cover" />
+        <div
+          class="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden"
+          [style.background-color]="avatar().bg"
+        >
+          @if (auth.appUser()?.photoURL && !photoFailed()) {
+            <img
+              [src]="auth.appUser()!.photoURL"
+              class="w-full h-full object-cover"
+              referrerpolicy="no-referrer"
+              (error)="photoFailed.set(true)"
+            />
           } @else {
-            <span class="material-icons text-3xl text-primary-400">person</span>
+            <span class="text-2xl font-bold" [style.color]="avatar().fg">{{ avatar().initials }}</span>
           }
         </div>
         <div class="font-bold text-lg">{{ auth.displayName() }}</div>
@@ -46,6 +55,11 @@ export class ProfileComponent {
   auth = inject(AuthService);
   private fcm = inject(FcmService);
   private router = inject(Router);
+
+  avatar = computed(() =>
+    initialsAvatar(this.auth.displayName() || this.auth.appUser()?.email)
+  );
+  photoFailed = signal(false);
 
   pushLabel(): string {
     const state = this.fcm.permissionState();

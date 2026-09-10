@@ -87,7 +87,6 @@ function switchToLatest<T>(accessor: () => Observable<T[]> | null): Observable<T
       <section class="mt-6 px-4">
         <div class="flex items-center justify-between mb-2">
           <h2 class="font-bold">Upcoming Matches</h2>
-          <a routerLink="/matches" class="text-xs font-semibold text-primary-600">See all</a>
         </div>
         <div class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
           @for (m of upcomingMatches(); track m.id) {
@@ -102,7 +101,6 @@ function switchToLatest<T>(accessor: () => Observable<T[]> | null): Observable<T
       <section class="mt-6 px-4">
         <div class="flex items-center justify-between mb-2">
           <h2 class="font-bold">Latest Results</h2>
-          <a routerLink="/matches" class="text-xs font-semibold text-primary-600">See all</a>
         </div>
         <div class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
           @for (m of latestResults(); track m.id) {

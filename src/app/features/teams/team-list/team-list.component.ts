@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
@@ -19,9 +19,13 @@ import { Team } from '../../../models/team.model';
   template: `
     <div class="flex flex-col gap-3">
       @if (auth.isAdmin()) {
-        <button class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm" (click)="openForm()">
-          <span class="material-icons text-[18px]">add</span> Add Team
-        </button>
+        @if (canAddTeam()) {
+          <button class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm" (click)="openForm()">
+            <span class="material-icons text-[18px]">add</span> Add Team
+          </button>
+        } @else {
+          <p class="text-xs text-gray-400">All {{ maxTeams() }} team slots are filled.</p>
+        }
       }
 
       @if (teams().length === 0) {
@@ -57,6 +61,8 @@ import { Team } from '../../../models/team.model';
 })
 export class TeamListComponent {
   readonly tournamentId = input.required<string>();
+  /** Tournament's team cap; 0 = no cap. Hides "Add Team" once the roster is full. */
+  readonly maxTeams = input<number>(0);
 
   private teamService = inject(TeamService);
   private dialog = inject(MatDialog);
@@ -68,15 +74,29 @@ export class TeamListComponent {
     { initialValue: [] as Team[] }
   );
 
+  canAddTeam = computed(() => {
+    const cap = this.maxTeams();
+    return cap <= 0 || this.teams().length < cap;
+  });
+
   openForm(team?: Team): void {
     const isMobile = this.breakpoints.isMatched('(max-width: 767px)');
     this.dialog.open(TeamFormComponent, {
-      data: { tournamentId: this.tournamentId(), team },
+      data: { tournamentId: this.tournamentId(), team, nextIndex: this.nextTeamIndex() },
       width: isMobile ? '100vw' : '480px',
       height: isMobile ? '100dvh' : 'auto',
       maxWidth: '100vw',
       panelClass: isMobile ? 'fullscreen-dialog' : undefined,
     });
+  }
+
+  /** Next "Team N" number: highest trailing number among existing names, else the count, + 1. */
+  private nextTeamIndex(): number {
+    const teams = this.teams();
+    const numbered = teams
+      .map((t) => Number(/(\d+)\s*$/.exec(t.teamName)?.[1]))
+      .filter((n) => Number.isInteger(n) && n > 0);
+    return (numbered.length ? Math.max(...numbered) : teams.length) + 1;
   }
 
   async deleteTeam(team: Team): Promise<void> {

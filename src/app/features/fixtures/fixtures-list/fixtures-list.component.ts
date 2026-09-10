@@ -15,6 +15,8 @@ import { Match } from '../../../models/match.model';
 /**
  * Used both as the "Fixtures" AND "Results" tab of Tournament Detail (filter toggle), and — with
  * no `tournamentId` input — as the cross-tournament `/matches` screen (Flashscore-style feed).
+ *
+ * Group-stage tournaments use the dedicated Group Stage / Final Stage tabs instead of this list.
  */
 @Component({
   selector: 'app-fixtures-list',
