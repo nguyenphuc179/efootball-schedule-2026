@@ -63,7 +63,7 @@ it to `false` to point dev at real Firebase.
 Do this **before** first shipping any data-writing feature:
 
 ```bash
-npm run deploy:rules      # firestore.rules + storage.rules
+npm run deploy:rules      # firestore.rules
 npm run deploy:indexes    # firestore.indexes.json
 ```
 
@@ -174,7 +174,7 @@ jobs:
 ## 10. Production checklist
 
 - [ ] Real Firebase config in both environment files + `firebase-messaging-sw.js`
-- [ ] `firestore.rules` / `storage.rules` deployed and manually re-tested with the Rules Playground
+- [ ] `firestore.rules` deployed and manually re-tested with the Rules Playground
 - [ ] Composite indexes deployed (`npm run deploy:indexes`) — Firestore will otherwise throw
       "requires an index" errors the first time each compound query runs in production
 - [ ] Lighthouse run on the deployed URL (mobile profile) — confirm PWA installability + >90 scores

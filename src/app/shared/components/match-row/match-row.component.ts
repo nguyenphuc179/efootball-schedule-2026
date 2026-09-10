@@ -50,7 +50,7 @@ import { Match } from '../../../models/match.model';
         <span class="text-sm truncate" [class.font-bold]="winner() === 'away'">{{ sideLabel('away') }}</span>
       </div>
 
-      <span class="badge shrink-0 !text-[10px]" [class]="statusClass()">{{ statusLabel() }}</span>
+      <span class="badge shrink-0 !text-[10px] hidden sm:inline-flex" [class]="statusClass()">{{ statusLabel() }}</span>
     </a>
   `,
 })

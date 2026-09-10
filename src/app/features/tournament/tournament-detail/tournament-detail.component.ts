@@ -73,9 +73,6 @@ type TabKey =
           <button class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1 ml-auto" (click)="share()">
             <span class="material-icons text-[16px]">share</span> Share
           </button>
-          <a [routerLink]="['/tournaments', tournament()!.id, 'checkin']" class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1">
-            <span class="material-icons text-[16px]">qr_code_scanner</span> Check-in
-          </a>
           @if (auth.isAdmin()) {
             @if (tournament()!.status === 'completed') {
               <button

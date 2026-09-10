@@ -82,7 +82,7 @@ const isExternalLogo = (logo: string | null | undefined): logo is string => /^ht
               <option [value]="m.uid">{{ m.name }}</option>
             }
           </select>
-          <span class="text-xs text-gray-400">Chosen from active members — they can then manage this team's roster &amp; check-in.</span>
+          <span class="text-xs text-gray-400">Chosen from active members — they can then manage this team's roster.</span>
         </label>
       </form>
     </div>

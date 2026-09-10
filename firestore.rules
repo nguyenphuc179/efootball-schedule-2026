@@ -44,7 +44,7 @@ service cloud.firestore {
       return isSignedIn() && currentUid() == uid;
     }
 
-    // A team manager may manage only their own team's roster (players) & check-in.
+    // A team manager may manage only their own team's roster (players).
     function isTeamManager(teamId) {
       return isSignedIn() && !isDisabled() &&
         exists(/databases/$(database)/documents/teams/$(teamId)) &&
@@ -135,17 +135,6 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update: if isSignedIn() && !isDisabled() && resource.data.targetUid == currentUid() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
-      allow delete: if isAdmin();
-    }
-
-    // -------------------------------------------------------------------
-    // checkins/{checkinId} — team manager or admin can check a team in;
-    // everyone signed in can read attendance for transparency at the venue.
-    // -------------------------------------------------------------------
-    match /checkins/{checkinId} {
-      allow read: if isSignedIn();
-      allow create: if isAdmin() || isTeamManager(request.resource.data.teamId);
-      allow update: if isAdmin() || isTeamManager(resource.data.teamId);
       allow delete: if isAdmin();
     }
 

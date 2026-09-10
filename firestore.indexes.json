@@ -73,14 +73,6 @@
         { "fieldPath": "audience", "order": "ASCENDING" },
         { "fieldPath": "createdDate", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "checkins",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "tournamentId", "order": "ASCENDING" },
-        { "fieldPath": "checkedInAt", "order": "DESCENDING" }
-      ]
     }
   ],
   "fieldOverrides": []

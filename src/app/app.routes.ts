@@ -13,12 +13,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login/login.component').then((m) => m.LoginComponent),
     canActivate: [guestOnlyGuard],
     title: 'Sign In',
+    data: { fullscreen: true },
   },
   {
     path: 'register',
     loadComponent: () => import('./features/auth/register/register.component').then((m) => m.RegisterComponent),
     canActivate: [guestOnlyGuard],
     title: 'Create Account',
+    data: { fullscreen: true },
   },
   {
     path: 'tournaments',
@@ -37,6 +39,7 @@ export const routes: Routes = [
             (m) => m.TournamentFormComponent
           ),
         canActivate: [authGuard, adminGuard],
+        data: { fullscreen: true },
       },
       {
         path: ':id',
@@ -52,16 +55,7 @@ export const routes: Routes = [
             (m) => m.TournamentFormComponent
           ),
         canActivate: [authGuard, adminGuard],
-      },
-      {
-        path: ':id/checkin',
-        loadComponent: () => import('./features/checkin/checkin.component').then((m) => m.CheckinComponent),
-        canActivate: [authGuard],
-      },
-      {
-        path: ':id/checkin/:teamId/qr',
-        loadComponent: () => import('./features/checkin/team-qr/team-qr.component').then((m) => m.TeamQrComponent),
-        canActivate: [authGuard],
+        data: { fullscreen: true },
       },
     ],
   },
@@ -70,6 +64,7 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/results/result-entry/result-entry.component').then((m) => m.ResultEntryComponent),
     canActivate: [authGuard, adminGuard],
+    data: { fullscreen: true },
   },
   {
     path: 'dashboard',
@@ -89,9 +84,5 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   { path: 't/:id', redirectTo: 'tournaments/:id' },
-  {
-    path: 'checkin/:teamId',
-    loadComponent: () => import('./features/checkin/checkin.component').then((m) => m.CheckinComponent),
-  },
   { path: '**', redirectTo: '' },
 ];
