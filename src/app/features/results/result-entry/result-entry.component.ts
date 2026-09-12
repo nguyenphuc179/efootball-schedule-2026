@@ -18,6 +18,7 @@ import { TeamService } from "../../teams/team.service";
 import { TournamentService } from "../../tournament/tournament.service";
 import { TournamentType } from "../../../models/tournament.model";
 import { toSignal } from "@angular/core/rxjs-interop";
+import { TranslatePipe } from "@ngx-translate/core";
 
 /**
  * One-handed result entry: large +/- steppers (no keyboard), thumb-reachable Save button.
@@ -26,7 +27,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
 @Component({
   selector: "app-result-entry",
   standalone: true,
-  imports: [CommonModule, LoadingSpinnerComponent],
+  imports: [CommonModule, LoadingSpinnerComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh flex flex-col bg-white">
@@ -37,11 +38,11 @@ import { toSignal } from "@angular/core/rxjs-interop";
         >
           <span class="material-icons">arrow_back</span>
         </button>
-        <h1 class="font-bold ml-1">Enter Result</h1>
+        <h1 class="font-bold ml-1">{{ 'RESULT_ENTRY.TITLE' | translate }}</h1>
       </div>
 
       @if (!match()) {
-        <app-loading-spinner label="Loading match…" />
+        <app-loading-spinner [label]="'RESULT_ENTRY.LOADING' | translate" />
       } @else {
         <div
           class="flex-1 flex flex-col items-center justify-center gap-8 px-6 py-8"
@@ -129,7 +130,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
               <div
                 class="text-xs font-bold uppercase tracking-wide text-gray-400"
               >
-                Penalty shootout
+                {{ 'RESULT_ENTRY.PENALTY_SHOOTOUT' | translate }}
               </div>
               <div class="flex items-center justify-center gap-8 w-full">
                 <div class="flex flex-col items-center gap-1 flex-1">
@@ -151,7 +152,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
                     <span class="material-icons text-[18px]">expand_more</span>
                   </button>
                 </div>
-                <div class="text-sm font-bold text-gray-300">PEN</div>
+                <div class="text-sm font-bold text-gray-300">{{ 'RESULT_ENTRY.PEN' | translate }}</div>
                 <div class="flex flex-col items-center gap-1 flex-1">
                   <button
                     class="w-9 h-9 rounded-full bg-surface-muted flex items-center justify-center active:bg-gray-200"
@@ -184,7 +185,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
             "
             (click)="save()"
           >
-            {{ isSaving() ? "Saving…" : "Save Result" }}
+            {{ (isSaving() ? 'COMMON.SAVING' : 'RESULT_ENTRY.SAVE_RESULT') | translate }}
           </button>
         </div>
       }

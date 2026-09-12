@@ -16,13 +16,6 @@ export const routes: Routes = [
     data: { fullscreen: true },
   },
   {
-    path: 'register',
-    loadComponent: () => import('./features/auth/register/register.component').then((m) => m.RegisterComponent),
-    canActivate: [guestOnlyGuard],
-    title: 'Create Account',
-    data: { fullscreen: true },
-  },
-  {
     path: 'tournaments',
     children: [
       {

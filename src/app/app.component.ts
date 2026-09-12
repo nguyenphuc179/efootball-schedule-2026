@@ -3,10 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
+import { TranslatePipe } from '@ngx-translate/core';
 import { BottomNavComponent } from './shared/components/bottom-nav/bottom-nav.component';
 import { HeaderComponent } from './shared/components/header/header.component';
 import { UserMenuComponent } from './shared/components/user-menu/user-menu.component';
 import { AuthService } from './core/services/auth.service';
+import { LanguageService } from './core/services/language.service';
 import { OfflineSyncService } from './core/services/offline-sync.service';
 
 /**
@@ -25,6 +27,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
     BottomNavComponent,
     HeaderComponent,
     UserMenuComponent,
+    TranslatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -50,7 +53,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
                 "
               >
                 <span class="material-icons text-[20px]">{{ item.icon }}</span>
-                {{ item.label }}
+                {{ item.label | translate }}
               </a>
             }
           </nav>
@@ -65,11 +68,18 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
           <header
             class="hidden md:flex items-center justify-end gap-1 h-14 px-6 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur z-20"
           >
+            <button
+              class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-xs font-extrabold text-gray-500"
+              (click)="lang.toggle()"
+              [attr.aria-label]="'NAV.SWITCH_LANGUAGE' | translate"
+            >
+              {{ lang.current() === 'en' ? 'EN' : 'VI' }}
+            </button>
             @if (auth.isSignedIn()) {
               <a
                 routerLink="/notifications"
                 class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100"
-                aria-label="Notifications"
+                [attr.aria-label]="'NAV.NOTIFICATIONS' | translate"
               >
                 <span class="material-icons text-gray-600">notifications</span>
               </a>
@@ -79,11 +89,11 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
 
           @if (!offlineSync.isOnline()) {
             <div class="bg-accent-amber/10 text-accent-amber text-xs text-center py-1.5 font-medium">
-              You're offline — showing cached data. Changes will sync automatically.
+              {{ 'COMMON.OFFLINE_BANNER' | translate }}
             </div>
           } @else if (offlineSync.pendingWrites() > 0) {
             <div class="bg-primary-50 text-primary-700 text-xs text-center py-1.5 font-medium">
-              Syncing {{ offlineSync.pendingWrites() }} change(s)…
+              {{ 'COMMON.SYNCING_BANNER' | translate: { count: offlineSync.pendingWrites() } }}
             </div>
           }
         }
@@ -99,6 +109,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
 })
 export class AppComponent {
   auth = inject(AuthService);
+  lang = inject(LanguageService);
   offlineSync = inject(OfflineSyncService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -122,9 +133,9 @@ export class AppComponent {
   }
 
   desktopNavItems = [
-    { label: 'Home', icon: 'home', route: '/' },
-    { label: 'Tournaments', icon: 'emoji_events', route: '/tournaments' },
-    { label: 'Ranking', icon: 'leaderboard', route: '/ranking' },
-    { label: 'Hall of Fame', icon: 'military_tech', route: '/hall-of-fame' },
+    { label: 'NAV.HOME', icon: 'home', route: '/' },
+    { label: 'NAV.TOURNAMENTS', icon: 'emoji_events', route: '/tournaments' },
+    { label: 'NAV.RANKING', icon: 'leaderboard', route: '/ranking' },
+    { label: 'NAV.FAME_FULL', icon: 'military_tech', route: '/hall-of-fame' },
   ];
 }

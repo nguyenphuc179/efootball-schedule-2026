@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ManagerImageService } from './manager-image.service';
 import { ImageUrlFieldComponent } from '../../shared/components/image-url-field/image-url-field.component';
+import { TranslatePipe } from '@ngx-translate/core';
 import { IMAGE_SRC_PATTERN, isImageSrc } from '../../shared/utils/image-url.util';
 
 export interface ManagerImageDialogData {
@@ -16,7 +17,7 @@ export interface ManagerImageDialogData {
 @Component({
   selector: 'app-manager-image-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh w-full flex flex-col bg-white">
@@ -26,7 +27,7 @@ export interface ManagerImageDialogData {
         </button>
         <h1 class="font-bold truncate px-2">{{ data.manager }}</h1>
         <button class="text-primary-600 font-semibold disabled:text-gray-300" [disabled]="form.invalid || isSaving()" (click)="save()">
-          {{ isSaving() ? 'Saving…' : 'Save' }}
+          {{ (isSaving() ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
         </button>
       </div>
 
@@ -34,7 +35,7 @@ export interface ManagerImageDialogData {
         <div class="flex flex-col items-center gap-2">
           <div class="w-40 h-40 rounded-2xl bg-surface-muted flex items-center justify-center overflow-hidden">
             @if (preview()) {
-              <img [src]="preview()" alt="Portrait" class="w-full h-full object-cover" (error)="imgError.set(true)" />
+              <img [src]="preview()" [alt]="'MANAGER_IMAGE_FORM.PORTRAIT' | translate" class="w-full h-full object-cover" (error)="imgError.set(true)" />
             } @else {
               <span class="material-icons text-5xl text-gray-300">account_circle</span>
             }
@@ -42,12 +43,12 @@ export interface ManagerImageDialogData {
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Portrait image <span class="text-gray-400">(leave empty to remove)</span></span>
+          <span class="text-sm font-medium text-gray-600">{{ 'MANAGER_IMAGE_FORM.PORTRAIT' | translate }} <span class="text-gray-400">({{ 'MANAGER_IMAGE_FORM.LEAVE_EMPTY' | translate }})</span></span>
           <app-image-url-field [control]="form.controls.imageUrl" (changed)="imgError.set(false)" />
           @if (form.controls.imageUrl.invalid && form.controls.imageUrl.value) {
-            <span class="text-xs text-red-500">Paste an image link (http/https) or a copied image.</span>
+            <span class="text-xs text-red-500">{{ 'TEAM_FORM.LOGO_INVALID' | translate }}</span>
           } @else if (imgError() && form.controls.imageUrl.value) {
-            <span class="text-xs text-red-500">That image couldn't be loaded — check the link.</span>
+            <span class="text-xs text-red-500">{{ 'TEAM_FORM.LOGO_LOAD_ERROR' | translate }}</span>
           }
         </label>
       </form>

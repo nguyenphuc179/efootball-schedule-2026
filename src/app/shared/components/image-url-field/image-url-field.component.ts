@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ImageUrlInputDirective } from '../../directives/image-url-input.directive';
 
 /**
@@ -22,16 +23,16 @@ import { ImageUrlInputDirective } from '../../directives/image-url-input.directi
 @Component({
   selector: 'app-image-url-field',
   standalone: true,
-  imports: [ReactiveFormsModule, ImageUrlInputDirective],
+  imports: [ReactiveFormsModule, ImageUrlInputDirective, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isInlineImage()) {
       <div class="input-field !flex items-center justify-between gap-2 text-sm">
         <span class="flex items-center gap-1.5 text-gray-500 min-w-0">
           <span class="material-icons text-[18px]">image</span>
-          <span class="truncate">Pasted image · {{ sizeLabel() }}</span>
+          <span class="truncate">{{ 'IMAGE_FIELD.PASTED_IMAGE' | translate: { size: sizeLabel() } }}</span>
         </span>
-        <button type="button" class="text-accent-red font-semibold shrink-0 min-h-0" (click)="clear()">Remove</button>
+        <button type="button" class="text-accent-red font-semibold shrink-0 min-h-0" (click)="clear()">{{ 'COMMON.REMOVE' | translate }}</button>
       </div>
     } @else {
       <input

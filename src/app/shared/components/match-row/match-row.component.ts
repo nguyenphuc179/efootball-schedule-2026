@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
 import { Match, matchScoreText, matchWinner } from '../../../models/match.model';
 import { initialsAvatar } from '../../utils/avatar.util';
 import { TeamAvatar } from '../../utils/team-avatar.util';
@@ -7,7 +8,7 @@ import { TeamAvatar } from '../../utils/team-avatar.util';
 /**
  * GiveTour-style single-line match row: (group badge + round, when grouped) · home name → crest ·
  * score · crest → away name · status badge. The whole row links to result entry when `showResultLink`
- * is set. Used by the Group Stage and Final Stage tabs; the stacked `match-card` is used elsewhere.
+ * is set. The single match display used across every tab (Fixtures/Results, Group Stage, Final Stage).
  */
 @Component({
   selector: 'app-match-row',
@@ -79,16 +80,21 @@ export class MatchRowComponent {
    *  match's denormalised crest, then initials from the team name, when a team isn't listed. */
   readonly avatars = input<Record<string, TeamAvatar>>({});
 
+  private translate = inject(TranslateService);
+
   homeBad = signal(false);
   awayBad = signal(false);
 
   /** "Club" or "Club_Manager" for the given side (placeholder slots stay "W/L …"). */
   sideLabel(side: 'home' | 'away'): string {
+    this.translate.currentLang();
     const m = this.match();
     const name = side === 'home' ? m.homeTeamName : m.awayTeamName;
-    if (!name) return 'TBD';
+    if (!name) return this.translate.instant('MATCH.TBD');
     if (/^(?:Winner|Loser) /.test(name)) {
-      return name.replace(/^Winner /, 'W ').replace(/^Loser /, 'L ');
+      return name
+        .replace(/^Winner /, this.translate.instant('MATCH.WINNER_ABBR') + ' ')
+        .replace(/^Loser /, this.translate.instant('MATCH.LOSER_ABBR') + ' ');
     }
     const manager = this.managers()[side === 'home' ? m.homeTeamId : m.awayTeamId];
     return manager ? `${name}_${manager}` : name;
@@ -97,30 +103,42 @@ export class MatchRowComponent {
   groupLetter = computed(() => (this.match().groupName ?? '').replace(/^group\s+/i, '').trim() || '?');
 
   roundLabel = computed(() => {
+    this.translate.currentLang();
     const round = this.match().round;
     const i = round.lastIndexOf(' - ');
-    if (i >= 0) return round.slice(i + 3); // "Group A - Round 1" -> "Round 1"
+    if (i >= 0) {
+      // "Group A - Round 1" -> "Round 1" (the group name prefix is stripped, not translated)
+      const tail = round.slice(i + 3);
+      const n = /^Round (\d+)$/.exec(tail)?.[1];
+      return n ? this.translate.instant('MATCH.ROUND_N', { n }) : tail;
+    }
     // Knockout round: "Quarter Final 2" -> "Quarter-final #2", "Final" -> "Final".
     const base = round.replace(/ \d+$/, '');
     const num = /(\d+)$/.exec(round)?.[1];
+    const roundOf = /^Round of (\d+)$/.exec(base);
     const name =
       base === 'Quarter Final'
-        ? 'Quarter-final'
+        ? this.translate.instant('MATCH.QUARTER_FINAL')
         : base === 'Semi Final'
-          ? 'Semi-final'
+          ? this.translate.instant('MATCH.SEMI_FINAL')
           : base === 'Third Place'
-            ? 'Third place'
-            : base;
+            ? this.translate.instant('MATCH.THIRD_PLACE')
+            : base === 'Final'
+              ? this.translate.instant('MATCH.FINAL')
+              : roundOf
+                ? this.translate.instant('MATCH.ROUND_OF', { n: roundOf[1] })
+                : base;
     return num && base !== 'Final' ? `${name} #${num}` : name;
   });
 
   /** Short chip shown on mobile where the full round label doesn't fit. */
   roundBadge = computed(() => {
+    this.translate.currentLang();
     const r = this.match().round.toLowerCase();
-    if (r.startsWith('quarter')) return 'QF';
-    if (r.startsWith('semi')) return 'SF';
-    if (r.startsWith('third') || r.includes('place')) return '3rd';
-    if (r === 'final') return 'F';
+    if (r.startsWith('quarter')) return this.translate.instant('MATCH.QF_ABBR');
+    if (r.startsWith('semi')) return this.translate.instant('MATCH.SF_ABBR');
+    if (r.startsWith('third') || r.includes('place')) return this.translate.instant('MATCH.THIRD_ABBR');
+    if (r === 'final') return this.translate.instant('MATCH.F_ABBR');
     const ro = /round of (\d+)/.exec(r);
     if (ro) return 'R' + ro[1];
     const rn = /round (\d+)/.exec(r);
@@ -156,15 +174,16 @@ export class MatchRowComponent {
   }
 
   statusLabel(): string {
+    this.translate.currentLang();
     switch (this.match().status) {
       case 'completed':
-        return 'Completed';
+        return this.translate.instant('MATCH.STATUS_COMPLETED');
       case 'live':
-        return 'Live';
+        return this.translate.instant('MATCH.STATUS_LIVE');
       case 'postponed':
-        return 'Postponed';
+        return this.translate.instant('MATCH.STATUS_POSTPONED');
       default:
-        return 'Not started';
+        return this.translate.instant('MATCH.STATUS_NOT_STARTED');
     }
   }
 

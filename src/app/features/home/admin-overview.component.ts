@@ -8,6 +8,7 @@ import {
 import { BaseChartDirective } from "ng2-charts";
 import { ChartConfiguration } from "chart.js";
 import { CommonModule } from "@angular/common";
+import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 import { Match } from "../../models/match.model";
 import { MatchService } from "../fixtures/match.service";
 import { TournamentService } from "../tournament/tournament.service";
@@ -20,7 +21,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
 @Component({
   selector: "app-admin-overview",
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="px-4 max-w-4xl mx-auto">
@@ -30,7 +31,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
         >
           <span class="material-icons text-[18px]">admin_panel_settings</span>
         </span>
-        <h2 class="text-lg font-black tracking-tight">Quản trị</h2>
+        <h2 class="text-lg font-black tracking-tight">{{ 'ADMIN_OVERVIEW.TITLE' | translate }}</h2>
       </div>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -38,31 +39,31 @@ import { toSignal } from "@angular/core/rxjs-interop";
           <div class="text-2xl font-extrabold text-primary-600">
             {{ tournaments().length }}
           </div>
-          <div class="text-xs text-gray-500">Tournaments</div>
+          <div class="text-xs text-gray-500">{{ 'ADMIN_OVERVIEW.TOURNAMENTS' | translate }}</div>
         </div>
         <div class="card text-center">
           <div class="text-2xl font-extrabold text-primary-600">
             {{ totalTeams() }}
           </div>
-          <div class="text-xs text-gray-500">Teams</div>
+          <div class="text-xs text-gray-500">{{ 'ADMIN_OVERVIEW.TEAMS' | translate }}</div>
         </div>
         <div class="card text-center">
           <div class="text-2xl font-extrabold text-primary-600">
             {{ matches().length }}
           </div>
-          <div class="text-xs text-gray-500">Matches</div>
+          <div class="text-xs text-gray-500">{{ 'ADMIN_OVERVIEW.MATCHES' | translate }}</div>
         </div>
         <div class="card text-center">
           <div class="text-2xl font-extrabold text-primary-600">
             {{ totalGoals() }}
           </div>
-          <div class="text-xs text-gray-500">Goals Scored</div>
+          <div class="text-xs text-gray-500">{{ 'ADMIN_OVERVIEW.GOALS_SCORED' | translate }}</div>
         </div>
       </div>
 
       <div class="grid md:grid-cols-2 gap-4">
         <div class="card">
-          <h3 class="font-bold text-sm mb-3">Match Results</h3>
+          <h3 class="font-bold text-sm mb-3">{{ 'ADMIN_OVERVIEW.MATCH_RESULTS' | translate }}</h3>
           <div class="h-56">
             <canvas
               baseChart
@@ -74,7 +75,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
         </div>
         <div class="card">
           <h3 class="font-bold text-sm mb-3">
-            Goals Distribution (by Tournament)
+            {{ 'ADMIN_OVERVIEW.GOALS_DISTRIBUTION' | translate }}
           </h3>
           <div class="h-56">
             <canvas
@@ -92,6 +93,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
 export class AdminOverviewComponent {
   private tournamentService = inject(TournamentService);
   private matchService = inject(MatchService);
+  private translate = inject(TranslateService);
 
   tournaments = this.tournamentService.all;
   totalTeams = computed(() =>
@@ -132,8 +134,12 @@ export class AdminOverviewComponent {
   };
 
   resultsChartData(): ChartConfiguration<"pie">["data"] {
+    this.translate.currentLang();
     return {
-      labels: ["Completed", "Scheduled"],
+      labels: [
+        this.translate.instant("ADMIN_OVERVIEW.COMPLETED"),
+        this.translate.instant("ADMIN_OVERVIEW.SCHEDULED"),
+      ],
       datasets: [
         {
           data: [this.completed().length, this.upcoming().length],

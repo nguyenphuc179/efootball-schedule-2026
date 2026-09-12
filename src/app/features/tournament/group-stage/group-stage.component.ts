@@ -21,6 +21,7 @@ import { TeamAvatarService } from "../../teams/team-avatar.service";
 import { TeamService } from "../../teams/team.service";
 import { TournamentService } from "../tournament.service";
 import { switchMap } from "rxjs";
+import { TranslatePipe } from "@ngx-translate/core";
 
 /** "Group A - Round 3" -> 3 (0 if the round number can't be read). */
 function roundNumber(m: Match): number {
@@ -39,25 +40,26 @@ function roundNumber(m: Match): number {
     MatchRowComponent,
     EmptyStateComponent,
     LoadingSpinnerComponent,
+    TranslatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-4">
       @if (isGenerating()) {
-        <app-loading-spinner label="Generating fixtures…" />
+        <app-loading-spinner [label]="'GROUP_STAGE.GENERATING_LABEL' | translate" />
       } @else if (!groupBlocks().length) {
         @if (auth.isAdmin() && !locked()) {
           <button
             class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm"
             (click)="generateFixtures()"
           >
-            <span class="material-icons text-[18px]">auto_fix_high</span> Generate Group Stage
+            <span class="material-icons text-[18px]">auto_fix_high</span> {{ 'GROUP_STAGE.GENERATE' | translate }}
           </button>
         }
         <app-empty-state
           icon="grid_view"
-          title="No group stage yet"
-          subtitle="Fixtures will appear here once generated."
+          [title]="'GROUP_STAGE.EMPTY_TITLE' | translate"
+          [subtitle]="'FIXTURES_LIST.EMPTY_SUBTITLE' | translate"
         />
       } @else {
         <div class="flex items-center gap-2 flex-wrap">
@@ -73,7 +75,7 @@ function roundNumber(m: Match): number {
                 "
                 (click)="mode.set(m)"
               >
-                {{ m }}
+                {{ (m === 'group' ? 'GROUP_STAGE.MODE_GROUP' : 'GROUP_STAGE.MODE_ROUND') | translate }}
               </button>
             }
           </div>
@@ -83,9 +85,9 @@ function roundNumber(m: Match): number {
               class="input-field !py-1.5 !px-2.5 !w-auto max-w-[10rem] text-sm shrink-0"
               [value]="managerFilter()"
               (change)="managerFilter.set($any($event.target).value)"
-              aria-label="Filter by manager"
+              [attr.aria-label]="'GROUP_STAGE.FILTER_BY_MANAGER' | translate"
             >
-              <option value="">All managers</option>
+              <option value="">{{ 'GROUP_STAGE.ALL_MANAGERS' | translate }}</option>
               @for (mgr of managerOptions(); track mgr) {
                 <option [value]="mgr">{{ mgr }}</option>
               }
@@ -96,10 +98,10 @@ function roundNumber(m: Match): number {
             <button
               class="btn-primary ml-auto shrink-0 flex items-center gap-1 !py-2 !px-3 text-sm"
               (click)="generateFixtures()"
-              aria-label="Regenerate group stage"
+              [attr.aria-label]="'GROUP_STAGE.REGENERATE_ARIA' | translate"
             >
               <span class="material-icons text-[18px]">auto_fix_high</span>
-              <span class="hidden sm:inline">Regenerate</span>
+              <span class="hidden sm:inline">{{ 'GROUP_STAGE.REGENERATE' | translate }}</span>
             </button>
           }
         </div>
@@ -115,7 +117,7 @@ function roundNumber(m: Match): number {
               <div class="flex items-center gap-2 flex-wrap">
                 <span
                   class="hidden sm:inline text-xs font-bold uppercase tracking-wide text-gray-400 mr-1"
-                  >Round</span
+                  >{{ 'GROUP_STAGE.ROUND_LABEL' | translate }}</span
                 >
                 <button
                   class="w-9 h-9 min-h-0 shrink-0 rounded-full text-xs font-bold flex items-center justify-center"
@@ -126,7 +128,7 @@ function roundNumber(m: Match): number {
                   "
                   (click)="pickRound(block.name, 0)"
                 >
-                  ALL
+                  {{ 'GROUP_STAGE.ALL_SHORT' | translate }}
                 </button>
                 @for (r of block.rounds; track r) {
                   <button
@@ -153,13 +155,13 @@ function roundNumber(m: Match): number {
                     "
                   />
                 } @empty {
-                  <p class="text-sm text-gray-400 py-2">Không có trận nào khớp bộ lọc.</p>
+                  <p class="text-sm text-gray-400 py-2">{{ 'GROUP_STAGE.NO_MATCH_FILTER' | translate }}</p>
                 }
               </div>
             </div>
           } @empty {
             <p class="text-sm text-gray-400 py-6 text-center">
-              Không có trận nào của "{{ managerFilter() }}".
+              {{ 'GROUP_STAGE.NO_MATCH_MANAGER' | translate: { manager: managerFilter() } }}
             </p>
           }
         } @else {
@@ -168,7 +170,7 @@ function roundNumber(m: Match): number {
               <h3
                 class="text-sm font-extrabold uppercase tracking-wide text-gray-700"
               >
-                Round {{ block.round }}
+                {{ 'MATCH.ROUND_N' | translate: { n: block.round } }}
               </h3>
               <div class="flex items-center gap-2 flex-wrap">
                 <button
@@ -180,7 +182,7 @@ function roundNumber(m: Match): number {
                   "
                   (click)="pickGroup(block.round, '')"
                 >
-                  ALL
+                  {{ 'GROUP_STAGE.ALL_SHORT' | translate }}
                 </button>
                 @for (g of block.groups; track g) {
                   <button
@@ -207,13 +209,13 @@ function roundNumber(m: Match): number {
                     "
                   />
                 } @empty {
-                  <p class="text-sm text-gray-400 py-2">Không có trận nào khớp bộ lọc.</p>
+                  <p class="text-sm text-gray-400 py-2">{{ 'GROUP_STAGE.NO_MATCH_FILTER' | translate }}</p>
                 }
               </div>
             </div>
           } @empty {
             <p class="text-sm text-gray-400 py-6 text-center">
-              Không có trận nào của "{{ managerFilter() }}".
+              {{ 'GROUP_STAGE.NO_MATCH_MANAGER' | translate: { manager: managerFilter() } }}
             </p>
           }
         }
@@ -375,7 +377,7 @@ export class GroupStageComponent {
         this.tournamentService.getOnce(id),
         this.teamService.getByTournamentOnce(id),
       ]);
-      if (!tournament) return;
+      if (!tournament || tournament.type !== 'group_knockout') return;
       await this.fixtureGenerator.generateAndSave(
         id,
         tournament.type,

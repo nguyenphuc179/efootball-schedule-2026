@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Match, matchWinner } from '../../../models/match.model';
 import { roundSortKey } from '../../fixtures/final-stage.service';
 
@@ -26,7 +27,7 @@ interface Node {
 @Component({
   selector: 'app-final-bracket',
   standalone: true,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="overflow-x-auto pb-2">
@@ -67,7 +68,7 @@ interface Node {
 
         @if (thirdPlace(); as tp) {
           <div class="absolute" [style.left.px]="layout().thirdX" [style.top.px]="layout().thirdY - 18">
-            <div class="text-[10px] italic font-semibold text-gray-400 mb-1">Bronze match</div>
+            <div class="text-[10px] italic font-semibold text-gray-400 mb-1">{{ 'FINAL_BRACKET.BRONZE_MATCH' | translate }}</div>
             <div class="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden" [style.width.px]="BOX_W">
               <ng-container [ngTemplateOutlet]="slot" [ngTemplateOutletContext]="{ m: tp, side: 'home' }" />
               <div class="border-t border-gray-100"></div>
@@ -103,6 +104,8 @@ export class FinalBracketComponent {
   /** teamId -> manager name; when present the label reads "Club_Manager". */
   readonly managers = input<Record<string, string>>({});
 
+  private translate = inject(TranslateService);
+
   readonly BOX_W = BOX_W;
   readonly SLOT_H = SLOT_H;
 
@@ -115,6 +118,7 @@ export class FinalBracketComponent {
   thirdPlace = computed(() => this.ko().find((m) => m.round === THIRD) ?? null);
 
   layout = computed(() => {
+    this.translate.currentLang();
     const list = this.ko().filter((m) => m.round !== THIRD);
     const num = (r: string) => Number(/ (\d+)$/.exec(r)?.[1] ?? 1);
 
@@ -190,9 +194,11 @@ export class FinalBracketComponent {
   });
 
   private headerLabel(base: string): string {
-    if (base === 'Semi Final') return 'Semi-finals';
-    if (base === 'Quarter Final') return 'Quarter-finals';
-    return base;
+    if (base === 'Semi Final') return this.translate.instant('FINAL_BRACKET.SEMI_FINALS');
+    if (base === 'Quarter Final') return this.translate.instant('FINAL_BRACKET.QUARTER_FINALS');
+    if (base === 'Final') return this.translate.instant('MATCH.FINAL');
+    const ro = /^Round of (\d+)$/.exec(base);
+    return ro ? this.translate.instant('MATCH.ROUND_OF', { n: ro[1] }) : base;
   }
 
   teamId(m: Match, side: 'home' | 'away'): string {
@@ -204,10 +210,13 @@ export class FinalBracketComponent {
   }
 
   label(m: Match, side: 'home' | 'away'): string {
+    this.translate.currentLang();
     const raw = side === 'home' ? m.homeTeamName : m.awayTeamName;
-    if (!raw) return 'TBD';
+    if (!raw) return this.translate.instant('MATCH.TBD');
     if (/^(?:Winner|Loser) /.test(raw)) {
-      return raw.replace(/^Winner /, 'W ').replace(/^Loser /, 'L ');
+      return raw
+        .replace(/^Winner /, this.translate.instant('MATCH.WINNER_ABBR') + ' ')
+        .replace(/^Loser /, this.translate.instant('MATCH.LOSER_ABBR') + ' ');
     }
     const manager = this.managers()[this.teamId(m, side)];
     return manager ? `${raw}_${manager}` : raw;

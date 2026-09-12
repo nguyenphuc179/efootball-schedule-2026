@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { CommonModule } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { of, switchMap } from 'rxjs';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { StandingsService } from '../standings.service';
 import { TournamentService } from '../../tournament/tournament.service';
 import { TeamService } from '../../teams/team.service';
@@ -21,7 +22,7 @@ import { initialsAvatar } from '../../../shared/utils/avatar.util';
 @Component({
   selector: 'app-standings-view',
   standalone: true,
-  imports: [CommonModule, EmptyStateComponent],
+  imports: [CommonModule, EmptyStateComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-4">
@@ -40,7 +41,7 @@ import { initialsAvatar } from '../../../shared/utils/avatar.util';
       }
 
       @if (groups().length === 0) {
-        <app-empty-state icon="leaderboard" title="No standings yet" subtitle="Standings update automatically once results are entered." />
+        <app-empty-state icon="leaderboard" [title]="'STANDINGS_VIEW.EMPTY_TITLE' | translate" [subtitle]="'STANDINGS_VIEW.EMPTY_SUBTITLE' | translate" />
       } @else {
         @for (group of groups(); track group.name) {
           <div class="flex flex-col gap-2">
@@ -52,12 +53,12 @@ import { initialsAvatar } from '../../../shared/utils/avatar.util';
                 <thead class="text-gray-400 text-[11px] uppercase">
                   <tr class="border-b border-gray-100">
                     <th class="text-left py-2 pl-3 pr-1 w-9">#</th>
-                    <th class="text-left py-2 px-1">Team</th>
-                    <th class="py-2 px-2">PLD</th>
-                    <th class="py-2 px-2 whitespace-nowrap">W-D-L</th>
+                    <th class="text-left py-2 px-1">{{ 'STANDINGS_VIEW.TEAM' | translate }}</th>
+                    <th class="py-2 px-2">{{ 'STANDINGS_VIEW.PLD' | translate }}</th>
+                    <th class="py-2 px-2 whitespace-nowrap">{{ 'STANDINGS_VIEW.W_D_L' | translate }}</th>
                     <th class="py-2 px-2">+/-</th>
-                    <th class="py-2 px-2 text-gray-500 font-bold">Pts</th>
-                    <th class="py-2 px-3 text-left">Form</th>
+                    <th class="py-2 px-2 text-gray-500 font-bold">{{ 'STANDINGS.PTS_ABBR' | translate }}</th>
+                    <th class="py-2 px-3 text-left">{{ 'STANDINGS_VIEW.FORM' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -98,7 +99,7 @@ import { initialsAvatar } from '../../../shared/utils/avatar.util';
                             <span
                               class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold"
                               [class]="formClass(f)"
-                            >{{ f }}</span>
+                            >{{ formLabel(f) }}</span>
                           }
                         </div>
                       </td>
@@ -120,6 +121,7 @@ export class StandingsViewComponent {
   private tournamentService = inject(TournamentService);
   private teamService = inject(TeamService);
   private teamAvatars = inject(TeamAvatarService);
+  private translate = inject(TranslateService);
 
   selectedTournamentId = signal<string>('');
   tournaments = this.tournamentService.all;
@@ -190,5 +192,11 @@ export class StandingsViewComponent {
     if (result === 'W') return 'bg-primary-500 text-white';
     if (result === 'L') return 'bg-accent-red text-white';
     return 'bg-gray-300 text-gray-700';
+  }
+
+  formLabel(result: 'W' | 'D' | 'L'): string {
+    this.translate.currentLang();
+    const key = { W: 'MY_OVERVIEW.OUTCOME_W', D: 'MY_OVERVIEW.OUTCOME_D', L: 'MY_OVERVIEW.OUTCOME_L' }[result];
+    return this.translate.instant(key);
   }
 }

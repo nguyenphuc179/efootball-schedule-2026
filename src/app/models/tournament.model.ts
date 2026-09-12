@@ -24,15 +24,17 @@ export type TournamentDraft = Omit<
   'id' | 'createdDate' | 'status' | 'createdBy' | 'endedAt'
 >;
 
+/** i18n keys (not display text) — pipe through `| translate` at the usage site. */
 export const TOURNAMENT_TYPE_LABELS: Record<TournamentType, string> = {
-  round_robin: 'Round Robin',
-  knockout: 'Knockout',
-  group_knockout: 'Group Stage + Knockout',
+  round_robin: 'TOURNAMENT_TYPE.ROUND_ROBIN',
+  knockout: 'TOURNAMENT_TYPE.KNOCKOUT',
+  group_knockout: 'TOURNAMENT_TYPE.GROUP_KNOCKOUT',
 };
 
+/** i18n keys (not display text) — pipe through `| translate` at the usage site. */
 export const TOURNAMENT_STATUS_LABELS: Record<TournamentStatus, string> = {
-  in_progress: 'In Progress',
-  completed: 'Completed',
+  in_progress: 'TOURNAMENT_STATUS.IN_PROGRESS',
+  completed: 'TOURNAMENT_STATUS.COMPLETED',
 };
 
 /** Coerces any legacy status ('upcoming' / 'ongoing') to the current two-state model. */

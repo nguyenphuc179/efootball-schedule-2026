@@ -31,24 +31,9 @@ import { TeamAvatarService } from "../../teams/team-avatar.service";
 import { TeamService } from "../../teams/team.service";
 import { TournamentType } from "../../../models/tournament.model";
 import { switchMap } from "rxjs";
+import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 
 const roundBase = (round: string) => round.replace(/ \d+$/, "");
-
-/** Compact chip label so the round filter fits on one line without scrolling. */
-function shortRound(base: string): string {
-  switch (base) {
-    case "Quarter Final":
-      return "QF";
-    case "Semi Final":
-      return "SF";
-    case "Third Place":
-      return "3rd";
-    case "Final":
-      return "Final";
-  }
-  const ro = /^Round of (\d+)$/.exec(base);
-  return ro ? "R" + ro[1] : base;
-}
 
 /**
  * "Final Stage" tab — the knockout bracket. Used both for `group_knockout` tournaments (locked
@@ -66,18 +51,19 @@ function shortRound(base: string): string {
     FinalBracketComponent,
     EmptyStateComponent,
     LoadingSpinnerComponent,
+    TranslatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-4">
       @if (isWorking()) {
-        <app-loading-spinner label="Building the bracket…" />
+        <app-loading-spinner [label]="'FINAL_STAGE.BUILDING' | translate" />
       } @else if (!hasFinalStage()) {
         @if (isPureKnockout()) {
           @if (auth.isAdmin() && !locked()) {
             @if (readyToSeed()) {
               <p class="text-sm text-gray-500">
-                {{ teamCount() }} teams entered — ready to seed the bracket.
+                {{ 'FINAL_STAGE.TEAMS_ENTERED' | translate: { count: teamCount() } }}
               </p>
               <button
                 class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm"
@@ -85,42 +71,35 @@ function shortRound(base: string): string {
                 (click)="openSeedDialog()"
               >
                 <span class="material-icons text-[18px]">account_tree</span>
-                {{ isSeeding() ? "Loading…" : "Generate Bracket" }}
+                {{ (isSeeding() ? 'COMMON.LOADING' : 'FINAL_STAGE.GENERATE_BRACKET') | translate }}
               </button>
             } @else {
               <app-empty-state
                 icon="groups"
-                title="Not enough teams yet"
-                subtitle="Add at least 2 teams to generate the bracket."
+                [title]="'FINAL_STAGE.NOT_ENOUGH_TEAMS_TITLE' | translate"
+                [subtitle]="'FINAL_STAGE.NOT_ENOUGH_TEAMS_SUBTITLE' | translate"
               />
             }
           } @else {
             <app-empty-state
               icon="account_tree"
-              title="Bracket not set up yet"
-              subtitle="Check back once the organiser seeds the bracket."
+              [title]="'FINAL_STAGE.NOT_SET_UP_TITLE' | translate"
+              [subtitle]="'FINAL_STAGE.NOT_SET_UP_SUBTITLE' | translate"
             />
           }
         } @else if (!groupStageComplete()) {
           <app-empty-state
             icon="lock"
-            title="Final stage locked"
-            [subtitle]="
-              'Enter every group-stage result first — ' +
-              progress().played +
-              ' / ' +
-              progress().total +
-              ' played.'
-            "
+            [title]="'FINAL_STAGE.LOCKED_TITLE' | translate"
+            [subtitle]="'FINAL_STAGE.LOCKED_SUBTITLE' | translate: { played: progress().played, total: progress().total }"
           />
         } @else if (auth.isAdmin() && !locked()) {
           <p class="text-sm text-gray-500">
-            The group stage is complete. Choose how many teams advance from each
-            group, then seed the bracket.
+            {{ 'FINAL_STAGE.GROUP_COMPLETE_HINT' | translate }}
           </p>
           <label class="flex items-center gap-2 text-sm">
             <span class="text-gray-600 font-medium"
-              >Teams advancing per group</span
+              >{{ 'FINAL_STAGE.QUALIFIERS_PER_GROUP' | translate }}</span
             >
             <select
               class="input-field !py-1.5 !px-2.5 !w-auto"
@@ -133,7 +112,7 @@ function shortRound(base: string): string {
             </select>
           </label>
           <p class="text-xs text-gray-400">
-            {{ qualifiers() * 2 }} teams in the knockout — {{ bracketShape() }}.
+            {{ 'FINAL_STAGE.KNOCKOUT_SIZE' | translate: { count: qualifiers() * 2, shape: bracketShape() | translate } }}
           </p>
           <button
             class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm"
@@ -141,13 +120,13 @@ function shortRound(base: string): string {
             (click)="openSeedDialog()"
           >
             <span class="material-icons text-[18px]">account_tree</span>
-            {{ isSeeding() ? "Loading…" : "Generate Final Stage" }}
+            {{ (isSeeding() ? 'COMMON.LOADING' : 'FINAL_STAGE.GENERATE_FINAL_STAGE') | translate }}
           </button>
         } @else {
           <app-empty-state
             icon="account_tree"
-            title="Final stage not set up yet"
-            subtitle="Check back once the organiser seeds the bracket."
+            [title]="'FINAL_STAGE.NOT_SET_UP_TITLE' | translate"
+            [subtitle]="'FINAL_STAGE.NOT_SET_UP_SUBTITLE' | translate"
           />
         }
       } @else {
@@ -174,10 +153,10 @@ function shortRound(base: string): string {
               class="btn-primary shrink-0 flex items-center gap-1 !py-2 !px-2.5 sm:!px-3 text-sm"
               [disabled]="isSeeding()"
               (click)="onGenerateClick()"
-              aria-label="Generate or update bracket"
+              [attr.aria-label]="'FINAL_STAGE.GENERATE_OR_UPDATE_ARIA' | translate"
             >
               <span class="material-icons text-[18px]">auto_fix_high</span>
-              <span class="hidden sm:inline">{{ isSeeding() ? "Loading…" : "Generate / update bracket" }}</span>
+              <span class="hidden sm:inline">{{ (isSeeding() ? 'COMMON.LOADING' : 'FINAL_STAGE.GENERATE_OR_UPDATE') | translate }}</span>
             </button>
           }
 
@@ -192,10 +171,10 @@ function shortRound(base: string): string {
                     : 'text-gray-500'
                 "
                 (click)="view.set($any(v))"
-                [attr.aria-label]="v"
+                [attr.aria-label]="(v === 'chart' ? 'FINAL_STAGE.CHART' : 'FINAL_STAGE.LIST') | translate"
               >
                 <span class="material-icons text-[16px] sm:hidden">{{ v === "chart" ? "account_tree" : "view_list" }}</span>
-                <span class="hidden sm:inline">{{ v }}</span>
+                <span class="hidden sm:inline">{{ (v === 'chart' ? 'FINAL_STAGE.CHART' : 'FINAL_STAGE.LIST') | translate }}</span>
               </button>
             }
           </div>
@@ -230,7 +209,7 @@ function shortRound(base: string): string {
               }
             </div>
           } @empty {
-            <p class="text-sm text-gray-400 py-4 text-center">Không có trận nào.</p>
+            <p class="text-sm text-gray-400 py-4 text-center">{{ 'FINAL_STAGE.NO_MATCHES' | translate }}</p>
           }
         }
       }
@@ -254,6 +233,7 @@ export class FinalStageComponent {
   private finalStage = inject(FinalStageService);
   private dialog = inject(MatDialog);
   private breakpoints = inject(BreakpointObserver);
+  private translate = inject(TranslateService);
   auth = inject(AuthService);
 
   activeFilter = signal<string>("all");
@@ -302,12 +282,13 @@ export class FinalStageComponent {
     return Array.from({ length: Math.max(0, max) }, (_, i) => i + 1);
   });
 
+  /** Returns a translation KEY (piped through `| translate` in the template). */
   bracketShape = computed(() => {
     const q = this.qualifiers() * 2;
-    if (q <= 2) return "a single final";
-    if (q <= 4) return "semi-finals + final";
-    if (q <= 8) return "quarter-finals onward";
-    return "a full knockout bracket";
+    if (q <= 2) return "FINAL_STAGE.SHAPE_SINGLE_FINAL";
+    if (q <= 4) return "FINAL_STAGE.SHAPE_SEMI_FINAL";
+    if (q <= 8) return "FINAL_STAGE.SHAPE_QUARTER_FINAL";
+    return "FINAL_STAGE.SHAPE_FULL_BRACKET";
   });
 
   knockout = computed(() =>
@@ -320,16 +301,34 @@ export class FinalStageComponent {
   canReseed = computed(() => this.knockout().every((m) => m.status !== "completed"));
 
   filterChips = computed(() => {
+    this.translate.currentLang();
     const bases: string[] = [];
     for (const m of this.knockout()) {
       const base = roundBase(m.round);
       if (!bases.includes(base)) bases.push(base);
     }
+    const all = this.translate.instant("FINAL_STAGE.FILTER_ALL");
     return [
-      { label: "All", short: "All", value: "all" },
-      ...bases.map((b) => ({ label: prettyRound(b), short: shortRound(b), value: b })),
+      { label: all, short: all, value: "all" },
+      ...bases.map((b) => ({ label: prettyRound(b, this.translate), short: this.shortRound(b), value: b })),
     ];
   });
+
+  /** Compact chip label so the round filter fits on one line without scrolling. */
+  private shortRound(base: string): string {
+    switch (base) {
+      case "Quarter Final":
+        return this.translate.instant("MATCH.QF_ABBR");
+      case "Semi Final":
+        return this.translate.instant("MATCH.SF_ABBR");
+      case "Third Place":
+        return this.translate.instant("MATCH.THIRD_ABBR");
+      case "Final":
+        return this.translate.instant("MATCH.FINAL");
+    }
+    const ro = /^Round of (\d+)$/.exec(base);
+    return ro ? "R" + ro[1] : base;
+  }
 
   visibleMatches = computed(() => {
     const filter = this.activeFilter();
@@ -340,9 +339,10 @@ export class FinalStageComponent {
 
   /** Matches grouped under a single heading per round ("Quarter-final", "Semi-final", "Final"). */
   matchGroups = computed(() => {
+    this.translate.currentLang();
     const groups: { label: string; matches: Match[] }[] = [];
     for (const m of this.visibleMatches()) {
-      const label = prettyRound(roundBase(m.round));
+      const label = prettyRound(roundBase(m.round), this.translate);
       let g = groups.find((x) => x.label === label);
       if (!g) {
         g = { label, matches: [] };
@@ -377,7 +377,7 @@ export class FinalStageComponent {
     try {
       const seeds = await this.finalStage.getReseedCandidates(this.tournamentId(), this.qualifiers());
       if (!seeds.length) {
-        this.errorMsg.set("Nothing left to re-seed — the bracket is already fully decided.");
+        this.errorMsg.set(this.translate.instant("FINAL_STAGE_ERROR.NOTHING_TO_RESEED"));
         return;
       }
       const isMobile = this.breakpoints.isMatched("(max-width: 767px)");
@@ -390,10 +390,16 @@ export class FinalStageComponent {
         panelClass: isMobile ? "fullscreen-dialog" : undefined,
       });
     } catch (e) {
-      this.errorMsg.set(e instanceof Error ? e.message : "Could not load the qualified teams.");
+      this.errorMsg.set(this.errorText(e, "FINAL_STAGE_ERROR.LOAD_QUALIFIED_FAILED"));
     } finally {
       this.isSeeding.set(false);
     }
+  }
+
+  /** Translates a thrown `Error`'s message as an i18n key, falling back to `fallbackKey`. */
+  private errorText(e: unknown, fallbackKey: string): string {
+    const key = e instanceof Error && e.message ? e.message : fallbackKey;
+    return this.translate.instant(key);
   }
 
   /**
@@ -409,11 +415,10 @@ export class FinalStageComponent {
 
     const ref = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: "Re-seed the bracket?",
-        message:
-          "Changing the bracket order deletes every Final Stage match and result entered so far — the group stage isn't affected. This can't be undone.",
+        title: this.translate.instant("FINAL_STAGE.RESEED_CONFIRM_TITLE"),
+        message: this.translate.instant("FINAL_STAGE.RESEED_CONFIRM_MESSAGE"),
         destructive: true,
-        confirmLabel: "Re-seed",
+        confirmLabel: this.translate.instant("FINAL_STAGE.RESEED"),
       },
       width: "90vw",
       maxWidth: "400px",
@@ -429,9 +434,7 @@ export class FinalStageComponent {
     try {
       await this.finalStage.generate(this.tournamentId(), this.qualifiers());
     } catch (e) {
-      this.errorMsg.set(
-        e instanceof Error ? e.message : "Could not generate the final stage.",
-      );
+      this.errorMsg.set(this.errorText(e, "FINAL_STAGE_ERROR.GENERATE_FAILED"));
     } finally {
       this.isWorking.set(false);
     }

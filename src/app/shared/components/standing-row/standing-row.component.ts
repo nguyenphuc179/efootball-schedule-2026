@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { StandingRow } from '../../../models/standing.model';
 
 /** Sofascore-style compact standings card — the default mobile view (no data tables on mobile). */
 @Component({
   selector: 'app-standing-row',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="card flex items-center gap-3 !py-3">
@@ -21,12 +22,13 @@ import { StandingRow } from '../../../models/standing.model';
       <div class="flex-1 min-w-0">
         <div class="font-semibold truncate">{{ row.teamName }}</div>
         <div class="text-xs text-gray-500">
-          W{{ row.won }} D{{ row.drawn }} L{{ row.lost }} · GD {{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }}
+          {{ 'STANDINGS.WON_ABBR' | translate }}{{ row.won }} {{ 'STANDINGS.DRAWN_ABBR' | translate }}{{ row.drawn }} {{ 'STANDINGS.LOST_ABBR' | translate }}{{ row.lost }}
+          · {{ 'STANDINGS.GD_ABBR' | translate }} {{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }}
         </div>
       </div>
       <div class="text-right shrink-0">
         <div class="font-extrabold text-lg leading-none">{{ row.points }}</div>
-        <div class="text-[10px] text-gray-400 uppercase tracking-wide">Pts</div>
+        <div class="text-[10px] text-gray-400 uppercase tracking-wide">{{ 'STANDINGS.PTS_ABBR' | translate }}</div>
       </div>
     </div>
   `,

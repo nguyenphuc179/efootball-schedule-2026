@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { TournamentService } from '../tournament.service';
 import { MatchService } from '../../fixtures/match.service';
 import { QrService } from '../../../core/services/qr.service';
@@ -44,11 +45,12 @@ type TabKey =
     StandingsViewComponent,
     StatisticsComponent,
     SwipeDirective,
+    TranslatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (!tournament()) {
-      <app-loading-spinner label="Loading tournament…" />
+      <app-loading-spinner [label]="'TOURNAMENT_DETAIL.LOADING' | translate" />
     } @else {
       <div class="app-content-area">
         <!-- Banner + summary -->
@@ -73,9 +75,9 @@ type TabKey =
         </div>
 
         <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
-          <span class="badge bg-primary-50 text-primary-700">{{ typeLabels[tournament()!.type] }}</span>
+          <span class="badge bg-primary-50 text-primary-700">{{ typeLabels[tournament()!.type] | translate }}</span>
           <button class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1 ml-auto" (click)="share()">
-            <span class="material-icons text-[16px]">share</span> Share
+            <span class="material-icons text-[16px]">share</span> {{ 'COMMON.SHARE' | translate }}
           </button>
           @if (auth.isAdmin()) {
             @if (tournament()!.status === 'completed') {
@@ -84,7 +86,7 @@ type TabKey =
                 [disabled]="isSavingStatus()"
                 (click)="reopenTournament()"
               >
-                <span class="material-icons text-[16px]">lock_open</span> {{ isSavingStatus() ? '…' : 'Reopen' }}
+                <span class="material-icons text-[16px]">lock_open</span> {{ isSavingStatus() ? '…' : ('TOURNAMENT_DETAIL.REOPEN' | translate) }}
               </button>
             } @else if (canEndTournament()) {
               <button
@@ -92,7 +94,7 @@ type TabKey =
                 [disabled]="isSavingStatus()"
                 (click)="endTournament()"
               >
-                <span class="material-icons text-[16px]">emoji_events</span> {{ isSavingStatus() ? '…' : 'End' }}
+                <span class="material-icons text-[16px]">emoji_events</span> {{ isSavingStatus() ? '…' : ('TOURNAMENT_DETAIL.END' | translate) }}
               </button>
             }
             @if (matches().length > 0) {
@@ -101,7 +103,7 @@ type TabKey =
                 [disabled]="isResetting()"
                 (click)="resetMatches()"
               >
-                <span class="material-icons text-[16px]">restart_alt</span> {{ isResetting() ? '…' : 'Reset' }}
+                <span class="material-icons text-[16px]">restart_alt</span> {{ isResetting() ? '…' : ('TOURNAMENT_DETAIL.RESET' | translate) }}
               </button>
             }
             <a [routerLink]="['/tournaments', tournament()!.id, 'edit']" class="w-8 h-8 flex items-center justify-center text-gray-400">
@@ -111,7 +113,7 @@ type TabKey =
               class="w-8 h-8 flex items-center justify-center text-gray-400 disabled:opacity-40"
               [disabled]="isDeleting()"
               (click)="deleteTournament()"
-              aria-label="Delete tournament"
+              [attr.aria-label]="'TOURNAMENT_DETAIL.DELETE_TOURNAMENT' | translate"
             >
               <span class="material-icons text-[18px]">delete_outline</span>
             </button>
@@ -126,8 +128,8 @@ type TabKey =
               [class]="visibleTab() === tab.key ? 'border-primary-500 text-primary-700' : 'border-transparent text-gray-500'"
               (click)="activeTab.set(tab.key)"
             >
-              <span class="sm:hidden">{{ tab.short }}</span>
-              <span class="hidden sm:inline">{{ tab.label }}</span>
+              <span class="sm:hidden">{{ tab.short | translate }}</span>
+              <span class="hidden sm:inline">{{ tab.label | translate }}</span>
             </button>
           }
         </div>
@@ -137,16 +139,16 @@ type TabKey =
           @switch (visibleTab()) {
             @case ('overview') {
               <div class="card">
-                <h3 class="font-bold mb-2">About</h3>
-                <p class="text-sm text-gray-600 whitespace-pre-line">{{ tournament()!.description || 'No description provided.' }}</p>
+                <h3 class="font-bold mb-2">{{ 'TOURNAMENT_DETAIL.ABOUT' | translate }}</h3>
+                <p class="text-sm text-gray-600 whitespace-pre-line">{{ tournament()!.description || ('TOURNAMENT_DETAIL.NO_DESCRIPTION' | translate) }}</p>
                 <div class="grid grid-cols-2 gap-3 mt-4 text-sm">
-                  <div><span class="text-gray-400">Teams</span><div class="font-semibold">{{ tournament()!.numberOfTeams }}</div></div>
-                  <div><span class="text-gray-400">Status</span><div class="font-semibold">{{ statusLabels[tournament()!.status] }}</div></div>
+                  <div><span class="text-gray-400">{{ 'ADMIN_OVERVIEW.TEAMS' | translate }}</span><div class="font-semibold">{{ tournament()!.numberOfTeams }}</div></div>
+                  <div><span class="text-gray-400">{{ 'TOURNAMENT_DETAIL.STATUS' | translate }}</span><div class="font-semibold">{{ statusLabels[tournament()!.status] | translate }}</div></div>
                 </div>
 
                 @if (auth.isAdmin() && tournament()!.status !== 'completed' && !canEndTournament()) {
                   <p class="text-xs text-gray-400 mt-4 pt-4 border-t border-gray-100">
-                    You can end this tournament (top bar) once the Final result is entered.
+                    {{ 'TOURNAMENT_DETAIL.END_HINT' | translate }}
                   </p>
                 }
               </div>
@@ -190,6 +192,7 @@ export class TournamentDetailComponent {
   private standingsService = inject(StandingsService);
   private qrService = inject(QrService);
   private dialog = inject(MatDialog);
+  private translate = inject(TranslateService);
   auth = inject(AuthService);
   typeLabels = TOURNAMENT_TYPE_LABELS;
   statusLabels = TOURNAMENT_STATUS_LABELS;
@@ -230,21 +233,21 @@ export class TournamentDetailComponent {
     const middle: { key: TabKey; label: string; short: string }[] =
       type === 'group_knockout'
         ? [
-            { key: 'groupStage', label: 'Group Stage', short: 'Groups' },
-            { key: 'finalStage', label: 'Final Stage', short: 'Final' },
+            { key: 'groupStage', label: 'TOURNAMENT_DETAIL.TAB_GROUP_STAGE', short: 'TOURNAMENT_DETAIL.TAB_GROUPS_SHORT' },
+            { key: 'finalStage', label: 'TOURNAMENT_DETAIL.TAB_FINAL_STAGE', short: 'TOURNAMENT_DETAIL.TAB_FINAL_SHORT' },
           ]
         : type === 'knockout'
-          ? [{ key: 'finalStage', label: 'Bracket', short: 'Bracket' }]
+          ? [{ key: 'finalStage', label: 'TOURNAMENT_DETAIL.TAB_BRACKET', short: 'TOURNAMENT_DETAIL.TAB_BRACKET' }]
           : [
-              { key: 'fixtures', label: 'Fixtures', short: 'Fixtures' },
-              { key: 'results', label: 'Results', short: 'Results' },
+              { key: 'fixtures', label: 'TOURNAMENT_DETAIL.TAB_FIXTURES', short: 'TOURNAMENT_DETAIL.TAB_FIXTURES' },
+              { key: 'results', label: 'TOURNAMENT_DETAIL.TAB_RESULTS', short: 'TOURNAMENT_DETAIL.TAB_RESULTS' },
             ];
     return [
-      { key: 'overview', label: 'Overview', short: 'Info' },
-      { key: 'teams', label: 'Teams', short: 'Teams' },
+      { key: 'overview', label: 'TOURNAMENT_DETAIL.TAB_OVERVIEW', short: 'TOURNAMENT_DETAIL.TAB_INFO_SHORT' },
+      { key: 'teams', label: 'ADMIN_OVERVIEW.TEAMS', short: 'ADMIN_OVERVIEW.TEAMS' },
       ...middle,
-      { key: 'standings', label: 'Standings', short: 'Standings' },
-      { key: 'statistics', label: 'Statistics', short: 'Stats' },
+      { key: 'standings', label: 'TOURNAMENT_DETAIL.TAB_STANDINGS', short: 'TOURNAMENT_DETAIL.TAB_STANDINGS' },
+      { key: 'statistics', label: 'TOURNAMENT_DETAIL.TAB_STATISTICS', short: 'TOURNAMENT_DETAIL.TAB_STATS_SHORT' },
     ];
   });
 
@@ -315,11 +318,10 @@ export class TournamentDetailComponent {
 
     const ref = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Reset all matches?',
-        message:
-          "Every match and result in this tournament will be permanently deleted so you can regenerate fixtures and re-enter results from scratch. Teams aren't affected. This can't be undone.",
+        title: this.translate.instant('TOURNAMENT_DETAIL.RESET_CONFIRM_TITLE'),
+        message: this.translate.instant('TOURNAMENT_DETAIL.RESET_CONFIRM_MESSAGE'),
         destructive: true,
-        confirmLabel: 'Reset',
+        confirmLabel: this.translate.instant('TOURNAMENT_DETAIL.RESET'),
       },
       width: '90vw',
       maxWidth: '400px',
@@ -343,10 +345,10 @@ export class TournamentDetailComponent {
 
     const ref = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: 'Delete tournament?',
-        message: `"${t.name}" and all of its teams, fixtures, results and standings will be permanently deleted. This can't be undone.`,
+        title: this.translate.instant('TOURNAMENT_DETAIL.DELETE_CONFIRM_TITLE'),
+        message: this.translate.instant('TOURNAMENT_DETAIL.DELETE_CONFIRM_MESSAGE', { name: t.name }),
         destructive: true,
-        confirmLabel: 'Delete',
+        confirmLabel: this.translate.instant('COMMON.DELETE'),
       },
       width: '90vw',
       maxWidth: '400px',

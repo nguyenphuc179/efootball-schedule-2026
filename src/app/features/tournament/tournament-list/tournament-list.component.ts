@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { TournamentService } from '../tournament.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
@@ -15,15 +16,15 @@ type FilterTab = 'all' | TournamentStatus;
 @Component({
   selector: 'app-tournament-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, EmptyStateComponent],
+  imports: [CommonModule, RouterLink, EmptyStateComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-4 max-w-3xl mx-auto">
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-extrabold">Tournaments</h1>
+        <h1 class="text-xl font-extrabold">{{ 'NAV.TOURNAMENTS' | translate }}</h1>
         @if (auth.isAdmin()) {
           <a routerLink="/tournaments/create" class="btn-primary !py-2 !px-3 text-sm flex items-center gap-1">
-            <span class="material-icons text-[18px]">add</span> New
+            <span class="material-icons text-[18px]">add</span> {{ 'TOURNAMENT_LIST.NEW' | translate }}
           </a>
         }
       </div>
@@ -35,13 +36,13 @@ type FilterTab = 'all' | TournamentStatus;
             [class]="activeTab() === tab.value ? 'bg-primary-500 text-white' : 'bg-white border border-gray-200 text-gray-600'"
             (click)="activeTab.set(tab.value)"
           >
-            {{ tab.label }}
+            {{ tab.label | translate }}
           </button>
         }
       </div>
 
       @if (filtered().length === 0) {
-        <app-empty-state icon="emoji_events" title="No tournaments" subtitle="Check back soon or create one." />
+        <app-empty-state icon="emoji_events" [title]="'TOURNAMENT_LIST.EMPTY_TITLE' | translate" [subtitle]="'TOURNAMENT_LIST.EMPTY_SUBTITLE' | translate" />
       } @else {
         <div class="flex flex-col gap-3 mt-2">
           @for (t of filtered(); track t.id) {
@@ -59,8 +60,8 @@ type FilterTab = 'all' | TournamentStatus;
                   <span class="material-icons text-[14px]">place</span>{{ t.location }}
                 </div>
                 <div class="flex items-center gap-2 mt-1.5">
-                  <span class="badge" [class]="statusClasses(t.status)">{{ statusLabels[t.status] }}</span>
-                  <span class="text-[11px] text-gray-400">{{ typeLabels[t.type] }}</span>
+                  <span class="badge" [class]="statusClasses(t.status)">{{ statusLabels[t.status] | translate }}</span>
+                  <span class="text-[11px] text-gray-400">{{ typeLabels[t.type] | translate }}</span>
                 </div>
               </div>
             </a>
@@ -78,9 +79,9 @@ export class TournamentListComponent {
 
   activeTab = signal<FilterTab>('all');
   tabs: { label: string; value: FilterTab }[] = [
-    { label: 'All', value: 'all' },
-    { label: 'In Progress', value: 'in_progress' },
-    { label: 'Completed', value: 'completed' },
+    { label: 'TOURNAMENT_LIST.TAB_ALL', value: 'all' },
+    { label: 'TOURNAMENT_STATUS.IN_PROGRESS', value: 'in_progress' },
+    { label: 'TOURNAMENT_STATUS.COMPLETED', value: 'completed' },
   ];
 
   tournaments = this.tournamentService.all;

@@ -5,6 +5,9 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
+import { provideTranslateService } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { getInitialLang } from './core/services/language.service';
 
 import { getApp, initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import {
@@ -35,6 +38,13 @@ export const appConfig: ApplicationConfig = {
     provideNativeDateAdapter(),
     provideHttpClient(withInterceptors([loadingInterceptor])),
     provideCharts(withDefaultRegisterables()),
+
+    // --- i18n (Vietnamese default, English optional) ------------------------------------
+    provideTranslateService({
+      lang: getInitialLang(),
+      fallbackLang: 'vi',
+      loader: provideTranslateHttpLoader({ prefix: '/assets/i18n/', suffix: '.json' }),
+    }),
 
     // --- Firebase -----------------------------------------------------------------------
     provideFirebaseApp(() => initializeApp(environment.firebase)),

@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 import { UserMenuComponent } from '../user-menu/user-menu.component';
 
 /**
@@ -10,7 +12,7 @@ import { UserMenuComponent } from '../user-menu/user-menu.component';
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, UserMenuComponent],
+  imports: [RouterLink, UserMenuComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-100">
@@ -20,11 +22,18 @@ import { UserMenuComponent } from '../user-menu/user-menu.component';
           PitchPro
         </a>
         <div class="flex items-center gap-1">
+          <button
+            class="w-9 h-9 flex items-center justify-center rounded-full active:bg-gray-100 text-xs font-extrabold text-gray-500"
+            (click)="lang.toggle()"
+            [attr.aria-label]="'NAV.SWITCH_LANGUAGE' | translate"
+          >
+            {{ lang.current() === 'en' ? 'EN' : 'VI' }}
+          </button>
           @if (auth.isSignedIn()) {
             <a
               routerLink="/notifications"
               class="w-11 h-11 flex items-center justify-center rounded-full active:bg-gray-100"
-              aria-label="Notifications"
+              [attr.aria-label]="'NAV.NOTIFICATIONS' | translate"
             >
               <span class="material-icons text-gray-600">notifications</span>
             </a>
@@ -37,4 +46,5 @@ import { UserMenuComponent } from '../user-menu/user-menu.component';
 })
 export class HeaderComponent {
   auth = inject(AuthService);
+  lang = inject(LanguageService);
 }

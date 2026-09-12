@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../core/services/auth.service';
 import { FcmService } from '../../core/services/fcm.service';
 import { MembersComponent } from '../members/members.component';
@@ -9,7 +10,7 @@ import { initialsAvatar } from '../../shared/utils/avatar.util';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, MembersComponent],
+  imports: [CommonModule, MembersComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-6 max-w-xl mx-auto">
@@ -31,23 +32,23 @@ import { initialsAvatar } from '../../shared/utils/avatar.util';
         </div>
         <div class="font-bold text-lg">{{ auth.displayName() }}</div>
         <div class="text-sm text-gray-400">{{ auth.appUser()?.email }}</div>
-        <span class="badge bg-primary-50 text-primary-700 capitalize">{{ auth.appUser()?.role ?? 'viewer' }}</span>
+        <span class="badge bg-primary-50 text-primary-700 capitalize">{{ roleLabelKey() | translate }}</span>
       </div>
 
       <div class="card mb-3">
         <div class="flex items-center justify-between">
           <div>
-            <div class="font-semibold text-sm">Push Notifications</div>
-            <div class="text-xs text-gray-400">Get alerts for match reminders and results</div>
+            <div class="font-semibold text-sm">{{ 'PROFILE.PUSH_NOTIFICATIONS' | translate }}</div>
+            <div class="text-xs text-gray-400">{{ 'PROFILE.PUSH_HINT' | translate }}</div>
           </div>
           <button class="btn-secondary !py-1.5 !px-3 text-xs" (click)="enablePush()">
-            {{ pushLabel() }}
+            {{ pushLabel() | translate }}
           </button>
         </div>
       </div>
 
       <button class="btn-secondary w-full flex items-center justify-center gap-2 text-accent-red" (click)="logout()">
-        <span class="material-icons text-[18px]">logout</span> Sign Out
+        <span class="material-icons text-[18px]">logout</span> {{ 'PROFILE.SIGN_OUT' | translate }}
       </button>
 
       @if (auth.isAdmin()) {
@@ -68,11 +69,15 @@ export class ProfileComponent {
   );
   photoFailed = signal(false);
 
+  roleLabelKey = computed(() =>
+    this.auth.appUser()?.role === 'admin' ? 'PROFILE.ROLE_ADMIN' : 'PROFILE.ROLE_VIEWER'
+  );
+
   pushLabel(): string {
     const state = this.fcm.permissionState();
-    if (state === 'granted') return 'Enabled';
-    if (state === 'unsupported') return 'Unsupported';
-    return 'Enable';
+    if (state === 'granted') return 'PROFILE.PUSH_ENABLED';
+    if (state === 'unsupported') return 'PROFILE.PUSH_UNSUPPORTED';
+    return 'PROFILE.PUSH_ENABLE';
   }
 
   async enablePush(): Promise<void> {

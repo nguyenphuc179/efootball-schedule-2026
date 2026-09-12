@@ -8,6 +8,7 @@ import { TournamentService } from '../tournament/tournament.service';
 import { ImageUrlFieldComponent } from '../../shared/components/image-url-field/image-url-field.component';
 import { IMAGE_SRC_PATTERN, isImageSrc } from '../../shared/utils/image-url.util';
 import { Champion } from '../../models/champion.model';
+import { TranslatePipe } from '@ngx-translate/core';
 
 export interface ChampionFormDialogData {
   champion?: Champion;
@@ -18,7 +19,7 @@ export interface ChampionFormDialogData {
 @Component({
   selector: 'app-champion-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh w-full flex flex-col bg-white">
@@ -26,9 +27,9 @@ export interface ChampionFormDialogData {
         <button class="w-9 h-9 flex items-center justify-center" (click)="dialogRef.close()">
           <span class="material-icons">close</span>
         </button>
-        <h1 class="font-bold">{{ data.champion ? 'Edit Champion' : 'Add Champion' }}</h1>
+        <h1 class="font-bold">{{ (data.champion ? 'CHAMPION_FORM.EDIT_TITLE' : 'CHAMPION_FORM.ADD_TITLE') | translate }}</h1>
         <button class="text-primary-600 font-semibold disabled:text-gray-300" [disabled]="form.invalid || isSaving()" (click)="save()">
-          {{ isSaving() ? 'Saving…' : 'Save' }}
+          {{ (isSaving() ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
         </button>
       </div>
 
@@ -36,7 +37,7 @@ export interface ChampionFormDialogData {
         <div class="flex flex-col items-center gap-2">
           <div class="w-40 h-40 rounded-2xl bg-surface-muted flex items-center justify-center overflow-hidden">
             @if (preview()) {
-              <img [src]="preview()" alt="Champion poster" class="w-full h-full object-cover" (error)="imgError.set(true)" />
+              <img [src]="preview()" [alt]="'CHAMPION_FORM.POSTER' | translate" class="w-full h-full object-cover" (error)="imgError.set(true)" />
             } @else {
               <span class="material-icons text-5xl text-gray-300">emoji_events</span>
             }
@@ -44,35 +45,35 @@ export interface ChampionFormDialogData {
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Poster image</span>
+          <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.POSTER' | translate }}</span>
           <app-image-url-field [control]="form.controls.imageUrl" (changed)="imgError.set(false)" />
           @if (form.controls.imageUrl.invalid && form.controls.imageUrl.value) {
-            <span class="text-xs text-red-500">Paste an image link (http/https) or a copied image.</span>
+            <span class="text-xs text-red-500">{{ 'TEAM_FORM.LOGO_INVALID' | translate }}</span>
           } @else if (imgError() && form.controls.imageUrl.value) {
-            <span class="text-xs text-red-500">That image couldn't be loaded — check the link.</span>
+            <span class="text-xs text-red-500">{{ 'TEAM_FORM.LOGO_LOAD_ERROR' | translate }}</span>
           }
         </label>
 
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-gray-600">Season</span>
+            <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.SEASON' | translate }}</span>
             <input class="input-field" type="number" min="1" formControlName="season" />
           </label>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-gray-600">Club</span>
+            <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.CLUB' | translate }}</span>
             <input class="input-field" formControlName="club" placeholder="Netherland" />
           </label>
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Player name</span>
+          <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.PLAYER_NAME' | translate }}</span>
           <input class="input-field" formControlName="playerName" placeholder="LÊ TÙNG DƯƠNG" />
         </label>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Tournament <span class="text-gray-400">(optional)</span></span>
+          <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.TOURNAMENT' | translate }} <span class="text-gray-400">({{ 'TEAM_FORM.OPTIONAL' | translate }})</span></span>
           <select class="input-field" formControlName="tournamentId">
-            <option value="">— None —</option>
+            <option value="">{{ 'CHAMPION_FORM.NONE_OPTION' | translate }}</option>
             @for (t of tournaments(); track t.id) {
               <option [value]="t.id">{{ t.name }}</option>
             }

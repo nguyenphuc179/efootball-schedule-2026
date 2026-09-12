@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../core/services/auth.service';
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
 import { MyOverviewComponent } from './my-overview.component';
@@ -14,12 +15,12 @@ import { AdminOverviewComponent } from './admin-overview.component';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink, LoadingSpinnerComponent, MyOverviewComponent, AdminOverviewComponent],
+  imports: [RouterLink, LoadingSpinnerComponent, MyOverviewComponent, AdminOverviewComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (!auth.isAuthResolved()) {
       <div class="app-content-area flex items-center justify-center py-24">
-        <app-loading-spinner label="Loading…" />
+        <app-loading-spinner [label]="'COMMON.LOADING' | translate" />
       </div>
     } @else if (!auth.isSignedIn()) {
       <div class="app-content-area min-h-[72vh] flex flex-col items-center justify-center text-center px-6 gap-5">
@@ -29,13 +30,11 @@ import { AdminOverviewComponent } from './admin-overview.component';
           <span class="material-icons text-[32px]">sports_soccer</span>
         </span>
         <div>
-          <h1 class="text-3xl font-black tracking-tight">Chào mừng đến với PitchPro</h1>
-          <p class="text-sm text-gray-400 mt-2 max-w-xs mx-auto">
-            Quản lý &amp; theo dõi giải đấu eFootball của bạn — lịch thi đấu, kết quả và bảng xếp hạng thời gian thực.
-          </p>
+          <h1 class="text-3xl font-black tracking-tight">{{ 'HOME.WELCOME_TITLE' | translate }}</h1>
+          <p class="text-sm text-gray-400 mt-2 max-w-xs mx-auto">{{ 'HOME.WELCOME_SUBTITLE' | translate }}</p>
         </div>
-        <a routerLink="/login" class="btn-primary !py-3 !px-8 text-base">Đăng nhập</a>
-        <a routerLink="/tournaments" class="text-sm font-semibold text-primary-600">Xem các giải đấu →</a>
+        <a routerLink="/login" class="btn-primary !py-3 !px-8 text-base">{{ 'USER_MENU.SIGN_IN' | translate }}</a>
+        <a routerLink="/tournaments" class="text-sm font-semibold text-primary-600">{{ 'HOME.VIEW_TOURNAMENTS' | translate }}</a>
       </div>
     } @else {
       <div class="app-content-area flex flex-col gap-8 pb-4">

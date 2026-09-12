@@ -3,12 +3,9 @@ import {
   Auth,
   GoogleAuthProvider,
   User,
-  createUserWithEmailAndPassword,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
-  updateProfile,
 } from '@angular/fire/auth';
 import { Firestore, doc, docData, getDoc, setDoc, updateDoc } from '@angular/fire/firestore';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -60,17 +57,6 @@ export class AuthService {
         signOut(this.auth);
       }
     });
-  }
-
-  async registerWithEmail(email: string, password: string, displayName: string): Promise<void> {
-    const cred = await createUserWithEmailAndPassword(this.auth, email, password);
-    await updateProfile(cred.user, { displayName });
-    await this.ensureUserProfile(cred.user.uid, email, displayName, cred.user.photoURL);
-  }
-
-  async loginWithEmail(email: string, password: string): Promise<void> {
-    const cred = await signInWithEmailAndPassword(this.auth, email, password);
-    await this.enforceNotDisabled(cred.user.uid);
   }
 
   async loginWithGoogle(): Promise<void> {

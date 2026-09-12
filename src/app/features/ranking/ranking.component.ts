@@ -13,6 +13,7 @@ import { ManagerImageFormComponent } from "./manager-image-form.component";
 import { ManagerImageService } from "./manager-image.service";
 import { MatDialog } from "@angular/material/dialog";
 import { initialsAvatar } from "../../shared/utils/avatar.util";
+import { TranslatePipe } from "@ngx-translate/core";
 
 interface PodiumSlot {
   place: 1 | 2 | 3;
@@ -23,7 +24,7 @@ interface PodiumSlot {
 @Component({
   selector: "app-ranking",
   standalone: true,
-  imports: [EmptyStateComponent],
+  imports: [EmptyStateComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-6 max-w-4xl mx-auto">
@@ -34,15 +35,15 @@ interface PodiumSlot {
           >
             <span class="material-icons text-[22px]">leaderboard</span>
           </span>
-          <h1 class="text-3xl font-black tracking-tight">Ranking</h1>
+          <h1 class="text-3xl font-black tracking-tight">{{ 'NAV.RANKING' | translate }}</h1>
         </div>
       </header>
 
       @if (ranking().length === 0) {
         <app-empty-state
           icon="leaderboard"
-          title="No ranking yet"
-          subtitle="Managers appear here once their teams have played."
+          [title]="'RANKING.EMPTY_TITLE' | translate"
+          [subtitle]="'RANKING.EMPTY_SUBTITLE' | translate"
         />
       } @else {
         <!-- Podium -->
@@ -94,14 +95,14 @@ interface PodiumSlot {
                 <span
                   class="absolute bottom-2 right-2 bg-black/55 text-white text-[11px] font-bold rounded-full px-2 py-0.5"
                 >
-                  {{ s.p.points }} pts
+                  {{ s.p.points }} {{ 'STANDINGS.PTS_ABBR' | translate }}
                 </span>
 
                 @if (auth.isAdmin()) {
                   <button
                     class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/45 text-white flex items-center justify-center"
                     (click)="editImage(s.p)"
-                    aria-label="Set portrait"
+                    [attr.aria-label]="'RANKING.SET_PORTRAIT' | translate"
                   >
                     <span class="material-icons text-[14px]">edit</span>
                   </button>
@@ -121,7 +122,7 @@ interface PodiumSlot {
                 </div>
                 <div class="text-[11px] text-white/85">
                   {{ s.p.wins }}-{{ s.p.draws }}-{{ s.p.losses
-                  }}{{ s.place === 1 ? " · " + s.p.teamCount + " teams" : "" }}
+                  }}{{ s.place === 1 ? " · " + ('RANKING.TEAM_COUNT' | translate: { count: s.p.teamCount }) : "" }}
                 </div>
               </div>
             </div>
@@ -161,14 +162,14 @@ interface PodiumSlot {
                   </div>
                   <div class="text-xs text-gray-400">
                     {{ p.wins }}-{{ p.draws }}-{{ p.losses }} ·
-                    {{ p.played }} played
+                    {{ 'RANKING.PLAYED_COUNT' | translate: { count: p.played } }}
                   </div>
                 </div>
                 @if (auth.isAdmin()) {
                   <button
                     class="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0"
                     (click)="editImage(p)"
-                    aria-label="Set portrait"
+                    [attr.aria-label]="'RANKING.SET_PORTRAIT' | translate"
                   >
                     <span class="material-icons text-[18px]">image</span>
                   </button>
@@ -177,7 +178,7 @@ interface PodiumSlot {
                   <span class="font-black text-base">{{ p.points }}</span>
                   <span
                     class="block text-[10px] text-gray-400 uppercase tracking-wide"
-                    >pts</span
+                    >{{ 'STANDINGS.PTS_ABBR' | translate }}</span
                   >
                 </span>
               </div>

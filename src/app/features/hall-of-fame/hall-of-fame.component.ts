@@ -14,12 +14,13 @@ import { CommonModule } from "@angular/common";
 import { ConfirmDialogComponent } from "../../shared/components/confirm-dialog/confirm-dialog.component";
 import { EmptyStateComponent } from "../../shared/components/empty-state/empty-state.component";
 import { MatDialog } from "@angular/material/dialog";
+import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 
 /** Public "Hall of Fame": every season's champion, latest featured on top. Admins manage entries inline. */
 @Component({
   selector: "app-hall-of-fame",
   standalone: true,
-  imports: [CommonModule, EmptyStateComponent],
+  imports: [CommonModule, EmptyStateComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-6 max-w-5xl mx-auto">
@@ -31,7 +32,7 @@ import { MatDialog } from "@angular/material/dialog";
             >
               <span class="material-icons text-[22px]">emoji_events</span>
             </span>
-            <h1 class="text-3xl font-black tracking-tight">Hall of Fame</h1>
+            <h1 class="text-3xl font-black tracking-tight">{{ 'NAV.FAME_FULL' | translate }}</h1>
           </div>
         </div>
         @if (auth.isAdmin()) {
@@ -39,7 +40,7 @@ import { MatDialog } from "@angular/material/dialog";
             class="btn-primary !py-2.5 !px-5 text-sm flex items-center gap-1.5 shrink-0"
             (click)="openForm()"
           >
-            <span class="material-icons text-[18px]">add</span> Add Champion
+            <span class="material-icons text-[18px]">add</span> {{ 'HALL_OF_FAME.ADD_CHAMPION' | translate }}
           </button>
         }
       </header>
@@ -47,8 +48,8 @@ import { MatDialog } from "@angular/material/dialog";
       @if (champions().length === 0) {
         <app-empty-state
           icon="emoji_events"
-          title="No champions yet"
-          subtitle="Season winners will show up here."
+          [title]="'HALL_OF_FAME.EMPTY_TITLE' | translate"
+          [subtitle]="'HALL_OF_FAME.EMPTY_SUBTITLE' | translate"
         />
       } @else {
         @if (featured(); as f) {
@@ -64,7 +65,7 @@ import { MatDialog } from "@angular/material/dialog";
               class="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.2em] text-amber-500 mb-4"
             >
               <span class="material-icons text-[16px]">emoji_events</span>
-              Reigning Champion
+              {{ 'HALL_OF_FAME.REIGNING_CHAMPION' | translate }}
             </span>
 
             <div
@@ -114,11 +115,11 @@ import { MatDialog } from "@angular/material/dialog";
             >
               <span
                 class="inline-flex items-center rounded-full bg-amber-50 text-amber-700 font-bold px-2.5 py-0.5"
-                >Mùa giải {{ f.season }}</span
+                >{{ 'HALL_OF_FAME.SEASON' | translate: { season: f.season } }}</span
               >
               <span
                 class="inline-flex items-center rounded-full bg-primary-50 text-primary-700 font-bold px-2.5 py-0.5"
-                >Đội bóng : {{ f.club }}</span
+                >{{ 'HALL_OF_FAME.CLUB' | translate: { club: f.club } }}</span
               >
             </div>
           </div>
@@ -164,12 +165,12 @@ import { MatDialog } from "@angular/material/dialog";
                 <span
                   class="inline-flex items-center rounded-full bg-amber-50 text-amber-700 font-bold text-[11px] px-2 py-0.5"
                 >
-                  Mùa giải {{ c.season }}
+                  {{ 'HALL_OF_FAME.SEASON' | translate: { season: c.season } }}
                 </span>
                 <span
                   class="inline-flex items-center rounded-full bg-primary-50 text-primary-700 font-bold text-[11px] px-2 py-0.5"
                 >
-                  Đội bóng : {{ c.club }}
+                  {{ 'HALL_OF_FAME.CLUB' | translate: { club: c.club } }}
                 </span>
               </div>
             </div>
@@ -183,6 +184,7 @@ export class HallOfFameComponent {
   private championService = inject(ChampionService);
   private dialog = inject(MatDialog);
   private breakpoints = inject(BreakpointObserver);
+  private translate = inject(TranslateService);
   auth = inject(AuthService);
 
   champions = this.championService.all;
@@ -209,10 +211,13 @@ export class HallOfFameComponent {
   async remove(champion: Champion): Promise<void> {
     const ref = this.dialog.open(ConfirmDialogComponent, {
       data: {
-        title: "Remove champion?",
-        message: `Season ${champion.season} — ${champion.playerName} will be removed from the Hall of Fame.`,
+        title: this.translate.instant("HALL_OF_FAME.REMOVE_CONFIRM_TITLE"),
+        message: this.translate.instant("HALL_OF_FAME.REMOVE_CONFIRM_MESSAGE", {
+          season: champion.season,
+          name: champion.playerName,
+        }),
         destructive: true,
-        confirmLabel: "Remove",
+        confirmLabel: this.translate.instant("COMMON.REMOVE"),
       },
       width: "90vw",
       maxWidth: "400px",

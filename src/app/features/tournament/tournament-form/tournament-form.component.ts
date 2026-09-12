@@ -9,6 +9,7 @@ import { TournamentService } from '../tournament.service';
 import { ImageUrlFieldComponent } from '../../../shared/components/image-url-field/image-url-field.component';
 import { IMAGE_SRC_PATTERN, isImageSrc } from '../../../shared/utils/image-url.util';
 import { TournamentType } from '../../../models/tournament.model';
+import { TranslatePipe } from '@ngx-translate/core';
 
 /**
  * Create/Edit tournament. Presented as a full-screen dialog-equivalent route on mobile
@@ -21,7 +22,7 @@ import { TournamentType } from '../../../models/tournament.model';
 @Component({
   selector: 'app-tournament-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDatepickerModule, MatSelectModule, ImageUrlFieldComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatDatepickerModule, MatSelectModule, ImageUrlFieldComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh flex flex-col bg-white">
@@ -29,9 +30,9 @@ import { TournamentType } from '../../../models/tournament.model';
         <button class="w-9 h-9 flex items-center justify-center" (click)="cancel()">
           <span class="material-icons">close</span>
         </button>
-        <h1 class="font-bold">{{ isEdit() ? 'Edit Tournament' : 'New Tournament' }}</h1>
+        <h1 class="font-bold">{{ (isEdit() ? 'TOURNAMENT_FORM.EDIT_TITLE' : 'TOURNAMENT_FORM.NEW_TITLE') | translate }}</h1>
         <button class="text-primary-600 font-semibold disabled:text-gray-300" [disabled]="form.invalid || isSaving()" (click)="submit()">
-          {{ isSaving() ? 'Saving…' : 'Save' }}
+          {{ (isSaving() ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
         </button>
       </div>
 
@@ -39,7 +40,7 @@ import { TournamentType } from '../../../models/tournament.model';
         <div class="flex flex-col items-center gap-2">
           <div class="w-28 h-28 rounded-2xl bg-surface-muted flex items-center justify-center overflow-hidden">
             @if (imagePreview()) {
-              <img [src]="imagePreview()" alt="Banner preview" class="w-full h-full object-cover" (error)="imgError.set(true)" />
+              <img [src]="imagePreview()" [alt]="'TOURNAMENT_FORM.BANNER_PREVIEW' | translate" class="w-full h-full object-cover" (error)="imgError.set(true)" />
             } @else {
               <span class="material-icons text-4xl text-gray-300">image</span>
             }
@@ -47,39 +48,39 @@ import { TournamentType } from '../../../models/tournament.model';
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Banner Image <span class="text-gray-400">(optional)</span></span>
+          <span class="text-sm font-medium text-gray-600">{{ 'TOURNAMENT_FORM.BANNER_IMAGE' | translate }} <span class="text-gray-400">({{ 'TEAM_FORM.OPTIONAL' | translate }})</span></span>
           <app-image-url-field [control]="form.controls.image" (changed)="imgError.set(false)" />
           @if (form.controls.image.invalid && form.controls.image.value) {
-            <span class="text-xs text-red-500">Paste an image link (http/https) or a copied image.</span>
+            <span class="text-xs text-red-500">{{ 'TEAM_FORM.LOGO_INVALID' | translate }}</span>
           } @else if (imgError() && form.controls.image.value) {
-            <span class="text-xs text-red-500">That image couldn't be loaded — check the link.</span>
+            <span class="text-xs text-red-500">{{ 'TEAM_FORM.LOGO_LOAD_ERROR' | translate }}</span>
           }
         </label>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Tournament Name</span>
+          <span class="text-sm font-medium text-gray-600">{{ 'TOURNAMENT_FORM.NAME' | translate }}</span>
           <input class="input-field" formControlName="name" placeholder="Summer Cup 2026" />
         </label>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Description</span>
-          <textarea class="input-field" rows="3" formControlName="description" placeholder="Short description"></textarea>
+          <span class="text-sm font-medium text-gray-600">{{ 'TOURNAMENT_FORM.DESCRIPTION' | translate }}</span>
+          <textarea class="input-field" rows="3" formControlName="description" [placeholder]="'TOURNAMENT_FORM.DESCRIPTION_PLACEHOLDER' | translate"></textarea>
         </label>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Location</span>
-          <input class="input-field" formControlName="location" placeholder="City Stadium" />
+          <span class="text-sm font-medium text-gray-600">{{ 'TOURNAMENT_FORM.LOCATION' | translate }}</span>
+          <input class="input-field" formControlName="location" [placeholder]="'TOURNAMENT_FORM.LOCATION_PLACEHOLDER' | translate" />
         </label>
 
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-gray-600">Start Date</span>
+            <span class="text-sm font-medium text-gray-600">{{ 'TOURNAMENT_FORM.START_DATE' | translate }}</span>
             <div class="relative">
               <input
                 class="input-field !pr-10 cursor-pointer"
                 [matDatepicker]="startPicker"
                 formControlName="startDate"
-                placeholder="Select a date"
+                [placeholder]="'TOURNAMENT_FORM.SELECT_DATE' | translate"
                 readonly
                 (click)="startPicker.open()"
               />
@@ -91,14 +92,14 @@ import { TournamentType } from '../../../models/tournament.model';
             </div>
           </label>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-gray-600">End Date</span>
+            <span class="text-sm font-medium text-gray-600">{{ 'TOURNAMENT_FORM.END_DATE' | translate }}</span>
             <div class="relative">
               <input
                 class="input-field !pr-10 cursor-pointer"
                 [matDatepicker]="endPicker"
                 [min]="form.controls.startDate.value"
                 formControlName="endDate"
-                placeholder="Select a date"
+                [placeholder]="'TOURNAMENT_FORM.SELECT_DATE' | translate"
                 readonly
                 (click)="endPicker.open()"
               />
@@ -112,16 +113,16 @@ import { TournamentType } from '../../../models/tournament.model';
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Number of Teams</span>
+          <span class="text-sm font-medium text-gray-600">{{ 'TOURNAMENT_FORM.NUMBER_OF_TEAMS' | translate }}</span>
           <input class="input-field" type="number" min="2" formControlName="numberOfTeams" />
         </label>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Tournament Type</span>
+          <span class="text-sm font-medium text-gray-600">{{ 'TOURNAMENT_FORM.TYPE' | translate }}</span>
           <mat-select class="input-field !flex items-center" formControlName="type">
-            <mat-option value="round_robin">Round Robin</mat-option>
-            <mat-option value="knockout">Knockout</mat-option>
-            <mat-option value="group_knockout">Group Stage + Knockout</mat-option>
+            <mat-option value="round_robin">{{ 'TOURNAMENT_TYPE.ROUND_ROBIN' | translate }}</mat-option>
+            <mat-option value="knockout">{{ 'TOURNAMENT_TYPE.KNOCKOUT' | translate }}</mat-option>
+            <mat-option value="group_knockout">{{ 'TOURNAMENT_TYPE.GROUP_KNOCKOUT' | translate }}</mat-option>
           </mat-select>
         </label>
       </form>

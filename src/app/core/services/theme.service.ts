@@ -47,7 +47,7 @@ export class ThemeService {
     } catch {
       /* ignore */
     }
-    return 'system';
+    return 'dark';
   }
 
   private resolve(pref: ThemePref): boolean {

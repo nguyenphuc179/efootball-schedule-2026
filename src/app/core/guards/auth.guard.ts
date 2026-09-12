@@ -17,7 +17,7 @@ export const authGuard: CanActivateFn = async (_route, state) => {
   return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
 };
 
-/** Redirects an already-signed-in user away from /login and /register. */
+/** Redirects an already-signed-in user away from /login. */
 export const guestOnlyGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);

@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { initialsAvatar } from '../../shared/utils/avatar.util';
 import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 /**
  * Admin-only Members panel: lists every registered user, flips each between Viewer / Admin, and
@@ -23,15 +24,15 @@ import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
 @Component({
   selector: 'app-members',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (auth.isAdmin()) {
       <div class="card">
         <button type="button" class="w-full flex items-center justify-between gap-3 text-left" (click)="toggle()">
           <span>
-            <span class="block font-bold text-sm">Members</span>
-            <span class="block text-xs text-gray-400">{{ members().length }} registered · admins can manage everything</span>
+            <span class="block font-bold text-sm">{{ 'MEMBERS.TITLE' | translate }}</span>
+            <span class="block text-xs text-gray-400">{{ 'MEMBERS.SUBTITLE' | translate: { count: members().length } }}</span>
           </span>
           <span class="material-icons text-gray-400 shrink-0">{{ expanded() ? 'expand_less' : 'expand_more' }}</span>
         </button>
@@ -39,7 +40,7 @@ import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
         @if (expanded()) {
           <div class="mt-3">
             @if (members().length === 0) {
-              <p class="text-sm text-gray-400">No members yet.</p>
+              <p class="text-sm text-gray-400">{{ 'MEMBERS.EMPTY' | translate }}</p>
             } @else {
               <div class="flex flex-col divide-y divide-gray-100">
             @for (m of members(); track m.uid) {
@@ -69,7 +70,7 @@ import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
                       #nameInput
                       class="input-field !py-1.5 !px-2 text-sm flex-1 min-w-0"
                       [value]="nameDraft()"
-                      placeholder="System display name"
+                      [placeholder]="'MEMBERS.SYSTEM_NAME_PLACEHOLDER' | translate"
                       autocomplete="off"
                       (keydown.enter)="saveName(m, nameInput.value)"
                       (keydown.escape)="cancelEditName()"
@@ -79,32 +80,32 @@ import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
                       [disabled]="savingUid() === m.uid"
                       (click)="saveName(m, nameInput.value)"
                     >
-                      {{ savingUid() === m.uid ? '…' : 'Save' }}
+                      {{ savingUid() === m.uid ? '…' : ('COMMON.SAVE' | translate) }}
                     </button>
-                    <button class="text-xs font-semibold text-gray-400 shrink-0 min-h-0" (click)="cancelEditName()">Cancel</button>
+                    <button class="text-xs font-semibold text-gray-400 shrink-0 min-h-0" (click)="cancelEditName()">{{ 'COMMON.CANCEL' | translate }}</button>
                   </div>
                 } @else {
                   <div class="flex-1 min-w-0">
                     <div class="text-sm font-semibold truncate flex items-center gap-1.5">
                       <span class="truncate">{{ nameOf(m) }}</span>
                       @if (m.uid === myUid()) {
-                        <span class="text-xs text-gray-400 font-normal">(you)</span>
+                        <span class="text-xs text-gray-400 font-normal">{{ 'MEMBERS.YOU' | translate }}</span>
                       }
                       @if (m.disabled) {
-                        <span class="text-[10px] uppercase tracking-wide bg-red-50 text-accent-red rounded px-1.5 py-0.5">Disabled</span>
+                        <span class="text-[10px] uppercase tracking-wide bg-red-50 text-accent-red rounded px-1.5 py-0.5">{{ 'MEMBERS.DISABLED_BADGE' | translate }}</span>
                       }
                       <button
                         class="text-[11px] font-semibold text-primary-600 shrink-0 min-h-0"
                         [disabled]="savingUid() === m.uid"
                         (click)="startEditName(m)"
                       >
-                        {{ m.systemDisplayName ? 'Edit' : 'Add' }}
+                        {{ (m.systemDisplayName ? 'COMMON.EDIT' : 'MEMBERS.ADD') | translate }}
                       </button>
                     </div>
                     <div class="text-xs text-gray-400 truncate">
                       {{ m.email || m.uid }}
                       @if (m.systemDisplayName && m.displayName) {
-                        <span class="italic"> · login: {{ m.displayName }}</span>
+                        <span class="italic"> · {{ 'MEMBERS.LOGIN_NAME' | translate: { name: m.displayName } }}</span>
                       }
                     </div>
                   </div>
@@ -116,8 +117,8 @@ import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
                   [disabled]="m.uid === myUid() || savingUid() === m.uid || !!m.disabled"
                   (change)="changeRole(m, $any($event.target).value)"
                 >
-                  <option value="viewer">Viewer</option>
-                  <option value="admin">Admin</option>
+                  <option value="viewer">{{ 'MEMBERS.ROLE_VIEWER' | translate }}</option>
+                  <option value="admin">{{ 'MEMBERS.ROLE_ADMIN' | translate }}</option>
                 </select>
 
                 @if (m.uid !== myUid()) {
@@ -127,7 +128,7 @@ import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
                     [disabled]="savingUid() === m.uid"
                     (click)="toggleDisabled(m)"
                   >
-                    {{ m.disabled ? 'Enable' : 'Disable' }}
+                    {{ (m.disabled ? 'MEMBERS.ENABLE' : 'MEMBERS.DISABLE') | translate }}
                   </button>
                 }
               </div>
@@ -147,6 +148,7 @@ import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
 export class MembersComponent {
   private memberService = inject(MemberService);
   private dialog = inject(MatDialog);
+  private translate = inject(TranslateService);
   auth = inject(AuthService);
 
   members = toSignal(this.memberService.streamMembers(), { initialValue: [] as AppUser[] });
@@ -211,7 +213,7 @@ export class MembersComponent {
       this.editingUid.set(null);
     } catch (err) {
       console.error('[Members] setUserSystemDisplayName', err);
-      this.errorMsg.set('Could not save that name — check your connection and permissions.');
+      this.errorMsg.set(this.translate.instant('MEMBERS.SAVE_NAME_FAILED'));
     } finally {
       this.savingUid.set(null);
     }
@@ -225,7 +227,7 @@ export class MembersComponent {
       await this.auth.setUserRole(member.uid, role);
     } catch (err) {
       console.error('[Members] setUserRole', err);
-      this.errorMsg.set('Could not update that role — check your connection and permissions.');
+      this.errorMsg.set(this.translate.instant('MEMBERS.UPDATE_ROLE_FAILED'));
     } finally {
       this.savingUid.set(null);
     }
@@ -234,15 +236,15 @@ export class MembersComponent {
   async toggleDisabled(member: AppUser): Promise<void> {
     if (member.uid === this.myUid() || this.savingUid()) return;
     const next = !member.disabled;
-    const name = userDisplayName(member, 'This member');
+    const name = userDisplayName(member, this.translate.instant('MEMBERS.THIS_MEMBER'));
 
     if (next) {
       const ref = this.dialog.open(ConfirmDialogComponent, {
         data: {
-          title: 'Disable member?',
-          message: `${name} will be signed out and blocked from doing anything in the app. Their login isn't deleted — re-enable them here any time, or delete the account in Firebase Console to free the email.`,
+          title: this.translate.instant('MEMBERS.DISABLE_CONFIRM_TITLE'),
+          message: this.translate.instant('MEMBERS.DISABLE_CONFIRM_MESSAGE', { name }),
           destructive: true,
-          confirmLabel: 'Disable',
+          confirmLabel: this.translate.instant('MEMBERS.DISABLE'),
         },
         width: '90vw',
         maxWidth: '400px',
@@ -256,7 +258,7 @@ export class MembersComponent {
       await this.auth.setUserDisabled(member.uid, next);
     } catch (err) {
       console.error('[Members] setUserDisabled', err);
-      this.errorMsg.set('Could not update that member — check your connection and permissions.');
+      this.errorMsg.set(this.translate.instant('MEMBERS.UPDATE_MEMBER_FAILED'));
     } finally {
       this.savingUid.set(null);
     }

@@ -2,11 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { CommonModule } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { of, switchMap } from 'rxjs';
-import { MatDialog } from '@angular/material/dialog';
-import { BreakpointObserver } from '@angular/cdk/layout';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { MatchService } from '../match.service';
 import { FixtureGeneratorService } from '../fixture-generator.service';
-import { KnockoutSeedDialogComponent } from '../knockout-seed-dialog.component';
 import { TeamService } from '../../teams/team.service';
 import { TeamAvatarService } from '../../teams/team-avatar.service';
 import { TournamentService } from '../../tournament/tournament.service';
@@ -21,12 +19,14 @@ import { Team } from '../../../models/team.model';
  * Used both as the "Fixtures" AND "Results" tab of Tournament Detail (filter toggle), and — with
  * no `tournamentId` input — as the cross-tournament `/matches` screen (Flashscore-style feed).
  *
- * Group-stage tournaments use the dedicated Group Stage / Final Stage tabs instead of this list.
+ * `group_knockout` and pure `knockout` tournaments use the Group Stage / Final Stage (Bracket)
+ * tabs instead of this list — only `round_robin` reaches this per-tournament, and its "Generate
+ * Fixtures" simply pairs teams by the round-robin circle method (no seeding step needed).
  */
 @Component({
   selector: 'app-fixtures-list',
   standalone: true,
-  imports: [CommonModule, MatchRowComponent, EmptyStateComponent, LoadingSpinnerComponent],
+  imports: [CommonModule, MatchRowComponent, EmptyStateComponent, LoadingSpinnerComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-3">
@@ -37,20 +37,20 @@ import { Team } from '../../../models/team.model';
           (click)="generateFixtures()"
         >
           <span class="material-icons text-[18px]">auto_fix_high</span>
-          {{ isGenerating() ? 'Generating…' : 'Generate Fixtures' }}
+          {{ (isGenerating() ? 'FIXTURES_LIST.GENERATING' : 'FIXTURES_LIST.GENERATE_FIXTURES') | translate }}
         </button>
       }
 
       @if (isGenerating()) {
-        <app-loading-spinner label="Generating fixtures…" />
+        <app-loading-spinner [label]="'FIXTURES_LIST.GENERATING_LABEL' | translate" />
       }
 
       @if (grouped().length === 0 && !isGenerating()) {
-        <app-empty-state icon="event" title="No matches scheduled" subtitle="Fixtures will appear here once generated." />
+        <app-empty-state icon="event" [title]="'FIXTURES_LIST.EMPTY_TITLE' | translate" [subtitle]="'FIXTURES_LIST.EMPTY_SUBTITLE' | translate" />
       } @else {
         @for (group of grouped(); track group.round) {
           <div>
-            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">{{ group.round }}</h3>
+            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">{{ roundHeading(group.round) }}</h3>
             <div class="flex flex-col gap-2">
               @for (m of group.matches; track m.id) {
                 <app-match-row
@@ -78,8 +78,7 @@ export class FixturesListComponent {
   private teamService = inject(TeamService);
   private teamAvatars = inject(TeamAvatarService);
   private tournamentService = inject(TournamentService);
-  private dialog = inject(MatDialog);
-  private breakpoints = inject(BreakpointObserver);
+  private translate = inject(TranslateService);
   auth = inject(AuthService);
 
   isGenerating = signal(false);
@@ -121,6 +120,13 @@ export class FixturesListComponent {
     return [...byRound.entries()].map(([round, matches]) => ({ round, matches }));
   });
 
+  /** "Round 1" -> localized "Round 1" / "Vòng 1"; anything else (shouldn't happen here) passes through. */
+  roundHeading(round: string): string {
+    this.translate.currentLang();
+    const n = /^Round (\d+)$/.exec(round)?.[1];
+    return n ? this.translate.instant('MATCH.ROUND_N', { n }) : round;
+  }
+
   async generateFixtures(): Promise<void> {
     const id = this.tournamentId();
     if (!id) return;
@@ -128,22 +134,9 @@ export class FixturesListComponent {
       this.tournamentService.getOnce(id),
       this.teamService.getByTournamentOnce(id),
     ]);
-    if (!tournament || teams.length < 2) return;
-
-    // Knockout: let the admin set the round-1 seeding (drag to reorder, or shuffle) instead of
-    // always pairing teams alphabetically.
-    if (tournament.type === 'knockout') {
-      const isMobile = this.breakpoints.isMatched('(max-width: 767px)');
-      this.dialog.open(KnockoutSeedDialogComponent, {
-        data: { tournamentId: id, teams, startDate: tournament.startDate, location: tournament.location },
-        width: isMobile ? '100vw' : '480px',
-        height: isMobile ? '100dvh' : 'auto',
-        maxHeight: isMobile ? '100dvh' : '85vh',
-        maxWidth: '100vw',
-        panelClass: isMobile ? 'fullscreen-dialog' : undefined,
-      });
-      return;
-    }
+    // Only round_robin reaches this list — group_knockout/knockout seed their bracket from the
+    // Final Stage tab instead (see FinalStageService).
+    if (!tournament || teams.length < 2 || tournament.type !== 'round_robin') return;
 
     this.isGenerating.set(true);
     try {

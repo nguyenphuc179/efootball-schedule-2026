@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 import { MatchService } from './match.service';
 import { StandingsService } from '../standings/standings.service';
 import { TournamentService } from '../tournament/tournament.service';
@@ -42,13 +43,18 @@ const BASE_ORDER = [
 
 const roundBase = (round: string) => round.replace(/ \d+$/, '');
 
-/** "Semi Final 2" → "Semi-final #2", "Final" → "Final", "Third Place" → "Third-place play-off". */
-export function prettyRound(round: string): string {
-  if (round === 'Final') return 'Final';
-  if (round === 'Third Place') return 'Third-place play-off';
+/** "Semi Final 2" → "Semi-final #2", "Final" → "Final", "Third Place" → "Third place". */
+export function prettyRound(round: string, translate: TranslateService): string {
+  if (round === 'Final') return translate.instant('MATCH.FINAL');
+  if (round === 'Third Place') return translate.instant('MATCH.THIRD_PLACE');
   const num = / (\d+)$/.exec(round)?.[1];
   const base = roundBase(round);
-  const name = base === 'Semi Final' ? 'Semi-final' : base === 'Quarter Final' ? 'Quarter-final' : base;
+  const name =
+    base === 'Semi Final'
+      ? translate.instant('MATCH.SEMI_FINAL')
+      : base === 'Quarter Final'
+        ? translate.instant('MATCH.QUARTER_FINAL')
+        : base;
   return num ? `${name} #${num}` : name;
 }
 
@@ -133,7 +139,7 @@ export class FinalStageService {
     if (existing.length > 0) {
       for (const m of existing) {
         if (m.status === 'completed' && m.homeTeamId && m.awayTeamId && !matchWinner(m)) {
-          throw new Error('A knockout match is level — enter a penalty shootout to decide it.');
+          throw new Error('FINAL_STAGE_ERROR.MATCH_LEVEL');
         }
       }
       await this.syncFromResults(tournamentId);
@@ -150,7 +156,7 @@ export class FinalStageService {
    */
   async getQualifiedSeeds(tournamentId: string, qualifiersPerGroup: number): Promise<FinalStageSeed[]> {
     const matches = await this.matchService.getByTournamentOnce(tournamentId);
-    if (!this.isGroupStageComplete(matches)) throw new Error('Finish every group-stage match first.');
+    if (!this.isGroupStageComplete(matches)) throw new Error('FINAL_STAGE_ERROR.GROUP_STAGE_NOT_DONE');
 
     const { names, groupA, groupB, k } = await this.groupedStandings(tournamentId, qualifiersPerGroup);
 
@@ -242,9 +248,9 @@ export class FinalStageService {
     qualifiersPerGroup: number
   ): Promise<void> {
     const tournament = await this.tournamentService.getOnce(tournamentId);
-    if (!tournament) throw new Error('Tournament not found.');
-    if (tournament.type !== 'group_knockout') throw new Error('This tournament has no group stage.');
-    if (!this.isGroupStageComplete(matches)) throw new Error('Finish every group-stage match first.');
+    if (!tournament) throw new Error('FINAL_STAGE_ERROR.TOURNAMENT_NOT_FOUND');
+    if (tournament.type !== 'group_knockout') throw new Error('FINAL_STAGE_ERROR.NO_GROUP_STAGE');
+    if (!this.isGroupStageComplete(matches)) throw new Error('FINAL_STAGE_ERROR.GROUP_STAGE_NOT_DONE');
 
     // Default: B-first interleave so the two group winners are seeds 1 & 2 (meet only in the final).
     const { groupA, groupB, k } = await this.groupedStandings(tournamentId, qualifiersPerGroup);
@@ -278,7 +284,7 @@ export class FinalStageService {
     customOrder: FinalStageSeed[]
   ): Promise<void> {
     const tournament = await this.tournamentService.getOnce(tournamentId);
-    if (!tournament) throw new Error('Tournament not found.');
+    if (!tournament) throw new Error('FINAL_STAGE_ERROR.TOURNAMENT_NOT_FOUND');
 
     const existingKnockout = matches.filter((m) => !m.groupName);
 
@@ -345,12 +351,12 @@ export class FinalStageService {
     }
 
     const names = [...groups.keys()].sort();
-    if (names.length !== 2) throw new Error('The final stage needs exactly 2 groups.');
+    if (names.length !== 2) throw new Error('FINAL_STAGE_ERROR.NEEDS_TWO_GROUPS');
     const [groupA, groupB] = names.map((n) => [...groups.get(n)!].sort(compareStandingRows));
 
     const maxK = Math.min(groupA.length, groupB.length);
     const k = Math.max(1, Math.min(Math.floor(qualifiersPerGroup) || 2, maxK));
-    if (maxK < 1) throw new Error('Each group needs at least 1 team.');
+    if (maxK < 1) throw new Error('FINAL_STAGE_ERROR.NEEDS_ONE_TEAM_PER_GROUP');
 
     return { names, groupA, groupB, k };
   }

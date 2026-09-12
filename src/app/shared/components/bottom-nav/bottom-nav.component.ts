@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
 
 interface NavItem {
@@ -16,13 +17,13 @@ interface NavItem {
 @Component({
   selector: 'app-bottom-nav',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nav
       class="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-100 shadow-nav-top pb-safe-bottom md:hidden"
       role="navigation"
-      aria-label="Primary"
+      [attr.aria-label]="'NAV.PRIMARY_LANDMARK' | translate"
     >
       <ul class="grid grid-cols-5 h-16">
         @for (item of items; track item.route) {
@@ -36,7 +37,7 @@ interface NavItem {
               [class]="rla.isActive ? 'text-primary-600' : 'text-gray-500'"
             >
               <span class="material-icons text-[22px] leading-none">{{ item.icon }}</span>
-              <span class="text-[11px] mt-1" [class]="rla.isActive ? 'font-bold' : 'font-medium'">{{ item.label }}</span>
+              <span class="text-[11px] mt-1" [class]="rla.isActive ? 'font-bold' : 'font-medium'">{{ item.label | translate }}</span>
             </a>
           </li>
         }
@@ -49,11 +50,11 @@ export class BottomNavComponent {
 
   get items(): NavItem[] {
     return [
-      { label: 'Home', icon: 'home', route: '/' },
-      { label: 'Cups', icon: 'emoji_events', route: '/tournaments' },
-      { label: 'Ranking', icon: 'leaderboard', route: '/ranking' },
-      { label: 'Fame', icon: 'military_tech', route: '/hall-of-fame' },
-      { label: 'Profile', icon: 'person', route: this.auth.isSignedIn() ? '/profile' : '/login' },
+      { label: 'NAV.HOME', icon: 'home', route: '/' },
+      { label: 'NAV.CUPS', icon: 'emoji_events', route: '/tournaments' },
+      { label: 'NAV.RANKING', icon: 'leaderboard', route: '/ranking' },
+      { label: 'NAV.FAME', icon: 'military_tech', route: '/hall-of-fame' },
+      { label: 'NAV.PROFILE', icon: 'person', route: this.auth.isSignedIn() ? '/profile' : '/login' },
     ];
   }
 }

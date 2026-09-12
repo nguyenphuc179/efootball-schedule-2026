@@ -4,6 +4,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { BreakpointObserver } from '@angular/cdk/layout';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { TeamService } from '../team.service';
 import { TeamAvatarService } from '../team-avatar.service';
 import { StandingsService } from '../../standings/standings.service';
@@ -16,22 +17,22 @@ import { Team } from '../../../models/team.model';
 @Component({
   selector: 'app-team-list',
   standalone: true,
-  imports: [CommonModule, EmptyStateComponent],
+  imports: [CommonModule, EmptyStateComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-3">
       @if (auth.isAdmin()) {
         @if (canAddTeam()) {
           <button class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm" (click)="openForm()">
-            <span class="material-icons text-[18px]">add</span> Add Team
+            <span class="material-icons text-[18px]">add</span> {{ 'TEAM_LIST.ADD_TEAM' | translate }}
           </button>
         } @else {
-          <p class="text-xs text-gray-400">All {{ maxTeams() }} team slots are filled.</p>
+          <p class="text-xs text-gray-400">{{ 'TEAM_LIST.SLOTS_FILLED' | translate: { max: maxTeams() } }}</p>
         }
       }
 
       @if (teams().length === 0) {
-        <app-empty-state icon="groups" title="No teams yet" subtitle="Teams added to this tournament will appear here." />
+        <app-empty-state icon="groups" [title]="'TEAM_LIST.EMPTY_TITLE' | translate" [subtitle]="'TEAM_LIST.EMPTY_SUBTITLE' | translate" />
       } @else {
         <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           @for (team of teams(); track team.id) {
@@ -58,7 +59,7 @@ import { Team } from '../../../models/team.model';
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-sm truncate">{{ team.teamName }}</div>
                 <div class="text-xs text-gray-400 truncate">
-                  {{ team.manager || 'No manager' }} · {{ team.playersCount }} {{ team.playersCount === 1 ? 'player' : 'players' }}
+                  {{ team.manager || ('TEAM_LIST.NO_MANAGER' | translate) }} · {{ playersLabel(team.playersCount) }}
                 </div>
               </div>
 
@@ -66,14 +67,14 @@ import { Team } from '../../../models/team.model';
                 <button
                   class="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0"
                   (click)="openForm(team)"
-                  aria-label="Edit team"
+                  [attr.aria-label]="'TEAM_LIST.EDIT_TEAM' | translate"
                 >
                   <span class="material-icons text-[18px]">edit</span>
                 </button>
                 <button
                   class="w-8 h-8 flex items-center justify-center text-accent-red shrink-0"
                   (click)="deleteTeam(team)"
-                  aria-label="Remove team"
+                  [attr.aria-label]="'TEAM_LIST.REMOVE_TEAM' | translate"
                 >
                   <span class="material-icons text-[18px]">delete_outline</span>
                 </button>
@@ -95,6 +96,7 @@ export class TeamListComponent {
   private standingsService = inject(StandingsService);
   private dialog = inject(MatDialog);
   private breakpoints = inject(BreakpointObserver);
+  private translate = inject(TranslateService);
   auth = inject(AuthService);
 
   teams = toSignal(
@@ -122,6 +124,11 @@ export class TeamListComponent {
     return this.failed().has(team.id) ? null : this.avatar(team).src;
   }
 
+  playersLabel(count: number): string {
+    this.translate.currentLang();
+    return this.translate.instant(count === 1 ? 'TEAM_LIST.PLAYER_ONE' : 'TEAM_LIST.PLAYER_OTHER', { count });
+  }
+
   openForm(team?: Team): void {
     const isMobile = this.breakpoints.isMatched('(max-width: 767px)');
     this.dialog.open(TeamFormComponent, {
@@ -144,7 +151,12 @@ export class TeamListComponent {
 
   async deleteTeam(team: Team): Promise<void> {
     const ref = this.dialog.open(ConfirmDialogComponent, {
-      data: { title: 'Remove team?', message: `${team.teamName} will be removed from this tournament.`, destructive: true, confirmLabel: 'Remove' },
+      data: {
+        title: this.translate.instant('TEAM_LIST.REMOVE_CONFIRM_TITLE'),
+        message: this.translate.instant('TEAM_LIST.REMOVE_CONFIRM_MESSAGE', { name: team.teamName }),
+        destructive: true,
+        confirmLabel: this.translate.instant('COMMON.REMOVE'),
+      },
       width: '90vw',
       maxWidth: '400px',
     });

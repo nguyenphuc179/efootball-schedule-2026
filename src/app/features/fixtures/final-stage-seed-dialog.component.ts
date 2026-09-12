@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, Inject, computed, inject, signal } 
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FinalStageSeed, FinalStageService, previewBracket } from './final-stage.service';
 import { FinalBracketComponent } from '../tournament/final-stage/final-bracket.component';
 import { Match } from '../../models/match.model';
@@ -30,7 +31,7 @@ const WHEEL_COLORS = ['#e5484d', '#f5a623', '#0fa863', '#3b82f6'];
 @Component({
   selector: 'app-final-stage-seed-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, DragDropModule, FinalBracketComponent],
+  imports: [CommonModule, MatDialogModule, DragDropModule, FinalBracketComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="h-full w-full flex flex-col bg-white">
@@ -38,13 +39,13 @@ const WHEEL_COLORS = ['#e5484d', '#f5a623', '#0fa863', '#3b82f6'];
         <button class="w-9 h-9 flex items-center justify-center" (click)="dialogRef.close()">
           <span class="material-icons">close</span>
         </button>
-        <h1 class="font-bold">Seed the Bracket</h1>
+        <h1 class="font-bold">{{ 'SEED_DIALOG.TITLE' | translate }}</h1>
         <button
           class="text-primary-600 font-semibold disabled:text-gray-300"
           [disabled]="isGenerating() || (mode() === 'random' && !hasSpun())"
           (click)="generate()"
         >
-          {{ isGenerating() ? 'Saving…' : 'Save' }}
+          {{ (isGenerating() ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
         </button>
       </div>
 
@@ -58,14 +59,14 @@ const WHEEL_COLORS = ['#e5484d', '#f5a623', '#0fa863', '#3b82f6'];
             >
               <input type="radio" name="finalSeedMode" class="sr-only" [checked]="mode() === m" (change)="mode.set(m)" />
               <span class="material-icons text-[18px]">{{ m === 'random' ? 'casino' : 'drag_indicator' }}</span>
-              {{ m === 'random' ? 'Random' : 'Drag & Drop' }}
+              {{ (m === 'random' ? 'SEED_DIALOG.RANDOM' : 'SEED_DIALOG.DRAG_DROP') | translate }}
             </label>
           }
         </div>
 
         @if (mode() === 'manual') {
           <p class="text-xs text-gray-400">
-            Drag to reorder the seeding. Seed 1 &amp; 2 only meet in the final.
+            {{ 'SEED_DIALOG.DRAG_HINT' | translate }}
           </p>
 
           <div cdkDropList cdkDragLockAxis="y" class="flex flex-col gap-2" (cdkDropListDropped)="drop($event)">
@@ -95,12 +96,12 @@ const WHEEL_COLORS = ['#e5484d', '#f5a623', '#0fa863', '#3b82f6'];
           </div>
 
           <div class="flex flex-col gap-2">
-            <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Bracket Preview</p>
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">{{ 'SEED_DIALOG.BRACKET_PREVIEW' | translate }}</p>
             <app-final-bracket [matches]="previewMatches()" />
           </div>
         } @else {
           <p class="text-xs text-gray-400 text-center">
-            Tap the wheel to draw a random bracket order.
+            {{ 'SEED_DIALOG.TAP_WHEEL' | translate }}
           </p>
 
           <div class="relative w-[260px] h-[260px] mx-auto select-none">
@@ -133,15 +134,15 @@ const WHEEL_COLORS = ['#e5484d', '#f5a623', '#0fa863', '#3b82f6'];
               [disabled]="spinning()"
               (click)="spin()"
             >
-              {{ spinning() ? '…' : 'Spin' }}
+              {{ spinning() ? '…' : ('SEED_DIALOG.SPIN' | translate) }}
             </button>
           </div>
 
           @if (!hasSpun()) {
-            <p class="text-sm text-gray-400 text-center py-2">Spin the wheel to draw the match-ups.</p>
+            <p class="text-sm text-gray-400 text-center py-2">{{ 'SEED_DIALOG.SPIN_HINT' | translate }}</p>
           } @else {
             <div class="flex flex-col gap-2">
-              <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Bracket Preview</p>
+              <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">{{ 'SEED_DIALOG.BRACKET_PREVIEW' | translate }}</p>
               <app-final-bracket [matches]="previewMatches()" />
             </div>
           }

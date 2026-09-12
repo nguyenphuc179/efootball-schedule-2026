@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { combineLatest, distinctUntilChanged, map, of, switchMap } from 'rxjs';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/services/auth.service';
 import { TeamService } from '../teams/team.service';
 import { TeamAvatarService } from '../teams/team-avatar.service';
@@ -22,13 +23,13 @@ import { userDisplayName } from '../../models/user.model';
 @Component({
   selector: 'app-my-overview',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatchRowComponent, EmptyStateComponent],
+  imports: [CommonModule, RouterLink, MatchRowComponent, EmptyStateComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="px-4 pt-5 max-w-3xl mx-auto flex flex-col gap-6">
       <header class="flex items-center gap-3">
         <div class="min-w-0 flex-1">
-          <div class="text-xs text-gray-400">Xin chào</div>
+          <div class="text-xs text-gray-400">{{ 'MY_OVERVIEW.GREETING' | translate }}</div>
           <div class="text-2xl font-black tracking-tight truncate">{{ displayName() }}</div>
         </div>
         @if (myRank(); as r) {
@@ -42,15 +43,15 @@ import { userDisplayName } from '../../models/user.model';
       <div class="grid grid-cols-3 gap-2">
         <div class="card !p-3 text-center">
           <div class="text-xl font-black">{{ stats().played }}</div>
-          <div class="text-[11px] text-gray-400 mt-0.5">Trận</div>
+          <div class="text-[11px] text-gray-400 mt-0.5">{{ 'MY_OVERVIEW.PLAYED' | translate }}</div>
         </div>
         <div class="card !p-3 text-center">
           <div class="text-xl font-black">{{ stats().wins }}-{{ stats().draws }}-{{ stats().losses }}</div>
-          <div class="text-[11px] text-gray-400 mt-0.5">T - H - B</div>
+          <div class="text-[11px] text-gray-400 mt-0.5">{{ 'MY_OVERVIEW.RECORD_LABEL' | translate }}</div>
         </div>
         <div class="card !p-3 text-center">
           <div class="text-xl font-black">{{ stats().winRate }}%</div>
-          <div class="text-[11px] text-gray-400 mt-0.5">Tỉ lệ thắng</div>
+          <div class="text-[11px] text-gray-400 mt-0.5">{{ 'MY_OVERVIEW.WIN_RATE' | translate }}</div>
         </div>
         <div class="card !p-3 text-center">
           <div
@@ -59,15 +60,15 @@ import { userDisplayName } from '../../models/user.model';
           >
             {{ stats().gd > 0 ? '+' : '' }}{{ stats().gd }}
           </div>
-          <div class="text-[11px] text-gray-400 mt-0.5">Hiệu số</div>
+          <div class="text-[11px] text-gray-400 mt-0.5">{{ 'MY_OVERVIEW.GOAL_DIFF' | translate }}</div>
         </div>
         <div class="card !p-3 text-center">
           <div class="text-xl font-black">{{ stats().tournaments }}</div>
-          <div class="text-[11px] text-gray-400 mt-0.5">Giải</div>
+          <div class="text-[11px] text-gray-400 mt-0.5">{{ 'NAV.CUPS' | translate }}</div>
         </div>
         <div class="card !p-3 text-center">
           <div class="text-xl font-black text-amber-500">{{ stats().trophies }}</div>
-          <div class="text-[11px] text-gray-400 mt-0.5">Cúp</div>
+          <div class="text-[11px] text-gray-400 mt-0.5">{{ 'MY_OVERVIEW.TROPHIES' | translate }}</div>
         </div>
       </div>
 
@@ -75,14 +76,15 @@ import { userDisplayName } from '../../models/user.model';
         <div class="flex flex-wrap gap-2">
           @for (c of myTrophies(); track c.id) {
             <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 text-amber-700 font-bold text-xs px-3 py-1">
-              <span class="material-icons text-[15px]">emoji_events</span> Mùa {{ c.season }} · {{ c.club }}
+              <span class="material-icons text-[15px]">emoji_events</span>
+              {{ 'MY_OVERVIEW.SEASON_TROPHY' | translate: { season: c.season, club: c.club } }}
             </span>
           }
         </div>
       }
 
       <section class="flex flex-col gap-2">
-        <h2 class="text-sm font-extrabold uppercase tracking-wide text-gray-500">Đội của tôi</h2>
+        <h2 class="text-sm font-extrabold uppercase tracking-wide text-gray-500">{{ 'MY_OVERVIEW.MY_TEAMS' | translate }}</h2>
         @for (t of myTeams(); track t.id) {
           <a [routerLink]="['/tournaments', t.tournamentId]" class="card !p-3 flex items-center gap-3 no-underline text-inherit">
             <span
@@ -102,23 +104,29 @@ import { userDisplayName } from '../../models/user.model';
             </div>
             @if (rowByTeamId().get(t.id); as r) {
               <span class="shrink-0 text-right leading-tight">
-                <span class="block text-sm font-black">Hạng {{ r.position }}</span>
-                <span class="block text-[11px] text-gray-400">{{ r.groupName ? 'Bảng ' + r.groupName : r.points + ' pts' }}</span>
+                <span class="block text-sm font-black">{{ 'MY_OVERVIEW.RANK' | translate: { position: r.position } }}</span>
+                <span class="block text-[11px] text-gray-400">
+                  @if (r.groupName) {
+                    {{ 'MY_OVERVIEW.GROUP_LABEL' | translate: { name: r.groupName } }}
+                  } @else {
+                    {{ r.points }} {{ 'STANDINGS.PTS_ABBR' | translate }}
+                  }
+                </span>
               </span>
             }
           </a>
         } @empty {
           <app-empty-state
             icon="groups"
-            title="Bạn chưa quản lý đội nào"
-            subtitle="Khi admin gán bạn làm quản lý một đội, đội đó sẽ hiện ở đây."
+            [title]="'MY_OVERVIEW.NO_TEAMS_TITLE' | translate"
+            [subtitle]="'MY_OVERVIEW.NO_TEAMS_SUBTITLE' | translate"
           />
         }
       </section>
 
       @if (upcoming().length) {
         <section class="flex flex-col gap-2">
-          <h2 class="text-sm font-extrabold uppercase tracking-wide text-gray-500">Trận sắp tới</h2>
+          <h2 class="text-sm font-extrabold uppercase tracking-wide text-gray-500">{{ 'MY_OVERVIEW.UPCOMING' | translate }}</h2>
           @for (m of upcoming(); track m.id) {
             <app-match-row [match]="m" [managers]="managersMap()" [avatars]="avatarsMap()" [showResultLink]="auth.isAdmin()" />
           }
@@ -127,7 +135,7 @@ import { userDisplayName } from '../../models/user.model';
 
       @if (recent().length) {
         <section class="flex flex-col gap-2">
-          <h2 class="text-sm font-extrabold uppercase tracking-wide text-gray-500">Kết quả gần đây</h2>
+          <h2 class="text-sm font-extrabold uppercase tracking-wide text-gray-500">{{ 'MY_OVERVIEW.RECENT_RESULTS' | translate }}</h2>
           @for (m of recent(); track m.id) {
             <div class="flex items-center gap-2">
               <span
@@ -144,6 +152,7 @@ import { userDisplayName } from '../../models/user.model';
 })
 export class MyOverviewComponent {
   auth = inject(AuthService);
+  private translate = inject(TranslateService);
   private teamService = inject(TeamService);
   private teamAvatars = inject(TeamAvatarService);
   private tournamentService = inject(TournamentService);
@@ -286,7 +295,9 @@ export class MyOverviewComponent {
     return (w === 'home') === mineHome ? 'W' : 'L';
   }
   outcomeLabel(m: Match): string {
-    return { W: 'T', D: 'H', L: 'B' }[this.outcome(m)];
+    this.translate.currentLang();
+    const key = { W: 'MY_OVERVIEW.OUTCOME_W', D: 'MY_OVERVIEW.OUTCOME_D', L: 'MY_OVERVIEW.OUTCOME_L' }[this.outcome(m)];
+    return this.translate.instant(key);
   }
   outcomeClass(m: Match): string {
     const o = this.outcome(m);

@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { TranslatePipe } from '@ngx-translate/core';
 import { TeamService } from '../team.service';
 import { MemberService } from '../../members/member.service';
 import { Team } from '../../../models/team.model';
@@ -30,7 +31,7 @@ export interface TeamFormDialogData {
 @Component({
   selector: 'app-team-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh w-full flex flex-col bg-white">
@@ -38,44 +39,44 @@ export interface TeamFormDialogData {
         <button class="w-9 h-9 flex items-center justify-center" (click)="dialogRef.close()">
           <span class="material-icons">close</span>
         </button>
-        <h1 class="font-bold">{{ data.team ? 'Edit Team' : 'Add Team' }}</h1>
+        <h1 class="font-bold">{{ (data.team ? 'TEAM_FORM.EDIT_TITLE' : 'TEAM_FORM.ADD_TITLE') | translate }}</h1>
         <button class="text-primary-600 font-semibold disabled:text-gray-300" [disabled]="form.invalid || isSaving()" (click)="save()">
-          {{ isSaving() ? 'Saving…' : 'Save' }}
+          {{ (isSaving() ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
         </button>
       </div>
 
       <form [formGroup]="form" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
         <div class="flex flex-col items-center gap-2">
           <div class="w-24 h-24 rounded-full bg-surface-muted flex items-center justify-center overflow-hidden">
-            <img [src]="logoPreview()" alt="Team logo" class="w-full h-full object-cover" (error)="imgError.set(true)" />
+            <img [src]="logoPreview()" [alt]="'TEAM_FORM.LOGO' | translate" class="w-full h-full object-cover" (error)="imgError.set(true)" />
           </div>
-          <span class="text-xs text-gray-400">Default avatar used until you add a logo URL</span>
+          <span class="text-xs text-gray-400">{{ 'TEAM_FORM.DEFAULT_AVATAR_HINT' | translate }}</span>
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Logo <span class="text-gray-400">(optional)</span></span>
+          <span class="text-sm font-medium text-gray-600">{{ 'TEAM_FORM.LOGO' | translate }} <span class="text-gray-400">({{ 'TEAM_FORM.OPTIONAL' | translate }})</span></span>
           <app-image-url-field [control]="form.controls.logo" (changed)="imgError.set(false)" />
           @if (form.controls.logo.invalid && form.controls.logo.value) {
-            <span class="text-xs text-red-500">Paste an image link (http/https) or a copied image.</span>
+            <span class="text-xs text-red-500">{{ 'TEAM_FORM.LOGO_INVALID' | translate }}</span>
           } @else if (imgError() && form.controls.logo.value) {
-            <span class="text-xs text-red-500">That image couldn't be loaded — check the link.</span>
+            <span class="text-xs text-red-500">{{ 'TEAM_FORM.LOGO_LOAD_ERROR' | translate }}</span>
           }
         </label>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Club Name</span>
+          <span class="text-sm font-medium text-gray-600">{{ 'TEAM_FORM.CLUB_NAME' | translate }}</span>
           <input class="input-field" formControlName="teamName" placeholder="Arsenal FC" />
         </label>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">Manager</span>
+          <span class="text-sm font-medium text-gray-600">{{ 'TEAM_FORM.MANAGER' | translate }}</span>
           <select class="input-field" formControlName="managerUid" (change)="imgError.set(false)">
-            <option value="">— No manager —</option>
+            <option value="">{{ 'TEAM_FORM.NO_MANAGER_OPTION' | translate }}</option>
             @for (m of activeMembers(); track m.uid) {
               <option [value]="m.uid">{{ m.name }}</option>
             }
           </select>
-          <span class="text-xs text-gray-400">Chosen from active members — they can then manage this team's roster.</span>
+          <span class="text-xs text-gray-400">{{ 'TEAM_FORM.MANAGER_HINT' | translate }}</span>
         </label>
       </form>
     </div>

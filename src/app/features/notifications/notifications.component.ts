@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NotificationService } from './notification.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { AppNotification, NotificationType } from '../../models/notification.model';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 const ICONS: Record<NotificationType, string> = {
   tournament_created: 'emoji_events',
@@ -18,14 +19,14 @@ const ICONS: Record<NotificationType, string> = {
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, RouterLink, EmptyStateComponent],
+  imports: [CommonModule, RouterLink, EmptyStateComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-4 max-w-2xl mx-auto">
-      <h1 class="text-xl font-extrabold mb-4">Notifications</h1>
+      <h1 class="text-xl font-extrabold mb-4">{{ 'NAV.NOTIFICATIONS' | translate }}</h1>
 
       @if (notifications().length === 0) {
-        <app-empty-state icon="notifications_none" title="No notifications yet" subtitle="Tournament updates will show up here." />
+        <app-empty-state icon="notifications_none" [title]="'NOTIFICATIONS.EMPTY_TITLE' | translate" [subtitle]="'NOTIFICATIONS.EMPTY_SUBTITLE' | translate" />
       } @else {
         <div class="flex flex-col gap-2">
           @for (n of notifications(); track n.id) {
@@ -53,6 +54,7 @@ const ICONS: Record<NotificationType, string> = {
 })
 export class NotificationsComponent {
   private notificationService = inject(NotificationService);
+  private translate = inject(TranslateService);
   icons = ICONS;
 
   notifications = toSignal(this.notificationService.streamForCurrentUser(), {
@@ -64,11 +66,12 @@ export class NotificationsComponent {
   }
 
   timeAgo(ms: number): string {
+    this.translate.currentLang();
     const diffMin = Math.round((Date.now() - ms) / 60000);
-    if (diffMin < 1) return 'Just now';
-    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffMin < 1) return this.translate.instant('NOTIFICATIONS.JUST_NOW');
+    if (diffMin < 60) return this.translate.instant('NOTIFICATIONS.MINUTES_AGO', { n: diffMin });
     const diffH = Math.round(diffMin / 60);
-    if (diffH < 24) return `${diffH}h ago`;
-    return `${Math.round(diffH / 24)}d ago`;
+    if (diffH < 24) return this.translate.instant('NOTIFICATIONS.HOURS_AGO', { n: diffH });
+    return this.translate.instant('NOTIFICATIONS.DAYS_AGO', { n: Math.round(diffH / 24) });
   }
 }
