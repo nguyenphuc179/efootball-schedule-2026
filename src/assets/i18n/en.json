@@ -163,6 +163,7 @@
     "TAB_STANDINGS": "Standings",
     "TAB_STATISTICS": "Statistics",
     "TAB_STATS_SHORT": "Stats",
+    "TAB_LINEUP": "Squad Lineup",
     "RESET_CONFIRM_TITLE": "Reset all matches?",
     "RESET_CONFIRM_MESSAGE": "Every match and result in this tournament will be permanently deleted so you can regenerate fixtures and re-enter results from scratch. Teams aren't affected. This can't be undone.",
     "DELETE_CONFIRM_TITLE": "Delete tournament?",
@@ -410,5 +411,15 @@
     "REMOVE_OPTION": "Remove option",
     "ALLOW_MULTIPLE": "Allow selection of multiple options",
     "MIN_OPTIONS_ERROR": "At least 2 valid options are required."
+  },
+  "LINEUP": {
+    "SELECT_MANAGER_LABEL": "Manager",
+    "SELECT_MANAGER_PLACEHOLDER": "Select a manager",
+    "NO_MANAGERS": "This tournament has no teams yet.",
+    "NO_ACCOUNT": "This manager has no linked Gmail account yet, so they can't receive images from the tool.",
+    "EMPTY_TITLE": "No lineup images yet",
+    "EMPTY_SUBTITLE": "Images will show up here automatically once the manager sends them via the tool.",
+    "DELETE_CONFIRM_TITLE": "Delete this image?",
+    "DELETE_CONFIRM_MESSAGE": "This image will be permanently deleted."
   }
 }

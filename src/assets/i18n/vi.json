@@ -163,6 +163,7 @@
     "TAB_STANDINGS": "Bảng xếp hạng",
     "TAB_STATISTICS": "Thống kê",
     "TAB_STATS_SHORT": "Thống kê",
+    "TAB_LINEUP": "Đội hình thi đấu",
     "RESET_CONFIRM_TITLE": "Đặt lại toàn bộ trận đấu?",
     "RESET_CONFIRM_MESSAGE": "Toàn bộ trận đấu và kết quả của giải này sẽ bị xóa vĩnh viễn để bạn tạo lại lịch thi đấu và nhập kết quả từ đầu. Đội bóng không bị ảnh hưởng. Không thể hoàn tác.",
     "DELETE_CONFIRM_TITLE": "Xóa giải đấu?",
@@ -410,5 +411,15 @@
     "REMOVE_OPTION": "Xóa lựa chọn",
     "ALLOW_MULTIPLE": "Cho phép chọn nhiều đáp án",
     "MIN_OPTIONS_ERROR": "Cần ít nhất 2 lựa chọn hợp lệ."
+  },
+  "LINEUP": {
+    "SELECT_MANAGER_LABEL": "Manager",
+    "SELECT_MANAGER_PLACEHOLDER": "Chọn manager",
+    "NO_MANAGERS": "Giải đấu chưa có đội bóng nào.",
+    "NO_ACCOUNT": "Manager này chưa liên kết tài khoản Gmail nên chưa thể nhận ảnh đội hình từ tool.",
+    "EMPTY_TITLE": "Chưa có ảnh đội hình",
+    "EMPTY_SUBTITLE": "Ảnh sẽ tự động hiện ở đây khi manager gửi qua tool.",
+    "DELETE_CONFIRM_TITLE": "Xóa ảnh đội hình?",
+    "DELETE_CONFIRM_MESSAGE": "Ảnh này sẽ bị xóa vĩnh viễn."
   }
 }

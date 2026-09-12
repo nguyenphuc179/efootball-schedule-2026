@@ -11,6 +11,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { TeamListComponent } from '../../teams/team-list/team-list.component';
+import { LineupViewComponent } from '../../lineups/lineup-view.component';
 import { FixturesListComponent } from '../../fixtures/fixtures-list/fixtures-list.component';
 import { GroupStageComponent } from '../group-stage/group-stage.component';
 import { FinalStageComponent } from '../final-stage/final-stage.component';
@@ -24,6 +25,7 @@ import { Match } from '../../../models/match.model';
 type TabKey =
   | 'overview'
   | 'teams'
+  | 'lineup'
   | 'fixtures'
   | 'results'
   | 'groupStage'
@@ -39,6 +41,7 @@ type TabKey =
     RouterLink,
     LoadingSpinnerComponent,
     TeamListComponent,
+    LineupViewComponent,
     FixturesListComponent,
     GroupStageComponent,
     FinalStageComponent,
@@ -180,6 +183,9 @@ type TabKey =
             @case ('teams') {
               <app-team-list [tournamentId]="tournament()!.id" [maxTeams]="tournament()!.numberOfTeams" />
             }
+            @case ('lineup') {
+              <app-lineup-view [tournamentId]="tournament()!.id" />
+            }
             @case ('fixtures') {
               <app-fixtures-list [tournamentId]="tournament()!.id" filter="upcoming" />
             }
@@ -274,6 +280,7 @@ export class TournamentDetailComponent {
     return [
       { key: 'overview', label: 'TOURNAMENT_DETAIL.TAB_OVERVIEW', short: 'TOURNAMENT_DETAIL.TAB_INFO_SHORT' },
       { key: 'teams', label: 'ADMIN_OVERVIEW.TEAMS', short: 'ADMIN_OVERVIEW.TEAMS' },
+      { key: 'lineup', label: 'TOURNAMENT_DETAIL.TAB_LINEUP', short: 'TOURNAMENT_DETAIL.TAB_LINEUP' },
       ...middle,
       { key: 'standings', label: 'TOURNAMENT_DETAIL.TAB_STANDINGS', short: 'TOURNAMENT_DETAIL.TAB_STANDINGS' },
       { key: 'statistics', label: 'TOURNAMENT_DETAIL.TAB_STATISTICS', short: 'TOURNAMENT_DETAIL.TAB_STATS_SHORT' },

@@ -173,6 +173,28 @@ service cloud.firestore {
       }
     }
 
+    // -------------------------------------------------------------------
+    // lineups/{tournamentId}__{email}/images/{slot} — squad lineup screenshots
+    // pushed in by an external capture tool (not this app's own UI), identified
+    // only by the manager's Gmail address, no Firebase Auth involved. Public,
+    // unauthenticated write on purpose (explicit product decision — see the
+    // "Đội hình thi đấu" tab): the mitigations below block junk collections,
+    // oversized payloads and non-image data even without requiring sign-in.
+    // Only an admin can delete a bad/stale image from the app itself.
+    // -------------------------------------------------------------------
+    match /lineups/{parentId} {
+      match /images/{slot} {
+        allow read: if true;
+        allow create, update: if slot in ['1', '2', '3', '4']
+          && exists(/databases/$(database)/documents/tournaments/$(parentId.split('__')[0]))
+          && request.resource.data.keys().hasOnly(['image'])
+          && request.resource.data.image is string
+          && request.resource.data.image.matches('^data:image/.*')
+          && request.resource.data.image.size() < 900000;
+        allow delete: if isAdmin();
+      }
+    }
+
     // Fallback: deny everything else by default.
     match /{document=**} {
       allow read: if false;
