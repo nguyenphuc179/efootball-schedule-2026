@@ -13,7 +13,6 @@ import { CommonModule } from "@angular/common";
 import { EmptyStateComponent } from "../../../shared/components/empty-state/empty-state.component";
 import { FixtureGeneratorService } from "../../fixtures/fixture-generator.service";
 import { LoadingSpinnerComponent } from "../../../shared/components/loading-spinner/loading-spinner.component";
-import { MatSelectModule } from "@angular/material/select";
 import { Match } from "../../../models/match.model";
 import { MatchRowComponent } from "../../../shared/components/match-row/match-row.component";
 import { MatchService } from "../../fixtures/match.service";
@@ -40,7 +39,6 @@ function roundNumber(m: Match): number {
     MatchRowComponent,
     EmptyStateComponent,
     LoadingSpinnerComponent,
-    MatSelectModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -62,12 +60,12 @@ function roundNumber(m: Match): number {
           subtitle="Fixtures will appear here once generated."
         />
       } @else {
-        <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex items-center gap-2 flex-wrap">
           <!-- View toggle -->
           <div class="flex rounded-lg bg-gray-100 p-1 text-sm font-semibold shrink-0">
             @for (m of modes; track m) {
               <button
-                class="px-4 py-1.5 rounded-md capitalize"
+                class="px-3 sm:px-4 py-1.5 rounded-md capitalize"
                 [class]="
                   mode() === m
                     ? 'bg-white shadow-sm text-primary-700'
@@ -81,25 +79,27 @@ function roundNumber(m: Match): number {
           </div>
 
           @if (managerOptions().length) {
-            <mat-select
-              class="input-field !flex items-center !w-auto min-w-[9rem] text-sm shrink-0"
+            <select
+              class="input-field !py-1.5 !px-2.5 !w-auto max-w-[10rem] text-sm shrink-0"
               [value]="managerFilter()"
-              (selectionChange)="managerFilter.set($event.value)"
-              panelWidth="auto"
+              (change)="managerFilter.set($any($event.target).value)"
+              aria-label="Filter by manager"
             >
-              <mat-option value="">All</mat-option>
+              <option value="">All managers</option>
               @for (mgr of managerOptions(); track mgr) {
-                <mat-option [value]="mgr">{{ mgr }}</mat-option>
+                <option [value]="mgr">{{ mgr }}</option>
               }
-            </mat-select>
+            </select>
           }
 
           @if (auth.isAdmin() && !locked()) {
             <button
-              class="btn-primary ml-auto shrink-0 flex items-center gap-1 !py-2 !px-4 text-sm"
+              class="btn-primary ml-auto shrink-0 flex items-center gap-1 !py-2 !px-3 text-sm"
               (click)="generateFixtures()"
+              aria-label="Regenerate group stage"
             >
-              <span class="material-icons text-[18px]">auto_fix_high</span> Regenerate Group Stage
+              <span class="material-icons text-[18px]">auto_fix_high</span>
+              <span class="hidden sm:inline">Regenerate</span>
             </button>
           }
         </div>
@@ -114,7 +114,7 @@ function roundNumber(m: Match): number {
               </h3>
               <div class="flex items-center gap-2 flex-wrap">
                 <span
-                  class="text-xs font-bold uppercase tracking-wide text-gray-400 mr-1"
+                  class="hidden sm:inline text-xs font-bold uppercase tracking-wide text-gray-400 mr-1"
                   >Round</span
                 >
                 <button

@@ -6,7 +6,6 @@ import { StandingsService } from '../standings.service';
 import { TournamentService } from '../../tournament/tournament.service';
 import { TeamService } from '../../teams/team.service';
 import { TeamAvatarService } from '../../teams/team-avatar.service';
-import { AuthService } from '../../../core/services/auth.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StandingRow } from '../../../models/standing.model';
 import { Team } from '../../../models/team.model';
@@ -26,17 +25,6 @@ import { initialsAvatar } from '../../../shared/utils/avatar.util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-4">
-      @if (canRecalc()) {
-        <button
-          class="btn-secondary !py-1.5 !px-3 text-xs self-end flex items-center gap-1"
-          [disabled]="recalculating()"
-          (click)="recalculate()"
-        >
-          <span class="material-icons text-[16px]">refresh</span>
-          {{ recalculating() ? 'Recalculating…' : 'Recalculate' }}
-        </button>
-      }
-
       @if (!tournamentId()) {
         <div class="flex gap-2 overflow-x-auto pb-1">
           @for (t of tournaments(); track t.id) {
@@ -132,11 +120,9 @@ export class StandingsViewComponent {
   private tournamentService = inject(TournamentService);
   private teamService = inject(TeamService);
   private teamAvatars = inject(TeamAvatarService);
-  private auth = inject(AuthService);
 
   selectedTournamentId = signal<string>('');
   tournaments = this.tournamentService.all;
-  recalculating = signal(false);
 
   constructor() {
     // Auto-select the first ongoing (else first) tournament when used as the standalone /standings route.
@@ -150,22 +136,6 @@ export class StandingsViewComponent {
   }
 
   private effectiveTournamentId = computed(() => this.tournamentId() ?? this.selectedTournamentId());
-
-  canRecalc = computed(() => this.auth.isAdmin() && !!this.effectiveTournamentId());
-
-  /** Manual reconcile — also prunes "ghost" rows for teams that were deleted after fixtures existed. */
-  async recalculate(): Promise<void> {
-    const id = this.effectiveTournamentId();
-    if (!id || this.recalculating()) return;
-    this.recalculating.set(true);
-    try {
-      await this.standingsService.recalculate(id);
-    } catch (err) {
-      console.error('[Standings] manual recalculate', err);
-    } finally {
-      this.recalculating.set(false);
-    }
-  }
 
   private rows = toSignal(
     toObservable(this.effectiveTournamentId).pipe(

@@ -29,12 +29,14 @@ interface NavItem {
           <li>
             <a
               [routerLink]="item.route"
-              routerLinkActive="text-primary-600"
+              routerLinkActive
+              #rla="routerLinkActive"
               [routerLinkActiveOptions]="{ exact: item.route === '/' }"
-              class="flex flex-col items-center justify-center h-full text-gray-500 active:bg-gray-50 tap-target"
+              class="flex flex-col items-center justify-center h-full active:bg-gray-50 tap-target"
+              [class]="rla.isActive ? 'text-primary-600' : 'text-gray-500'"
             >
               <span class="material-icons text-[22px] leading-none">{{ item.icon }}</span>
-              <span class="text-[11px] mt-1 font-medium">{{ item.label }}</span>
+              <span class="text-[11px] mt-1" [class]="rla.isActive ? 'font-bold' : 'font-medium'">{{ item.label }}</span>
             </a>
           </li>
         }

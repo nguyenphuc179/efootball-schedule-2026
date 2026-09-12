@@ -14,6 +14,7 @@ import { FixturesListComponent } from '../../fixtures/fixtures-list/fixtures-lis
 import { GroupStageComponent } from '../group-stage/group-stage.component';
 import { FinalStageComponent } from '../final-stage/final-stage.component';
 import { StandingsViewComponent } from '../../standings/standings-view/standings-view.component';
+import { StandingsService } from '../../standings/standings.service';
 import { StatisticsComponent } from '../../statistics/statistics.component';
 import { SwipeDirective } from '../../../shared/directives/swipe.directive';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_TYPE_LABELS } from '../../../models/tournament.model';
@@ -94,6 +95,15 @@ type TabKey =
                 <span class="material-icons text-[16px]">emoji_events</span> {{ isSavingStatus() ? '…' : 'End' }}
               </button>
             }
+            @if (matches().length > 0) {
+              <button
+                class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1"
+                [disabled]="isResetting()"
+                (click)="resetMatches()"
+              >
+                <span class="material-icons text-[16px]">restart_alt</span> {{ isResetting() ? '…' : 'Reset' }}
+              </button>
+            }
             <a [routerLink]="['/tournaments', tournament()!.id, 'edit']" class="w-8 h-8 flex items-center justify-center text-gray-400">
               <span class="material-icons text-[18px]">edit</span>
             </a>
@@ -112,11 +122,12 @@ type TabKey =
         <div class="sticky-tabs flex overflow-x-auto border-b border-gray-100">
           @for (tab of tabs(); track tab.key) {
             <button
-              class="px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2"
+              class="flex-1 sm:flex-none px-2 sm:px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2"
               [class]="visibleTab() === tab.key ? 'border-primary-500 text-primary-700' : 'border-transparent text-gray-500'"
               (click)="activeTab.set(tab.key)"
             >
-              {{ tab.label }}
+              <span class="sm:hidden">{{ tab.short }}</span>
+              <span class="hidden sm:inline">{{ tab.label }}</span>
             </button>
           }
         </div>
@@ -153,7 +164,11 @@ type TabKey =
               <app-group-stage [tournamentId]="tournament()!.id" [locked]="tournament()!.status === 'completed'" />
             }
             @case ('finalStage') {
-              <app-final-stage [tournamentId]="tournament()!.id" [locked]="tournament()!.status === 'completed'" />
+              <app-final-stage
+                [tournamentId]="tournament()!.id"
+                [tournamentType]="tournament()!.type"
+                [locked]="tournament()!.status === 'completed'"
+              />
             }
             @case ('standings') {
               <app-standings-view [tournamentId]="tournament()!.id" />
@@ -172,6 +187,7 @@ export class TournamentDetailComponent {
   router = inject(Router);
   private tournamentService = inject(TournamentService);
   private matchService = inject(MatchService);
+  private standingsService = inject(StandingsService);
   private qrService = inject(QrService);
   private dialog = inject(MatDialog);
   auth = inject(AuthService);
@@ -180,11 +196,12 @@ export class TournamentDetailComponent {
 
   private id = this.route.snapshot.paramMap.get('id')!;
   tournament = toSignal(this.tournamentService.streamOne(this.id));
-  private matches = toSignal(this.matchService.streamByTournament(this.id), {
+  matches = toSignal(this.matchService.streamByTournament(this.id), {
     initialValue: [] as Match[],
   });
   isDeleting = signal(false);
   isSavingStatus = signal(false);
+  isResetting = signal(false);
 
   /**
    * Can be ended once the Final is played. Knockout / group+knockout need an actual completed
@@ -201,23 +218,33 @@ export class TournamentDetailComponent {
 
   activeTab = signal<TabKey>((this.route.snapshot.queryParamMap.get('tab') as TabKey) ?? 'overview');
 
-  /** Group tournaments swap Fixtures/Results for the dedicated Group Stage / Final Stage tabs. */
-  tabs = computed<{ key: TabKey; label: string }[]>(() => {
-    const isGroup = this.tournament()?.type === 'group_knockout';
+  /**
+   * `group_knockout` swaps Fixtures/Results for the dedicated Group Stage / Final Stage tabs.
+   * Plain `knockout` has no fixtures pipeline of its own either — it's just a bracket from the
+   * start, so it reuses the same Final Stage tab/component (relabelled "Bracket") instead of a
+   * separate Fixtures/Results pair. `short` is used on mobile so the bar fits without scrolling;
+   * `label` is the full desktop name.
+   */
+  tabs = computed<{ key: TabKey; label: string; short: string }[]>(() => {
+    const type = this.tournament()?.type;
+    const middle: { key: TabKey; label: string; short: string }[] =
+      type === 'group_knockout'
+        ? [
+            { key: 'groupStage', label: 'Group Stage', short: 'Groups' },
+            { key: 'finalStage', label: 'Final Stage', short: 'Final' },
+          ]
+        : type === 'knockout'
+          ? [{ key: 'finalStage', label: 'Bracket', short: 'Bracket' }]
+          : [
+              { key: 'fixtures', label: 'Fixtures', short: 'Fixtures' },
+              { key: 'results', label: 'Results', short: 'Results' },
+            ];
     return [
-      { key: 'overview', label: 'Overview' },
-      { key: 'teams', label: 'Teams' },
-      ...(isGroup
-        ? ([
-            { key: 'groupStage', label: 'Group Stage' },
-            { key: 'finalStage', label: 'Final Stage' },
-          ] as { key: TabKey; label: string }[])
-        : ([
-            { key: 'fixtures', label: 'Fixtures' },
-            { key: 'results', label: 'Results' },
-          ] as { key: TabKey; label: string }[])),
-      { key: 'standings', label: 'Standings' },
-      { key: 'statistics', label: 'Statistics' },
+      { key: 'overview', label: 'Overview', short: 'Info' },
+      { key: 'teams', label: 'Teams', short: 'Teams' },
+      ...middle,
+      { key: 'standings', label: 'Standings', short: 'Standings' },
+      { key: 'statistics', label: 'Statistics', short: 'Stats' },
     ];
   });
 
@@ -275,6 +302,38 @@ export class TournamentDetailComponent {
       await this.tournamentService.reopenTournament(t.id);
     } finally {
       this.isSavingStatus.set(false);
+    }
+  }
+
+  /**
+   * Wipes every match/result (and the standings derived from them) so the admin can regenerate
+   * fixtures/groups/bracket and re-enter everything from scratch. Teams themselves are untouched.
+   */
+  async resetMatches(): Promise<void> {
+    const t = this.tournament();
+    if (!t || this.isResetting()) return;
+
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Reset all matches?',
+        message:
+          "Every match and result in this tournament will be permanently deleted so you can regenerate fixtures and re-enter results from scratch. Teams aren't affected. This can't be undone.",
+        destructive: true,
+        confirmLabel: 'Reset',
+      },
+      width: '90vw',
+      maxWidth: '400px',
+    });
+
+    const confirmed = await ref.afterClosed().toPromise();
+    if (!confirmed) return;
+
+    this.isResetting.set(true);
+    try {
+      await this.matchService.clearForTournament(t.id);
+      await this.standingsService.recalculate(t.id);
+    } finally {
+      this.isResetting.set(false);
     }
   }
 

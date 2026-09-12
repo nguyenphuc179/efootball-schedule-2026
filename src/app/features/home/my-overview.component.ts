@@ -17,7 +17,6 @@ import { Team } from '../../models/team.model';
 import { Match, matchWinner } from '../../models/match.model';
 import { StandingRow } from '../../models/standing.model';
 import { userDisplayName } from '../../models/user.model';
-import { initialsAvatar } from '../../shared/utils/avatar.util';
 
 /** The signed-in user's personal Home: rank, career record, their teams, upcoming & recent games. */
 @Component({
@@ -28,20 +27,9 @@ import { initialsAvatar } from '../../shared/utils/avatar.util';
   template: `
     <div class="px-4 pt-5 max-w-3xl mx-auto flex flex-col gap-6">
       <header class="flex items-center gap-3">
-        <span
-          class="w-14 h-14 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-lg font-bold"
-          [style.background-color]="me().bg"
-          [style.color]="me().fg"
-        >
-          @if (me().photo; as p) {
-            <img [src]="p" alt="" class="w-full h-full object-cover" referrerpolicy="no-referrer" />
-          } @else {
-            {{ me().initials }}
-          }
-        </span>
         <div class="min-w-0 flex-1">
           <div class="text-xs text-gray-400">Xin chào</div>
-          <div class="text-xl font-black tracking-tight truncate">{{ displayName() }}</div>
+          <div class="text-2xl font-black tracking-tight truncate">{{ displayName() }}</div>
         </div>
         @if (myRank(); as r) {
           <a routerLink="/ranking" class="shrink-0 text-center rounded-xl bg-primary-50 text-primary-700 px-3 py-1.5 no-underline">
@@ -143,7 +131,7 @@ import { initialsAvatar } from '../../shared/utils/avatar.util';
           @for (m of recent(); track m.id) {
             <div class="flex items-center gap-2">
               <span
-                class="w-6 h-6 rounded-md text-[11px] font-black flex items-center justify-center shrink-0"
+                class="hidden sm:flex w-6 h-6 rounded-md text-[11px] font-black items-center justify-center shrink-0"
                 [class]="outcomeClass(m)"
               >{{ outcomeLabel(m) }}</span>
               <div class="flex-1 min-w-0"><app-match-row [match]="m" [managers]="managersMap()" [avatars]="avatarsMap()" /></div>
@@ -281,12 +269,6 @@ export class MyOverviewComponent {
       tournaments: this.myTournamentIds().length,
       trophies: this.myTrophies().length,
     };
-  });
-
-  me = computed(() => {
-    const u = this.auth.appUser();
-    const base = initialsAvatar(userDisplayName(u, 'You'));
-    return { ...base, photo: u?.photoURL ?? this.auth.firebaseUser()?.photoURL ?? null };
   });
 
   avatar(team: Team) {

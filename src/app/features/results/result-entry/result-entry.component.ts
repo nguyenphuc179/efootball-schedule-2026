@@ -248,7 +248,8 @@ export class ResultEntryComponent {
   /** The detail-page tab this match lives under, so we return the user right where they were. */
   private originTab(m: Match): string {
     if (m.groupName) return "groupStage";
-    if (this.tournamentType() === "group_knockout") return "finalStage";
+    const type = this.tournamentType();
+    if (type === "group_knockout" || type === "knockout") return "finalStage";
     return "results";
   }
 

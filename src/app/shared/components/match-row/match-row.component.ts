@@ -20,18 +20,18 @@ import { TeamAvatar } from '../../utils/team-avatar.util';
       class="flex items-center gap-2 sm:gap-3 bg-white rounded-lg border border-gray-100 px-2.5 sm:px-3 py-2.5 no-underline text-inherit"
     >
       @if (match().groupName) {
-        <div class="flex items-center gap-1.5 shrink-0 w-12 sm:w-24">
+        <div class="hidden sm:flex items-center gap-1.5 shrink-0 sm:w-24">
           <span class="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-[10px] font-bold flex items-center justify-center shrink-0">
             {{ groupLetter() }}
           </span>
-          <span class="text-[11px] text-gray-400 truncate hidden sm:inline">{{ roundLabel() }}</span>
+          <span class="text-[11px] text-gray-400 truncate">{{ roundLabel() }}</span>
         </div>
       } @else if (showRound() && roundLabel()) {
-        <div class="flex items-center gap-1.5 shrink-0 w-9 sm:w-28">
+        <div class="hidden sm:flex items-center gap-1.5 shrink-0 sm:w-28">
           <span class="h-6 px-1.5 rounded-full bg-gray-100 text-gray-500 text-[10px] font-bold flex items-center justify-center shrink-0">
             {{ roundBadge() }}
           </span>
-          <span class="text-[11px] text-gray-400 truncate hidden sm:inline">{{ roundLabel() }}</span>
+          <span class="text-[11px] text-gray-400 truncate">{{ roundLabel() }}</span>
         </div>
       }
 

@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { MatchService } from './match.service';
 import { StandingsService } from '../standings/standings.service';
 import { TournamentService } from '../tournament/tournament.service';
+import { TeamService } from '../teams/team.service';
 import { Match, MatchDraft, matchWinner } from '../../models/match.model';
 import { StandingRow, compareStandingRows } from '../../models/standing.model';
 
@@ -14,6 +15,19 @@ interface Slot {
 }
 /** What flows out of a bracket slot: a known team, "winner of round X", or a bye (round 1 only). */
 type Feed = Slot | { ref: string } | null;
+
+/** A team the seed dialog can place — the group-stage qualifiers (first seed) or, once some
+ *  knockout rounds are done, whoever's about to enter the next undecided round. The admin
+ *  re-orders these (drag, or a random draw) before that round is actually built. */
+export interface FinalStageSeed {
+  id: string;
+  name: string;
+  logo: string | null;
+  /** Set only for the initial seed (from group standings) — e.g. "Group A" rank 1. Omitted once
+   *  re-seeding a later round, where "which group" no longer means much. */
+  groupName?: string;
+  position?: number;
+}
 
 const BASE_ORDER = [
   'Round of 128',
@@ -60,6 +74,7 @@ export class FinalStageService {
   private matchService = inject(MatchService);
   private standingsService = inject(StandingsService);
   private tournamentService = inject(TournamentService);
+  private teamService = inject(TeamService);
 
   isGroupStageComplete(matches: Match[]): boolean {
     const groupMatches = matches.filter((m) => m.groupName);
@@ -92,12 +107,28 @@ export class FinalStageService {
 
   /**
    * Manual "Generate / update bracket" action:
-   *  - no bracket yet → seed it from the group standings (`qualifiersPerGroup` advance from each)
-   *  - bracket exists → resolve the "Winner/Loser of …" placeholders from played matches
+   *  - `customOrder` given (from the seed dialog: random draw / drag & drop) → always (re)seeds
+   *    the bracket in that order, wiping any existing Final Stage matches/results first. The
+   *    dialog is responsible for confirming with the admin before calling this when results would
+   *    be lost; the group stage itself is never touched.
+   *  - no `customOrder` → the safe, no-dialog path: seeds with the default order if there's no
+   *    bracket yet, otherwise just resolves "Winner/Loser of …" placeholders from played matches.
    */
-  async generate(tournamentId: string, qualifiersPerGroup = 2): Promise<void> {
+  async generate(
+    tournamentId: string,
+    qualifiersPerGroup = 2,
+    customOrder?: FinalStageSeed[]
+  ): Promise<void> {
     const matches = await this.matchService.getByTournamentOnce(tournamentId);
     const existing = matches.filter((m) => !m.groupName);
+
+    // An explicit order from the seed dialog is always honoured, even over an already-played
+    // bracket — the dialog confirms with the admin first, since this discards results for that
+    // round onward (earlier, already-decided rounds are left alone; see applyCustomSeed()).
+    if (customOrder) {
+      await this.applyCustomSeed(tournamentId, matches, customOrder);
+      return;
+    }
 
     if (existing.length > 0) {
       for (const m of existing) {
@@ -110,6 +141,63 @@ export class FinalStageService {
     }
 
     await this.seedBracket(tournamentId, matches, qualifiersPerGroup);
+  }
+
+  /**
+   * The teams that will advance, in the default seed order (group winners cross-seeded so they
+   * only meet in the final) — fetched to pre-fill the seed dialog before the bracket is built.
+   * Throws the same validation errors `generate()` would.
+   */
+  async getQualifiedSeeds(tournamentId: string, qualifiersPerGroup: number): Promise<FinalStageSeed[]> {
+    const matches = await this.matchService.getByTournamentOnce(tournamentId);
+    if (!this.isGroupStageComplete(matches)) throw new Error('Finish every group-stage match first.');
+
+    const { names, groupA, groupB, k } = await this.groupedStandings(tournamentId, qualifiersPerGroup);
+
+    const seeds: FinalStageSeed[] = [];
+    for (let i = 0; i < k; i++) {
+      seeds.push({ ...slot(groupB[i]), groupName: names[1], position: i + 1 });
+      seeds.push({ ...slot(groupA[i]), groupName: names[0], position: i + 1 });
+    }
+    return seeds;
+  }
+
+  /** Every team entered — the seed source for a plain `knockout` tournament (no group stage). */
+  async getTeamSeeds(tournamentId: string): Promise<FinalStageSeed[]> {
+    const teams = await this.teamService.getByTournamentOnce(tournamentId);
+    return teams.map((t) => ({ id: t.id, name: t.teamName, logo: t.logo }));
+  }
+
+  /**
+   * The teams to offer in the seed dialog: the original group-stage qualifiers if the bracket
+   * hasn't been generated yet, otherwise whoever's about to enter the first round that isn't
+   * fully decided (e.g. once every quarter-final is played, the four semi-finalists) — so
+   * re-seeding only rearranges what's genuinely still undecided, never a round already played.
+   * Third Place is never its own "frontier" — it's rebuilt alongside the semi-final it depends
+   * on. Returns `[]` once the whole bracket (main line) is decided — nothing left to reseed.
+   */
+  async getReseedCandidates(tournamentId: string, qualifiersPerGroup: number): Promise<FinalStageSeed[]> {
+    const matches = await this.matchService.getByTournamentOnce(tournamentId);
+    const knockout = matches.filter((m) => !m.groupName);
+    if (knockout.length === 0) {
+      const tournament = await this.tournamentService.getOnce(tournamentId);
+      // A plain `knockout` tournament has no group stage to qualify from — every entered team
+      // goes straight into the bracket.
+      return tournament?.type === 'knockout'
+        ? this.getTeamSeeds(tournamentId)
+        : this.getQualifiedSeeds(tournamentId, qualifiersPerGroup);
+    }
+
+    const frontier = this.frontierRound(knockout);
+    if (!frontier) return [];
+
+    const roundMatches = [...frontier.matches].sort((a, b) => roundSortKey(a.round) - roundSortKey(b.round));
+    const seeds: FinalStageSeed[] = [];
+    for (const m of roundMatches) {
+      seeds.push({ id: m.homeTeamId, name: m.homeTeamName ?? 'TBD', logo: m.homeTeamLogo ?? null });
+      seeds.push({ id: m.awayTeamId, name: m.awayTeamName ?? 'TBD', logo: m.awayTeamLogo ?? null });
+    }
+    return seeds;
   }
 
   /**
@@ -153,13 +241,100 @@ export class FinalStageService {
     matches: Match[],
     qualifiersPerGroup: number
   ): Promise<void> {
-    const [tournament, rows] = await Promise.all([
-      this.tournamentService.getOnce(tournamentId),
-      this.standingsService.getRowsOnce(tournamentId),
-    ]);
+    const tournament = await this.tournamentService.getOnce(tournamentId);
     if (!tournament) throw new Error('Tournament not found.');
     if (tournament.type !== 'group_knockout') throw new Error('This tournament has no group stage.');
     if (!this.isGroupStageComplete(matches)) throw new Error('Finish every group-stage match first.');
+
+    // Default: B-first interleave so the two group winners are seeds 1 & 2 (meet only in the final).
+    const { groupA, groupB, k } = await this.groupedStandings(tournamentId, qualifiersPerGroup);
+    const seeds: Slot[] = [];
+    for (let i = 0; i < k; i++) seeds.push(slot(groupB[i]), slot(groupA[i]));
+
+    const lastGroupDate = Math.max(...matches.filter((m) => m.groupName).map((m) => m.matchDate));
+    const bracket = buildBracket(seeds);
+    const drafts: MatchDraft[] = bracket.map((b) =>
+      this.draft(
+        tournamentId,
+        b.round,
+        b.home,
+        b.away,
+        lastGroupDate + (b.depth + 1) * 7 * DAY_MS,
+        tournament.location
+      )
+    );
+    await this.matchService.bulkCreate(drafts);
+  }
+
+  /**
+   * Applies an admin-chosen seed order from the dialog. If these teams are still at the very
+   * start (the group-stage qualifiers), this seeds the whole bracket exactly like `seedBracket()`.
+   * Otherwise it rebuilds only from the round these teams currently occupy onward (that round,
+   * Third Place, and the Final) — earlier, already-decided rounds are left completely untouched.
+   */
+  private async applyCustomSeed(
+    tournamentId: string,
+    matches: Match[],
+    customOrder: FinalStageSeed[]
+  ): Promise<void> {
+    const tournament = await this.tournamentService.getOnce(tournamentId);
+    if (!tournament) throw new Error('Tournament not found.');
+
+    const existingKnockout = matches.filter((m) => !m.groupName);
+
+    // Everything from the first not-yet-decided round tier onward gets rebuilt; anything earlier
+    // (already-decided rounds) is left in place. NOTE: can't find this by searching for the seed
+    // teams' ids in `existingKnockout` — those same ids also appear in their own earlier, already
+    // -completed matches (e.g. a semi-finalist was also a quarter-finalist), which would wrongly
+    // point back at an already-decided round instead of the current one.
+    const frontier = this.frontierRound(existingKnockout);
+    const frontierKey = frontier ? frontier.key : -Infinity; // no bracket yet -> nothing to protect
+
+    const toDelete = existingKnockout.filter((m) => roundSortKey(m.round) >= frontierKey);
+    const toKeep = existingKnockout.filter((m) => roundSortKey(m.round) < frontierKey);
+    if (toDelete.length) await this.matchService.clearMatches(toDelete.map((m) => m.id));
+
+    const groupDates = matches.filter((m) => m.groupName).map((m) => m.matchDate);
+    const baseDate = toKeep.length
+      ? Math.max(...toKeep.map((m) => m.matchDate))
+      : groupDates.length
+        ? Math.max(...groupDates)
+        : tournament.startDate; // plain `knockout` tournaments have no group stage to anchor to
+
+    const seeds: Slot[] = customOrder.map((s) => ({ id: s.id, name: s.name, logo: s.logo }));
+    const bracket = buildBracket(seeds);
+    const drafts: MatchDraft[] = bracket.map((b) =>
+      this.draft(tournamentId, b.round, b.home, b.away, baseDate + (b.depth + 1) * 7 * DAY_MS, tournament.location)
+    );
+    await this.matchService.bulkCreate(drafts);
+  }
+
+  /**
+   * The matches of the first round *tier* (e.g. every "Semi Final N" together, not the individual
+   * numbered round strings) that isn't fully completed — Third Place is never its own tier, since
+   * it's derived from the semi-final rather than an independent bracket level. `null` once the
+   * whole main line is decided (or there are no knockout matches at all yet).
+   */
+  private frontierRound(knockout: Match[]): { key: number; matches: Match[] } | null {
+    const byRound = new Map<string, Match[]>();
+    for (const m of knockout) {
+      const base = roundBase(m.round);
+      if (base === 'Third Place') continue;
+      const arr = byRound.get(base) ?? [];
+      arr.push(m);
+      byRound.set(base, arr);
+    }
+    const rounds = [...byRound.entries()].sort((a, b) => roundSortKey(a[0]) - roundSortKey(b[0]));
+    const found = rounds.find(([, ms]) => !ms.every((m) => m.status === 'completed'));
+    return found ? { key: roundSortKey(found[0]), matches: found[1] } : null;
+  }
+
+  /** Both groups' standings rows (sorted, ranked) plus the usable qualifier count `k`. */
+  private async groupedStandings(
+    tournamentId: string,
+    qualifiersPerGroup: number
+  ): Promise<{ names: string[]; groupA: StandingRow[]; groupB: StandingRow[]; k: number }> {
+    const rows = await this.standingsService.getRowsOnce(tournamentId);
 
     const groups = new Map<string, StandingRow[]>();
     for (const row of rows) {
@@ -177,25 +352,7 @@ export class FinalStageService {
     const k = Math.max(1, Math.min(Math.floor(qualifiersPerGroup) || 2, maxK));
     if (maxK < 1) throw new Error('Each group needs at least 1 team.');
 
-    // B-first interleave so the two group winners are seeds 1 & 2 (they only meet in the final).
-    const seeds: Slot[] = [];
-    for (let i = 0; i < k; i++) {
-      seeds.push(slot(groupB[i]), slot(groupA[i]));
-    }
-
-    const lastGroupDate = Math.max(...matches.filter((m) => m.groupName).map((m) => m.matchDate));
-    const bracket = buildBracket(seeds);
-    const drafts: MatchDraft[] = bracket.map((b) =>
-      this.draft(
-        tournamentId,
-        b.round,
-        b.home,
-        b.away,
-        lastGroupDate + (b.depth + 1) * 7 * DAY_MS,
-        tournament.location
-      )
-    );
-    await this.matchService.bulkCreate(drafts);
+    return { names, groupA, groupB, k };
   }
 
   private draft(
@@ -308,6 +465,17 @@ function buildBracket(seeds: Slot[]): { round: string; home: Slot; away: Slot; d
 
 function slot(row: StandingRow): Slot {
   return { id: row.teamId, name: row.teamName, logo: row.teamLogo };
+}
+
+/**
+ * The full bracket tree (every round, not just round 1 — Semi-finals, Final, Bronze match, byes
+ * and all) a given seed order would produce. Used by the seed dialog to preview the actual
+ * bracket shape — with `app-final-bracket` — as the admin arranges seeds, before anything's saved.
+ */
+export function previewBracket(
+  seeds: { id: string; name: string; logo: string | null }[]
+): { round: string; home: Slot; away: Slot; depth: number }[] {
+  return buildBracket(seeds);
 }
 
 function label(text: string): Slot {

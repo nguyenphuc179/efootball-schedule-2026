@@ -10,19 +10,17 @@ import { ChartConfiguration } from "chart.js";
 import { CommonModule } from "@angular/common";
 import { Match } from "../../models/match.model";
 import { MatchService } from "../fixtures/match.service";
-import { RouterLink } from "@angular/router";
 import { TournamentService } from "../tournament/tournament.service";
 import { toSignal } from "@angular/core/rxjs-interop";
 
 /**
- * Admin section of the Home page (shown only to admins, below the personal stats): platform KPIs,
- * Match Results / Goals-by-Tournament charts, quick create/manage links and the Members panel.
- * This replaces the old standalone /dashboard route.
+ * Admin section of the Home page (shown only to admins, below the personal stats): platform KPIs
+ * plus the Match Results / Goals-by-Tournament charts. Replaces the old standalone /dashboard route.
  */
 @Component({
   selector: "app-admin-overview",
   standalone: true,
-  imports: [CommonModule, RouterLink, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="px-4 max-w-4xl mx-auto">
@@ -87,11 +85,6 @@ import { toSignal } from "@angular/core/rxjs-interop";
             ></canvas>
           </div>
         </div>
-      </div>
-
-      <div class="mt-6 flex flex-col gap-2">
-        <a routerLink="/tournaments/create" class="btn-primary w-full text-center">Create New Tournament</a>
-        <a routerLink="/tournaments" class="btn-secondary w-full text-center">Manage Tournaments</a>
       </div>
     </div>
   `,

@@ -87,13 +87,17 @@ export class MatchService {
 
   /** Removes all existing fixtures for a tournament (used before regenerating). */
   async clearForTournament(tournamentId: string): Promise<void> {
-    const existing = await this.getByTournamentOnce(tournamentId);
+    await this.clearMatches((await this.getByTournamentOnce(tournamentId)).map((m) => m.id));
+  }
+
+  /** Batched delete for an explicit set of match ids (e.g. wiping just the knockout stage before re-seeding it). */
+  async clearMatches(ids: string[]): Promise<void> {
     const chunkSize = 450;
-    for (let i = 0; i < existing.length; i += chunkSize) {
-      const chunk = existing.slice(i, i + chunkSize);
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
       const batch = writeBatch(this.firestore);
-      for (const m of chunk) {
-        batch.delete(doc(this.firestore, `${PATH}/${m.id}`));
+      for (const id of chunk) {
+        batch.delete(doc(this.firestore, `${PATH}/${id}`));
       }
       await batch.commit();
     }

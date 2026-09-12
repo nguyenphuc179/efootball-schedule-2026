@@ -13,6 +13,8 @@ export class SwipeDirective implements OnDestroy {
   private el = inject(ElementRef<HTMLElement>);
   private startX = 0;
   private startY = 0;
+  /** Swipe began inside a horizontally-scrollable child (chip bar, card rail, wide table). */
+  private startedInScroller = false;
   private readonly threshold = 40; // px
   private readonly restraint = 60; // max vertical drift allowed
 
@@ -23,9 +25,11 @@ export class SwipeDirective implements OnDestroy {
     const t = e.changedTouches[0];
     this.startX = t.clientX;
     this.startY = t.clientY;
+    this.startedInScroller = this.hasHorizontalScroller(e.target as Element | null);
   };
 
   private onEnd = (e: TouchEvent) => {
+    if (this.startedInScroller) return; // let the inner element consume the horizontal drag
     const t = e.changedTouches[0];
     const dx = t.clientX - this.startX;
     const dy = t.clientY - this.startY;
@@ -34,6 +38,19 @@ export class SwipeDirective implements OnDestroy {
       else this.swipeRight.emit();
     }
   };
+
+  /** True if any element between `node` and the host scrolls sideways (overflow-x + real overflow). */
+  private hasHorizontalScroller(node: Element | null): boolean {
+    const host = this.el.nativeElement;
+    for (let el = node; el && el !== host; el = el.parentElement) {
+      if (!(el instanceof HTMLElement)) continue;
+      const overflowX = getComputedStyle(el).overflowX;
+      if ((overflowX === 'auto' || overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 1) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   constructor() {
     const node = this.el.nativeElement;
