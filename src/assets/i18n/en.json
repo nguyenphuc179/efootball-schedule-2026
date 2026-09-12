@@ -42,7 +42,9 @@
     "THEME_ARIA_SYSTEM": "Theme: System"
   },
   "IMAGE_FIELD": {
-    "PASTED_IMAGE": "Pasted image · {{size}}"
+    "ATTACHED_IMAGE": "Image attached · {{size}}",
+    "UPLOAD": "Upload image",
+    "UPLOAD_FAILED": "Couldn't process that image — try another one or paste a link."
   },
   "MATCH": {
     "TBD": "TBD",
@@ -313,6 +315,9 @@
     "POSTER": "Poster image",
     "SEASON": "Season",
     "CLUB": "Club",
+    "MANAGER": "Manager",
+    "NO_MANAGER_OPTION": "— Type a name manually —",
+    "MANAGER_HINT": "Pick from the member list to auto-sync name + email; or leave blank and type the name below.",
     "PLAYER_NAME": "Player name",
     "TOURNAMENT": "Tournament",
     "NONE_OPTION": "— None —"
@@ -320,12 +325,9 @@
   "PROFILE": {
     "ROLE_ADMIN": "admin",
     "ROLE_VIEWER": "viewer",
-    "PUSH_NOTIFICATIONS": "Push Notifications",
-    "PUSH_HINT": "Get alerts for match reminders and results",
-    "PUSH_ENABLED": "Enabled",
-    "PUSH_UNSUPPORTED": "Unsupported",
-    "PUSH_ENABLE": "Enable",
-    "SIGN_OUT": "Sign Out"
+    "SIGN_OUT": "Sign Out",
+    "UPLOAD_AVATAR": "Upload avatar",
+    "AVATAR_UPLOAD_FAILED": "Couldn't process that image — try another one."
   },
   "MEMBERS": {
     "TITLE": "Members",

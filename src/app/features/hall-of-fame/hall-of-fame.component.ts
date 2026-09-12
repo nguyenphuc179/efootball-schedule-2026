@@ -7,9 +7,8 @@ import {
 
 import { AuthService } from "../../core/services/auth.service";
 import { BreakpointObserver } from "@angular/cdk/layout";
-import { Champion } from "../../models/champion.model";
 import { ChampionFormComponent } from "./champion-form.component";
-import { ChampionService } from "./champion.service";
+import { ChampionResolved, ChampionService } from "./champion.service";
 import { CommonModule } from "@angular/common";
 import { ConfirmDialogComponent } from "../../shared/components/confirm-dialog/confirm-dialog.component";
 import { EmptyStateComponent } from "../../shared/components/empty-state/empty-state.component";
@@ -110,6 +109,9 @@ import { TranslatePipe, TranslateService } from "@ngx-translate/core";
             >
               {{ f.playerName }}
             </div>
+            @if (auth.isAdmin() && f.email) {
+              <div class="text-xs text-gray-400">{{ f.email }}</div>
+            }
             <div
               class="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm"
             >
@@ -161,6 +163,9 @@ import { TranslatePipe, TranslateService } from "@ngx-translate/core";
               >
                 {{ c.playerName }}
               </div>
+              @if (auth.isAdmin() && c.email) {
+                <div class="text-[10px] text-gray-400 truncate">{{ c.email }}</div>
+              }
               <div class="mt-1.5 flex flex-col items-center gap-1">
                 <span
                   class="inline-flex items-center rounded-full bg-amber-50 text-amber-700 font-bold text-[11px] px-2 py-0.5"
@@ -187,7 +192,7 @@ export class HallOfFameComponent {
   private translate = inject(TranslateService);
   auth = inject(AuthService);
 
-  champions = this.championService.all;
+  champions = this.championService.allResolved;
   featured = computed(() => this.champions()[0] ?? null);
   rest = computed(() => this.champions().slice(1));
 
@@ -198,7 +203,7 @@ export class HallOfFameComponent {
     return (seasons.length ? Math.max(...seasons) : 0) + 1;
   }
 
-  openForm(champion?: Champion): void {
+  openForm(champion?: ChampionResolved): void {
     const isMobile = this.breakpoints.isMatched("(max-width: 767px)");
     this.dialog.open(ChampionFormComponent, {
       data: { champion, nextSeason: this.nextSeason() },
@@ -208,7 +213,7 @@ export class HallOfFameComponent {
     });
   }
 
-  async remove(champion: Champion): Promise<void> {
+  async remove(champion: ChampionResolved): Promise<void> {
     const ref = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: this.translate.instant("HALL_OF_FAME.REMOVE_CONFIRM_TITLE"),

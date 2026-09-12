@@ -10,6 +10,5 @@ export const environment = {
   appId: "1:1086663020111:web:61ed92e731c540d605a43a",
     measurementId: 'REPLACE_WITH_MEASUREMENT_ID',
   },
-  fcmVapidKey: 'REPLACE_WITH_YOUR_VAPID_KEY',
   appName: 'PitchPro',
 };

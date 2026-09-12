@@ -248,11 +248,14 @@ export class MyOverviewComponent {
     () => new Set(this.myTeams().map((t) => (t.manager ?? '').trim()).filter(Boolean))
   );
 
+  /** Matches by uid (stable across a rename) when possible, falling back to name matching only
+   *  for legacy teams with no linked account. */
   myRank = computed(() => {
+    const uid = this.uid();
     const names = this.myManagerNames();
-    if (!names.size) return null;
+    if (!uid && !names.size) return null;
     const list = this.rankingService.ranking();
-    const idx = list.findIndex((e) => names.has(e.manager));
+    const idx = list.findIndex((e) => (uid && e.uid === uid) || names.has(e.manager));
     return idx < 0 ? null : { entry: list[idx], rank: idx + 1, total: list.length };
   });
 

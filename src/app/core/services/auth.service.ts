@@ -118,12 +118,8 @@ export class AuthService {
     await updateDoc(doc(this.firestore, `users/${uid}`), { systemDisplayName: value });
   }
 
-  async registerFcmToken(uid: string, token: string): Promise<void> {
-    const ref = doc(this.firestore, `users/${uid}`);
-    const snap = await getDoc(ref);
-    const tokens: string[] = snap.data()?.['fcmTokens'] ?? [];
-    if (!tokens.includes(token)) {
-      await updateDoc(ref, { fcmTokens: [...tokens, token] });
-    }
+  /** Sets (or clears, with `null`) the current user's own avatar — self-service only. */
+  async setUserPhotoURL(uid: string, photoURL: string | null): Promise<void> {
+    await updateDoc(doc(this.firestore, `users/${uid}`), { photoURL });
   }
 }

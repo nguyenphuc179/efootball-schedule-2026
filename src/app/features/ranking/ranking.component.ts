@@ -120,6 +120,9 @@ interface PodiumSlot {
                 <div class="font-extrabold uppercase text-sm truncate">
                   {{ s.p.manager }}
                 </div>
+                @if (auth.isAdmin() && s.p.email) {
+                  <div class="text-[10px] text-white/70 truncate">{{ s.p.email }}</div>
+                }
                 <div class="text-[11px] text-white/85">
                   {{ s.p.wins }}-{{ s.p.draws }}-{{ s.p.losses
                   }}{{ s.place === 1 ? " · " + ('RANKING.TEAM_COUNT' | translate: { count: s.p.teamCount }) : "" }}
@@ -160,6 +163,9 @@ interface PodiumSlot {
                   <div class="font-semibold text-sm truncate">
                     {{ p.manager }}
                   </div>
+                  @if (auth.isAdmin() && p.email) {
+                    <div class="text-xs text-gray-400 truncate">{{ p.email }}</div>
+                  }
                   <div class="text-xs text-gray-400">
                     {{ p.wins }}-{{ p.draws }}-{{ p.losses }} ·
                     {{ 'RANKING.PLAYED_COUNT' | translate: { count: p.played } }}

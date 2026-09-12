@@ -12,7 +12,6 @@ export interface AppUser {
   photoURL: string | null;
   role: UserRole;
   disabled?: boolean; // admin lock-out: blocked by firestore.rules + force sign-out
-  fcmTokens: string[];
   favoriteTeamIds: string[];
   createdDate: number; // epoch millis
 }
@@ -44,7 +43,6 @@ export function createDefaultAppUser(
     photoURL,
     role: 'viewer',
     disabled: false,
-    fcmTokens: [],
     favoriteTeamIds: [],
     createdDate: Date.now(),
   };

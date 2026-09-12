@@ -5,9 +5,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ChampionService } from './champion.service';
 import { TournamentService } from '../tournament/tournament.service';
+import { MemberService } from '../members/member.service';
 import { ImageUrlFieldComponent } from '../../shared/components/image-url-field/image-url-field.component';
 import { IMAGE_SRC_PATTERN, isImageSrc } from '../../shared/utils/image-url.util';
 import { Champion } from '../../models/champion.model';
+import { AppUser, userDisplayName } from '../../models/user.model';
 import { TranslatePipe } from '@ngx-translate/core';
 
 export interface ChampionFormDialogData {
@@ -66,6 +68,17 @@ export interface ChampionFormDialogData {
         </div>
 
         <label class="flex flex-col gap-1">
+          <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.MANAGER' | translate }} <span class="text-gray-400">({{ 'TEAM_FORM.OPTIONAL' | translate }})</span></span>
+          <select class="input-field" formControlName="managerUid" (change)="onManagerChange($any($event.target).value)">
+            <option value="">{{ 'CHAMPION_FORM.NO_MANAGER_OPTION' | translate }}</option>
+            @for (m of activeMembers(); track m.uid) {
+              <option [value]="m.uid">{{ m.name }}</option>
+            }
+          </select>
+          <span class="text-xs text-gray-400">{{ 'CHAMPION_FORM.MANAGER_HINT' | translate }}</span>
+        </label>
+
+        <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.PLAYER_NAME' | translate }}</span>
           <input class="input-field" formControlName="playerName" placeholder="LÊ TÙNG DƯƠNG" />
         </label>
@@ -87,19 +100,39 @@ export class ChampionFormComponent {
   private fb = inject(FormBuilder);
   private championService = inject(ChampionService);
   private tournamentService = inject(TournamentService);
+  private memberService = inject(MemberService);
 
   isSaving = signal(false);
   imgError = signal(false);
 
   tournaments = this.tournamentService.all;
 
+  private members = toSignal(this.memberService.streamMembers(), { initialValue: [] as AppUser[] });
+  activeMembers = computed(() =>
+    this.members()
+      .filter((m) => !m.disabled)
+      .map((m) => ({ uid: m.uid, name: userDisplayName(m, m.uid) }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  );
+
   form = this.fb.nonNullable.group({
     season: [this.data.champion?.season ?? this.data.nextSeason ?? 1, [Validators.required, Validators.min(1)]],
+    managerUid: [this.data.champion?.managerUid ?? ''],
     playerName: [this.data.champion?.playerName ?? '', Validators.required],
     club: [this.data.champion?.club ?? '', Validators.required],
     imageUrl: [this.data.champion?.imageUrl ?? '', [Validators.required, Validators.pattern(IMAGE_SRC_PATTERN)]],
     tournamentId: [this.data.champion?.tournamentId ?? ''],
   });
+
+  /** Picking a manager pre-fills the player name as a convenience — only when it's still empty,
+   *  so it never clobbers a name the admin already typed/customised. */
+  onManagerChange(uid: string): void {
+    if (!uid) return;
+    const member = this.activeMembers().find((m) => m.uid === uid);
+    if (member && !this.form.controls.playerName.value.trim()) {
+      this.form.controls.playerName.setValue(member.name);
+    }
+  }
 
   private value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
 
@@ -120,6 +153,7 @@ export class ChampionFormComponent {
       const raw = this.form.getRawValue();
       const draft = {
         season: Number(raw.season),
+        managerUid: raw.managerUid || null,
         playerName: raw.playerName.trim(),
         club: raw.club.trim(),
         imageUrl: raw.imageUrl.trim(),

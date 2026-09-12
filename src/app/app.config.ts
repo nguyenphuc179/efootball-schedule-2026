@@ -24,7 +24,6 @@ import {
   provideFirestore,
 } from '@angular/fire/firestore';
 import { connectStorageEmulator, getStorage, provideStorage } from '@angular/fire/storage';
-import { getMessaging, provideMessaging } from '@angular/fire/messaging';
 
 import { environment } from '../environments/environment';
 import { routes } from './app.routes';
@@ -85,8 +84,6 @@ export const appConfig: ApplicationConfig = {
       }
       return storage;
     }),
-
-    provideMessaging(() => getMessaging()),
 
     // --- PWA ------------------------------------------------------------------------------
     provideServiceWorker('ngsw-worker.js', {

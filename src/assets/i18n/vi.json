@@ -42,7 +42,9 @@
     "THEME_ARIA_SYSTEM": "Giao diện: Theo hệ thống"
   },
   "IMAGE_FIELD": {
-    "PASTED_IMAGE": "Ảnh đã dán · {{size}}"
+    "ATTACHED_IMAGE": "Ảnh đã chọn · {{size}}",
+    "UPLOAD": "Tải ảnh lên",
+    "UPLOAD_FAILED": "Không thể xử lý ảnh này — thử ảnh khác hoặc dán link."
   },
   "MATCH": {
     "TBD": "Chưa xác định",
@@ -313,6 +315,9 @@
     "POSTER": "Ảnh poster",
     "SEASON": "Mùa giải",
     "CLUB": "Đội bóng",
+    "MANAGER": "Quản lý",
+    "NO_MANAGER_OPTION": "— Nhập tên thủ công —",
+    "MANAGER_HINT": "Chọn từ danh sách thành viên để tự đồng bộ tên + gmail; hoặc để trống và tự nhập tên bên dưới.",
     "PLAYER_NAME": "Tên tuyển thủ",
     "TOURNAMENT": "Giải đấu",
     "NONE_OPTION": "— Không có —"
@@ -320,12 +325,9 @@
   "PROFILE": {
     "ROLE_ADMIN": "quản trị",
     "ROLE_VIEWER": "người xem",
-    "PUSH_NOTIFICATIONS": "Thông báo đẩy",
-    "PUSH_HINT": "Nhận cảnh báo nhắc trận đấu và kết quả",
-    "PUSH_ENABLED": "Đã bật",
-    "PUSH_UNSUPPORTED": "Không hỗ trợ",
-    "PUSH_ENABLE": "Bật",
-    "SIGN_OUT": "Đăng xuất"
+    "SIGN_OUT": "Đăng xuất",
+    "UPLOAD_AVATAR": "Tải ảnh đại diện",
+    "AVATAR_UPLOAD_FAILED": "Không thể xử lý ảnh này — thử ảnh khác."
   },
   "MEMBERS": {
     "TITLE": "Thành viên",
