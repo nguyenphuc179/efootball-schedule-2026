@@ -1,6 +1,6 @@
 {
   "name": "football-tournament-platform",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Mobile-first Football Tournament Management Platform (Angular 20 + Firebase)",
   "scripts": {
     "ng": "ng",
@@ -11,8 +11,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "deploy": "npm run build:prod && firebase deploy",
-    "deploy:hosting": "npm run build:prod && firebase deploy --only hosting",
+    "deploy": "node scripts/bump-version.js && npm run build:prod && firebase deploy",
+    "deploy:hosting": "node scripts/bump-version.js && npm run build:prod && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules",
     "deploy:indexes": "firebase deploy --only firestore:indexes",
     "emulators": "firebase emulators:start"
@@ -34,6 +34,7 @@
     "@ngx-translate/http-loader": "^18.0.0",
     "chart.js": "^4.4.4",
     "firebase": "^11.8.0",
+    "heic2any": "^0.0.4",
     "ng2-charts": "^6.0.1",
     "qrcode": "^1.5.4",
     "rxjs": "~7.8.0",

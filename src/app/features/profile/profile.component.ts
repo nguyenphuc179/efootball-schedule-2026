@@ -91,8 +91,9 @@ export class ProfileComponent {
       const dataUri = await downscaleToDataUri(file);
       await this.auth.setUserPhotoURL(uid, dataUri);
       this.photoFailed.set(false);
-    } catch {
-      this.avatarError.set(this.translate.instant('PROFILE.AVATAR_UPLOAD_FAILED'));
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      this.avatarError.set(`${this.translate.instant('PROFILE.AVATAR_UPLOAD_FAILED')} (${detail})`);
     } finally {
       this.uploadingAvatar.set(false);
     }

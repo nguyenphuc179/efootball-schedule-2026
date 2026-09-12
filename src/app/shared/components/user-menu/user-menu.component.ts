@@ -13,6 +13,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { ThemePref, ThemeService } from '../../../core/services/theme.service';
 import { initialsAvatar } from '../../utils/avatar.util';
+import { APP_VERSION } from '../../../core/app-version';
 
 /**
  * Top-right account control: "Hi, {name}" + avatar + a chevron that opens a small menu
@@ -113,6 +114,7 @@ import { initialsAvatar } from '../../utils/avatar.util';
             >
               <span class="material-icons text-[18px]">logout</span> {{ 'USER_MENU.LOG_OUT' | translate }}
             </button>
+            <div class="px-3 pt-1 pb-0.5 text-[10px] text-gray-300 text-right select-none">v{{ appVersion }}</div>
           </div>
         }
       </div>
@@ -126,6 +128,7 @@ export class UserMenuComponent {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   open = signal(false);
+  readonly appVersion = APP_VERSION;
 
   readonly themeOptions: { value: ThemePref; icon: string; label: string }[] = [
     { value: 'light', icon: 'light_mode', label: 'USER_MENU.THEME_LIGHT' },

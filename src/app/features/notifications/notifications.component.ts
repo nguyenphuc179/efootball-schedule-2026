@@ -6,6 +6,7 @@ import { NotificationService } from './notification.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { AppNotification, NotificationType } from '../../models/notification.model';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { timeAgoKey } from '../../shared/utils/time-ago.util';
 
 const ICONS: Record<NotificationType, string> = {
   tournament_created: 'emoji_events',
@@ -67,11 +68,7 @@ export class NotificationsComponent {
 
   timeAgo(ms: number): string {
     this.translate.currentLang();
-    const diffMin = Math.round((Date.now() - ms) / 60000);
-    if (diffMin < 1) return this.translate.instant('NOTIFICATIONS.JUST_NOW');
-    if (diffMin < 60) return this.translate.instant('NOTIFICATIONS.MINUTES_AGO', { n: diffMin });
-    const diffH = Math.round(diffMin / 60);
-    if (diffH < 24) return this.translate.instant('NOTIFICATIONS.HOURS_AGO', { n: diffH });
-    return this.translate.instant('NOTIFICATIONS.DAYS_AGO', { n: Math.round(diffH / 24) });
+    const { key, params } = timeAgoKey(ms);
+    return this.translate.instant(key, params);
   }
 }

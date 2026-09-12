@@ -26,7 +26,9 @@
     "LOADING": "Loading…",
     "SHARE": "Share",
     "YES": "Yes",
-    "NO": "No"
+    "NO": "No",
+    "LINK_COPIED": "Link copied!",
+    "SHARE_MANUAL_HINT": "Couldn't copy automatically — tap the box above and copy it manually."
   },
   "USER_MENU": {
     "SIGN_IN": "Sign In",
@@ -351,11 +353,7 @@
   },
   "NOTIFICATIONS": {
     "EMPTY_TITLE": "No notifications yet",
-    "EMPTY_SUBTITLE": "Tournament updates will show up here.",
-    "JUST_NOW": "Just now",
-    "MINUTES_AGO": "{{n}}m ago",
-    "HOURS_AGO": "{{n}}h ago",
-    "DAYS_AGO": "{{n}}d ago"
+    "EMPTY_SUBTITLE": "Tournament updates will show up here."
   },
   "RESULT_ENTRY": {
     "TITLE": "Enter Result",
@@ -379,5 +377,38 @@
     "SELECT_DATE": "Select a date",
     "NUMBER_OF_TEAMS": "Number of Teams",
     "TYPE": "Tournament Type"
+  },
+  "TIME_AGO": {
+    "JUST_NOW": "Just now",
+    "MINUTES_AGO": "{{n}}m ago",
+    "HOURS_AGO": "{{n}}h ago",
+    "DAYS_AGO": "{{n}}d ago"
+  },
+  "POLLS": {
+    "TITLE": "Polls",
+    "NAV_LABEL": "Vote",
+    "EMPTY_TITLE": "No polls yet",
+    "EMPTY_SUBTITLE": "Create a poll to ask everyone something.",
+    "CREATED_BY": "by {{name}}",
+    "LOADING": "Loading poll…",
+    "BACK_TO_LIST": "Back to polls",
+    "VOTE": "Vote",
+    "SHOW_RESULTS": "Show results",
+    "BACK_TO_POLL": "Back to poll",
+    "TOTAL_VOTES": "Total votes: {{count}}",
+    "VOTE_FAILED": "Could not submit your vote — try again.",
+    "DELETE_CONFIRM_TITLE": "Delete poll?",
+    "DELETE_CONFIRM_MESSAGE": "\"{{title}}\" and all of its votes will be permanently deleted. This cannot be undone."
+  },
+  "POLL_FORM": {
+    "CREATE_TITLE": "Create poll",
+    "TITLE_LABEL": "Title",
+    "TITLE_PLACEHOLDER": "What do you want to ask?",
+    "OPTIONS_LABEL": "Answer options",
+    "OPTION_PLACEHOLDER": "Option {{n}}",
+    "ADD_OPTION": "Add option",
+    "REMOVE_OPTION": "Remove option",
+    "ALLOW_MULTIPLE": "Allow selection of multiple options",
+    "MIN_OPTIONS_ERROR": "At least 2 valid options are required."
   }
 }

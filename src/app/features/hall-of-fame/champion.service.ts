@@ -1,10 +1,10 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { orderBy } from '@angular/fire/firestore';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, combineLatest, map, of, switchMap } from 'rxjs';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { Champion, ChampionDraft } from '../../models/champion.model';
 import { AppUser, userDisplayName } from '../../models/user.model';
+import { liveUserProfiles, uidsKey } from '../../shared/utils/live-user-profiles.util';
 
 const PATH = 'champions';
 
@@ -23,32 +23,13 @@ export class ChampionService {
 
   /** Stable, order-independent key so the profile stream below only re-subscribes when the
    *  actual SET of linked-account uids changes. */
-  private managerUidsKey = computed(() =>
-    [...new Set(this.all().map((c) => c.managerUid).filter((u): u is string => !!u))].sort().join('|')
-  );
+  private managerUidsKey = computed(() => uidsKey(this.all().map((c) => c.managerUid)));
 
-  /** Live current name + email for every champion linked to an account, keyed by uid. Firestore
-   *  rules require sign-in to read a `users/{uid}` doc — for a guest this silently resolves to
-   *  nothing per uid, and `allResolved` below falls back to the entry's stored `playerName`. */
-  private managerProfiles = toSignal(
-    toObservable(this.managerUidsKey).pipe(
-      switchMap((key) => {
-        const uids = key ? key.split('|') : [];
-        if (!uids.length) return of(new Map<string, AppUser>());
-        return combineLatest(
-          uids.map((uid) => this.fs.streamDoc<AppUser>(`users/${uid}`).pipe(catchError(() => of(undefined))))
-        ).pipe(
-          map(
-            (users) =>
-              new Map(
-                uids.map((uid, i) => [uid, users[i]] as const).filter((e): e is [string, AppUser] => !!e[1])
-              )
-          )
-        );
-      })
-    ),
-    { initialValue: new Map<string, AppUser>() }
-  );
+  /** Live current name + email for every champion linked to an account, keyed by uid — falls
+   *  back to the entry's stored `playerName` for a guest viewer (see `liveUserProfiles`). */
+  private managerProfiles = toSignal(liveUserProfiles(this.fs, toObservable(this.managerUidsKey)), {
+    initialValue: new Map<string, AppUser>(),
+  });
 
   /** `all()` with each entry's display name resolved live from its linked account (if any) — a
    *  rename shows up immediately instead of waiting for the entry to be re-saved — plus the

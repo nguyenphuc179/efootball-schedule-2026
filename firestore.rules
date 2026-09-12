@@ -152,6 +152,27 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // -------------------------------------------------------------------
+    // polls/{pollId} — quick group polls. Any signed-in member may read and
+    // vote; only an admin may create or delete a poll. Immutable once
+    // created (no edit).
+    // votes/{uid} — one vote per account: doc id is the voter's own uid, and
+    // it can never be updated/deleted, so a member can't change their vote.
+    // -------------------------------------------------------------------
+    match /polls/{pollId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if false;
+      allow delete: if isAdmin();
+
+      match /votes/{uid} {
+        allow read: if isSignedIn();
+        allow create: if isOwnUser(uid);
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+
     // Fallback: deny everything else by default.
     match /{document=**} {
       allow read: if false;

@@ -26,7 +26,9 @@
     "LOADING": "Đang tải…",
     "SHARE": "Chia sẻ",
     "YES": "Có",
-    "NO": "Không"
+    "NO": "Không",
+    "LINK_COPIED": "Đã copy link!",
+    "SHARE_MANUAL_HINT": "Không tự động copy được — chạm vào ô trên rồi copy thủ công."
   },
   "USER_MENU": {
     "SIGN_IN": "Đăng nhập",
@@ -351,11 +353,7 @@
   },
   "NOTIFICATIONS": {
     "EMPTY_TITLE": "Chưa có thông báo",
-    "EMPTY_SUBTITLE": "Cập nhật giải đấu sẽ hiện ở đây.",
-    "JUST_NOW": "Vừa xong",
-    "MINUTES_AGO": "{{n}} phút trước",
-    "HOURS_AGO": "{{n}} giờ trước",
-    "DAYS_AGO": "{{n}} ngày trước"
+    "EMPTY_SUBTITLE": "Cập nhật giải đấu sẽ hiện ở đây."
   },
   "RESULT_ENTRY": {
     "TITLE": "Nhập kết quả",
@@ -379,5 +377,38 @@
     "SELECT_DATE": "Chọn ngày",
     "NUMBER_OF_TEAMS": "Số đội",
     "TYPE": "Thể thức giải đấu"
+  },
+  "TIME_AGO": {
+    "JUST_NOW": "Vừa xong",
+    "MINUTES_AGO": "{{n}} phút trước",
+    "HOURS_AGO": "{{n}} giờ trước",
+    "DAYS_AGO": "{{n}} ngày trước"
+  },
+  "POLLS": {
+    "TITLE": "Bình chọn",
+    "NAV_LABEL": "Bình chọn",
+    "EMPTY_TITLE": "Chưa có bình chọn nào",
+    "EMPTY_SUBTITLE": "Tạo một bình chọn để hỏi ý kiến mọi người.",
+    "CREATED_BY": "bởi {{name}}",
+    "LOADING": "Đang tải bình chọn…",
+    "BACK_TO_LIST": "Danh sách bình chọn",
+    "VOTE": "Bình chọn",
+    "SHOW_RESULTS": "Xem kết quả",
+    "BACK_TO_POLL": "Quay lại bình chọn",
+    "TOTAL_VOTES": "Tổng số lượt bình chọn: {{count}}",
+    "VOTE_FAILED": "Không thể gửi bình chọn — thử lại.",
+    "DELETE_CONFIRM_TITLE": "Xóa bình chọn?",
+    "DELETE_CONFIRM_MESSAGE": "\"{{title}}\" sẽ bị xóa vĩnh viễn cùng toàn bộ kết quả. Không thể hoàn tác."
+  },
+  "POLL_FORM": {
+    "CREATE_TITLE": "Tạo bình chọn",
+    "TITLE_LABEL": "Tiêu đề",
+    "TITLE_PLACEHOLDER": "Bạn muốn hỏi điều gì?",
+    "OPTIONS_LABEL": "Các lựa chọn",
+    "OPTION_PLACEHOLDER": "Lựa chọn {{n}}",
+    "ADD_OPTION": "Thêm lựa chọn",
+    "REMOVE_OPTION": "Xóa lựa chọn",
+    "ALLOW_MULTIPLE": "Cho phép chọn nhiều đáp án",
+    "MIN_OPTIONS_ERROR": "Cần ít nhất 2 lựa chọn hợp lệ."
   }
 }

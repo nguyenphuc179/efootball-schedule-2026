@@ -15,7 +15,6 @@ import {
   getDocs,
   limit,
   query,
-  serverTimestamp,
   setDoc,
   startAfter,
   updateDoc,
@@ -81,10 +80,14 @@ export class FirestoreBaseService {
     return { items, lastDoc, hasMore: snap.docs.length === pageSize };
   }
 
+  /** `createdDate` is a plain client-clock epoch-millis number (not `serverTimestamp()`) because
+   *  every model in this app types it `number` and does direct arithmetic on it (e.g. "time ago"
+   *  labels) — a Firestore `Timestamp`'s `valueOf()` is a sortable padded string, not millis, and
+   *  silently produces nonsense when coerced to a number in that arithmetic. */
   async add<T extends object>(path: string, data: T): Promise<string> {
     const ref = await addDoc(this.collectionRef(path), {
       ...data,
-      createdDate: serverTimestamp(),
+      createdDate: Date.now(),
     } as DocumentData);
     return ref.id;
   }

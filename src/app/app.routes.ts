@@ -77,6 +77,27 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'polls',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/polls/poll-list/poll-list.component').then((m) => m.PollListComponent),
+        title: 'Polls',
+      },
+      {
+        path: 'create',
+        loadComponent: () => import('./features/polls/poll-form/poll-form.component').then((m) => m.PollFormComponent),
+        canActivate: [adminGuard],
+        data: { fullscreen: true },
+      },
+      {
+        path: ':id',
+        loadComponent: () => import('./features/polls/poll-detail/poll-detail.component').then((m) => m.PollDetailComponent),
+      },
+    ],
+  },
+  {
     path: 'profile',
     loadComponent: () => import('./features/profile/profile.component').then((m) => m.ProfileComponent),
     canActivate: [authGuard],

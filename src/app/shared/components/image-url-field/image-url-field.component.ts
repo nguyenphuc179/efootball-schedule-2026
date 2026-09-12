@@ -105,8 +105,9 @@ export class ImageUrlFieldComponent {
     try {
       this._control.setValue(await downscaleToDataUri(file));
       this.changed.emit();
-    } catch {
-      this.uploadError.set(this.translate.instant('IMAGE_FIELD.UPLOAD_FAILED'));
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      this.uploadError.set(`${this.translate.instant('IMAGE_FIELD.UPLOAD_FAILED')} (${detail})`);
     } finally {
       this.uploading.set(false);
     }

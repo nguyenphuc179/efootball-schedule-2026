@@ -1,11 +1,11 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { where } from '@angular/fire/firestore';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, combineLatest, map, of, switchMap } from 'rxjs';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { Match, matchWinner } from '../../models/match.model';
 import { Team } from '../../models/team.model';
 import { AppUser, userDisplayName } from '../../models/user.model';
+import { liveUserProfiles, uidsKey } from '../../shared/utils/live-user-profiles.util';
 
 /** Points: a win (incl. a penalty-shootout win) = 3, a genuine draw = 1. */
 const WIN = 3;
@@ -49,33 +49,13 @@ export class RankingService {
 
   /** Stable, order-independent key so the profile stream below only re-subscribes when the
    *  actual SET of manager uids changes, not on every unrelated team edit. */
-  private managerUidsKey = computed(() =>
-    [...new Set(this.teams().map((t) => t.managerUid).filter((u): u is string => !!u))].sort().join('|')
-  );
+  private managerUidsKey = computed(() => uidsKey(this.teams().map((t) => t.managerUid)));
 
-  /** Live current name + email for every manager who holds a team, keyed by uid. Firestore rules
-   *  require sign-in to read a `users/{uid}` doc (`allow get: if isSignedIn()`) — for a guest this
-   *  silently resolves to nothing per uid, and the ranking below falls back to each team's
-   *  denormalized `manager` name string instead. */
-  private managerProfiles = toSignal(
-    toObservable(this.managerUidsKey).pipe(
-      switchMap((key) => {
-        const uids = key ? key.split('|') : [];
-        if (!uids.length) return of(new Map<string, AppUser>());
-        return combineLatest(
-          uids.map((uid) => this.fs.streamDoc<AppUser>(`users/${uid}`).pipe(catchError(() => of(undefined))))
-        ).pipe(
-          map(
-            (users) =>
-              new Map(
-                uids.map((uid, i) => [uid, users[i]] as const).filter((e): e is [string, AppUser] => !!e[1])
-              )
-          )
-        );
-      })
-    ),
-    { initialValue: new Map<string, AppUser>() }
-  );
+  /** Live current name + email for every manager who holds a team, keyed by uid — falls back to
+   *  each team's denormalized `manager` name string for a guest viewer (see `liveUserProfiles`). */
+  private managerProfiles = toSignal(liveUserProfiles(this.fs, toObservable(this.managerUidsKey)), {
+    initialValue: new Map<string, AppUser>(),
+  });
 
   readonly ranking = computed<ManagerRank[]>(() => {
     const profiles = this.managerProfiles();

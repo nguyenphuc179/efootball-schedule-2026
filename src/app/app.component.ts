@@ -137,5 +137,6 @@ export class AppComponent {
     { label: 'NAV.TOURNAMENTS', icon: 'emoji_events', route: '/tournaments' },
     { label: 'NAV.RANKING', icon: 'leaderboard', route: '/ranking' },
     { label: 'NAV.FAME_FULL', icon: 'military_tech', route: '/hall-of-fame' },
+    { label: 'POLLS.NAV_LABEL', icon: 'how_to_vote', route: '/polls' },
   ];
 }

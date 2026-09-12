@@ -83,6 +83,14 @@ import { userDisplayName } from '../../models/user.model';
         </div>
       }
 
+      <a routerLink="/polls" class="card !p-3 flex items-center gap-3 no-underline text-inherit">
+        <span class="w-9 h-9 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
+          <span class="material-icons text-[18px]">how_to_vote</span>
+        </span>
+        <span class="flex-1 font-semibold text-sm">{{ 'POLLS.NAV_LABEL' | translate }}</span>
+        <span class="material-icons text-gray-300">chevron_right</span>
+      </a>
+
       <section class="flex flex-col gap-2">
         <h2 class="text-sm font-extrabold uppercase tracking-wide text-gray-500">{{ 'MY_OVERVIEW.MY_TEAMS' | translate }}</h2>
         @for (t of myTeams(); track t.id) {

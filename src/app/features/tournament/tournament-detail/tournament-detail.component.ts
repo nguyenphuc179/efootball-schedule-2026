@@ -77,7 +77,8 @@ type TabKey =
         <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
           <span class="badge bg-primary-50 text-primary-700">{{ typeLabels[tournament()!.type] | translate }}</span>
           <button class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1 ml-auto" (click)="share()">
-            <span class="material-icons text-[16px]">share</span> {{ 'COMMON.SHARE' | translate }}
+            <span class="material-icons text-[16px]">{{ shareCopied() ? 'check' : 'share' }}</span>
+            {{ (shareCopied() ? 'COMMON.LINK_COPIED' : 'COMMON.SHARE') | translate }}
           </button>
           @if (auth.isAdmin()) {
             @if (tournament()!.status === 'completed') {
@@ -119,6 +120,29 @@ type TabKey =
             </button>
           }
         </div>
+
+        @if (shareLinkVisible(); as link) {
+          <div class="px-4 py-2 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+              <input
+                #shareLinkInput
+                readonly
+                class="input-field flex-1 text-xs"
+                [value]="link"
+                (click)="shareLinkInput.select()"
+              />
+              <button
+                type="button"
+                class="w-9 h-9 flex items-center justify-center text-gray-400 shrink-0"
+                (click)="shareLinkVisible.set(null)"
+                [attr.aria-label]="'COMMON.CLOSE' | translate"
+              >
+                <span class="material-icons text-[18px]">close</span>
+              </button>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-1">{{ 'COMMON.SHARE_MANUAL_HINT' | translate }}</p>
+          </div>
+        }
 
         <!-- Sticky tabs -->
         <div class="sticky-tabs flex overflow-x-auto border-b border-gray-100">
@@ -205,6 +229,11 @@ export class TournamentDetailComponent {
   isDeleting = signal(false);
   isSavingStatus = signal(false);
   isResetting = signal(false);
+  shareCopied = signal(false);
+  /** Set when neither the Clipboard nor Web Share API worked — shows the link as plain text so
+   *  it can be copied manually (both require a secure context, which plain-http LAN testing on
+   *  a phone against the dev server doesn't have). */
+  shareLinkVisible = signal<string | null>(null);
 
   /**
    * Can be ended once the Final is played. Knockout / group+knockout need an actual completed
@@ -275,15 +304,36 @@ export class TournamentDetailComponent {
     this.activeTab.set(order[Math.max(idx - 1, 0)]);
   }
 
+  /** Copies the link first (with a visible "Copied!" confirmation) — the reliable path a user
+   *  actually wants when sending a tournament to others. Falls back to the native share sheet,
+   *  and if NEITHER browser API is usable (both `navigator.clipboard` and `navigator.share`
+   *  require a secure context — plain http on a phone testing against the dev server over the
+   *  LAN has neither), reveals the link as plain selectable text so it can still be copied by
+   *  hand. */
   async share(): Promise<void> {
     const t = this.tournament();
     if (!t) return;
     const url = this.qrService.tournamentShareUrl(t.id);
-    if (navigator.share) {
-      await navigator.share({ title: t.name, url }).catch(() => undefined);
-    } else {
-      await navigator.clipboard.writeText(url).catch(() => undefined);
+
+    try {
+      await navigator.clipboard.writeText(url);
+      this.shareCopied.set(true);
+      setTimeout(() => this.shareCopied.set(false), 2000);
+      return;
+    } catch {
+      /* clipboard unavailable/blocked — try the next option */
     }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: t.name, url });
+        return;
+      } catch {
+        /* user cancelled, or share unsupported here too — fall through */
+      }
+    }
+
+    this.shareLinkVisible.set(url);
   }
 
   async endTournament(): Promise<void> {
