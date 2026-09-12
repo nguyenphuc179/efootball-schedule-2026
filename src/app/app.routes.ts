@@ -71,10 +71,10 @@ export const routes: Routes = [
     data: { fullscreen: true },
   },
   {
-    path: 'notifications',
+    path: 'history',
     loadComponent: () =>
-      import('./features/notifications/notifications.component').then((m) => m.NotificationsComponent),
-    canActivate: [authGuard],
+      import('./features/activity-log/activity-log.component').then((m) => m.ActivityLogComponent),
+    canActivate: [authGuard, adminGuard],
   },
   {
     path: 'polls',

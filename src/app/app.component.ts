@@ -7,7 +7,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { BottomNavComponent } from './shared/components/bottom-nav/bottom-nav.component';
 import { HeaderComponent } from './shared/components/header/header.component';
 import { UserMenuComponent } from './shared/components/user-menu/user-menu.component';
-import { AuthService } from './core/services/auth.service';
+import { ActivityLogBellComponent } from './features/activity-log/activity-log-bell.component';
 import { LanguageService } from './core/services/language.service';
 import { OfflineSyncService } from './core/services/offline-sync.service';
 
@@ -27,6 +27,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
     BottomNavComponent,
     HeaderComponent,
     UserMenuComponent,
+    ActivityLogBellComponent,
     TranslatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -75,15 +76,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
             >
               {{ lang.current() === 'en' ? 'EN' : 'VI' }}
             </button>
-            @if (auth.isSignedIn()) {
-              <a
-                routerLink="/notifications"
-                class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100"
-                [attr.aria-label]="'NAV.NOTIFICATIONS' | translate"
-              >
-                <span class="material-icons text-gray-600">notifications</span>
-              </a>
-            }
+            <app-activity-log-bell size="w-10 h-10" />
             <app-user-menu />
           </header>
 
@@ -108,7 +101,6 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
   `,
 })
 export class AppComponent {
-  auth = inject(AuthService);
   lang = inject(LanguageService);
   offlineSync = inject(OfflineSyncService);
   private router = inject(Router);

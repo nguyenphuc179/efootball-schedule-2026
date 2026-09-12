@@ -8,7 +8,7 @@
     "FAME_FULL": "Đại sảnh Vinh danh",
     "PROFILE": "Cá nhân",
     "SWITCH_LANGUAGE": "Đổi ngôn ngữ",
-    "NOTIFICATIONS": "Thông báo",
+    "HISTORY": "Nhật ký hoạt động",
     "PRIMARY_LANDMARK": "Điều hướng chính"
   },
   "COMMON": {
@@ -352,9 +352,21 @@
     "DISABLE_CONFIRM_MESSAGE": "{{name}} sẽ bị đăng xuất và chặn mọi thao tác trong ứng dụng. Tài khoản đăng nhập không bị xóa — có thể mở khóa lại bất cứ lúc nào ở đây, hoặc xóa tài khoản trong Firebase Console để giải phóng email.",
     "THIS_MEMBER": "Thành viên này"
   },
-  "NOTIFICATIONS": {
-    "EMPTY_TITLE": "Chưa có thông báo",
-    "EMPTY_SUBTITLE": "Cập nhật giải đấu sẽ hiện ở đây."
+  "ACTIVITY_LOG": {
+    "TITLE": "Nhật ký hoạt động",
+    "EMPTY_TITLE": "Chưa có hoạt động nào",
+    "EMPTY_SUBTITLE": "Các hành động trong app sẽ hiện ở đây.",
+    "MARK_ALL_SEEN": "Đánh dấu đã xem tất cả",
+    "MARK_SEEN": "Đánh dấu đã xem",
+    "FILTER_LABEL": "Lọc theo màn hình",
+    "FILTER_ALL": "Tất cả màn hình",
+    "FILTER_MANAGER_LABEL": "Lọc theo manager",
+    "FILTER_MANAGER_ALL": "Tất cả manager",
+    "DELETE_ALL": "Xoá tất cả",
+    "DELETE_FILTERED": "Xoá theo bộ lọc",
+    "DELETE_ALL_CONFIRM_MESSAGE": "Toàn bộ lịch sử hoạt động sẽ bị xoá vĩnh viễn. Không thể hoàn tác.",
+    "DELETE_FILTERED_CONFIRM_MESSAGE": "Toàn bộ log thuộc bộ lọc hiện tại ({{scope}}) sẽ bị xoá vĩnh viễn. Không thể hoàn tác.",
+    "LOAD_MORE": "Xem thêm"
   },
   "RESULT_ENTRY": {
     "TITLE": "Nhập kết quả",
@@ -419,6 +431,8 @@
     "NO_ACCOUNT": "Manager này chưa liên kết tài khoản Gmail nên chưa thể nhận ảnh đội hình từ tool.",
     "EMPTY_TITLE": "Chưa có ảnh đội hình",
     "EMPTY_SUBTITLE": "Ảnh sẽ tự động hiện ở đây khi manager gửi qua tool.",
+    "ADD_IMAGE": "Thêm ảnh",
+    "UPLOAD_FAILED": "Không thể tải ảnh này lên — thử ảnh khác.",
     "DELETE_CONFIRM_TITLE": "Xóa ảnh đội hình?",
     "DELETE_CONFIRM_MESSAGE": "Ảnh này sẽ bị xóa vĩnh viễn."
   }

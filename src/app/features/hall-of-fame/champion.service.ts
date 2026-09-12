@@ -2,6 +2,7 @@ import { Injectable, computed, inject } from '@angular/core';
 import { orderBy } from '@angular/fire/firestore';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
+import { ActivityLogService } from '../../core/services/activity-log.service';
 import { Champion, ChampionDraft } from '../../models/champion.model';
 import { AppUser, userDisplayName } from '../../models/user.model';
 import { liveUserProfiles, uidsKey } from '../../shared/utils/live-user-profiles.util';
@@ -14,6 +15,7 @@ export type ChampionResolved = Champion & { email?: string };
 @Injectable({ providedIn: 'root' })
 export class ChampionService {
   private fs = inject(FirestoreBaseService);
+  private activityLog = inject(ActivityLogService);
 
   /** Public Hall of Fame — newest season first. */
   readonly all = toSignal(
@@ -45,15 +47,33 @@ export class ChampionService {
     })
   );
 
-  create(draft: ChampionDraft): Promise<string> {
-    return this.fs.add<ChampionDraft>(PATH, draft);
+  async create(draft: ChampionDraft): Promise<string> {
+    const id = await this.fs.add<ChampionDraft>(PATH, draft);
+    await this.activityLog.log(
+      'champion_create',
+      `Đã thêm nhà vô địch mùa ${draft.season}: ${draft.playerName}`,
+      draft.tournamentId ?? null
+    );
+    return id;
   }
 
-  update(id: string, draft: Partial<ChampionDraft>): Promise<void> {
-    return this.fs.update(PATH, id, draft);
+  async update(id: string, draft: Partial<ChampionDraft>): Promise<void> {
+    await this.fs.update(PATH, id, draft);
+    const champion = this.all().find((c) => c.id === id);
+    await this.activityLog.log(
+      'champion_update',
+      `Đã cập nhật nhà vô địch mùa ${draft.season ?? champion?.season ?? ''}: ${draft.playerName ?? champion?.playerName ?? id}`,
+      draft.tournamentId ?? champion?.tournamentId ?? null
+    );
   }
 
-  remove(id: string): Promise<void> {
-    return this.fs.remove(PATH, id);
+  async remove(id: string): Promise<void> {
+    const champion = this.all().find((c) => c.id === id);
+    await this.fs.remove(PATH, id);
+    await this.activityLog.log(
+      'champion_delete',
+      `Đã xoá nhà vô địch mùa ${champion?.season ?? ''}: ${champion?.playerName ?? id}`,
+      champion?.tournamentId ?? null
+    );
   }
 }

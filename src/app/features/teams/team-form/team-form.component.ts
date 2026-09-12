@@ -97,7 +97,7 @@ export class TeamFormComponent {
   activeMembers = computed(() =>
     this.members()
       .filter((m) => !m.disabled)
-      .map((m) => ({ uid: m.uid, name: userDisplayName(m, m.uid), photoURL: m.photoURL ?? null }))
+      .map((m) => ({ uid: m.uid, name: userDisplayName(m, m.uid), photoURL: m.photoURL ?? null, email: m.email ?? null }))
       .sort((a, b) => a.name.localeCompare(b.name))
   );
 
@@ -139,10 +139,11 @@ export class TeamFormComponent {
       const member = this.activeMembers().find((m) => m.uid === managerUid);
       const manager = member?.name ?? '';
       const managerPhotoURL = member?.photoURL ?? null;
+      const managerEmail = member?.email?.trim().toLowerCase() || null;
 
       const id = this.data.team?.id;
       if (id) {
-        await this.teamService.update(id, { teamName: raw.teamName, manager, managerUid, managerPhotoURL, logo });
+        await this.teamService.update(id, { teamName: raw.teamName, manager, managerUid, managerPhotoURL, managerEmail, logo });
       } else {
         await this.teamService.create({
           tournamentId: this.data.tournamentId,
@@ -150,6 +151,7 @@ export class TeamFormComponent {
           manager,
           managerUid,
           managerPhotoURL,
+          managerEmail,
           logo,
         });
       }

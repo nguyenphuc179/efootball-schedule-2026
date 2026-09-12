@@ -4,6 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { MemberService } from './member.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ActivityLogService } from '../../core/services/activity-log.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { initialsAvatar } from '../../shared/utils/avatar.util';
 import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
@@ -150,6 +151,7 @@ export class MembersComponent {
   private dialog = inject(MatDialog);
   private translate = inject(TranslateService);
   auth = inject(AuthService);
+  private activityLog = inject(ActivityLogService);
 
   members = toSignal(this.memberService.streamMembers(), { initialValue: [] as AppUser[] });
   myUid = computed(() => this.auth.firebaseUser()?.uid);
@@ -210,6 +212,12 @@ export class MembersComponent {
     this.errorMsg.set('');
     try {
       await this.auth.setUserSystemDisplayName(member.uid, next || null);
+      await this.activityLog.log(
+        'user_name_override',
+        next
+          ? `Đã đổi tên hiển thị của ${member.email ?? member.uid} thành "${next}"`
+          : `Đã xoá tên hiển thị tuỳ chỉnh của ${member.email ?? member.uid}`
+      );
       this.editingUid.set(null);
     } catch (err) {
       console.error('[Members] setUserSystemDisplayName', err);
@@ -225,6 +233,7 @@ export class MembersComponent {
     this.errorMsg.set('');
     try {
       await this.auth.setUserRole(member.uid, role);
+      await this.activityLog.log('user_role_change', `Đã đổi quyền của ${member.email ?? member.uid} thành ${role}`);
     } catch (err) {
       console.error('[Members] setUserRole', err);
       this.errorMsg.set(this.translate.instant('MEMBERS.UPDATE_ROLE_FAILED'));
@@ -256,6 +265,10 @@ export class MembersComponent {
     this.errorMsg.set('');
     try {
       await this.auth.setUserDisabled(member.uid, next);
+      await this.activityLog.log(
+        'user_disabled_change',
+        next ? `Đã khoá tài khoản ${member.email ?? member.uid}` : `Đã mở khoá tài khoản ${member.email ?? member.uid}`
+      );
     } catch (err) {
       console.error('[Members] setUserDisabled', err);
       this.errorMsg.set(this.translate.instant('MEMBERS.UPDATE_MEMBER_FAILED'));

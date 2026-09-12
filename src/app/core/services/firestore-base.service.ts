@@ -18,6 +18,7 @@ import {
   setDoc,
   startAfter,
   updateDoc,
+  writeBatch,
 } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 
@@ -102,6 +103,20 @@ export class FirestoreBaseService {
 
   async remove(path: string, id: string): Promise<void> {
     await deleteDoc(doc(this.firestore, `${path}/${id}`));
+  }
+
+  /** Deletes every document matching the given constraints, batched (Firestore's write-batch cap
+   *  is 500) — returns how many were deleted. Equality-only constraint combos need no composite
+   *  index (no `orderBy` here, unlike a paginated list query). */
+  async removeMatching(path: string, ...constraints: QueryConstraint[]): Promise<number> {
+    const snap = await getDocs(query(this.collectionRef(path), ...constraints));
+    const refs = snap.docs.map((d) => d.ref);
+    for (let i = 0; i < refs.length; i += 450) {
+      const batch = writeBatch(this.firestore);
+      for (const ref of refs.slice(i, i + 450)) batch.delete(ref);
+      await batch.commit();
+    }
+    return refs.length;
   }
 
   docRef(path: string, id: string) {

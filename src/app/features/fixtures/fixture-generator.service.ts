@@ -3,6 +3,7 @@ import { Team } from '../../models/team.model';
 import { MatchDraft } from '../../models/match.model';
 import { MatchService } from './match.service';
 import { StandingsService } from '../standings/standings.service';
+import { ActivityLogService } from '../../core/services/activity-log.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -24,6 +25,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export class FixtureGeneratorService {
   private matchService = inject(MatchService);
   private standingsService = inject(StandingsService);
+  private activityLog = inject(ActivityLogService);
 
   // ---------------------------------------------------------------------------------------
   // Round Robin
@@ -123,6 +125,7 @@ export class FixtureGeneratorService {
     await this.matchService.bulkCreate(drafts);
     // Fresh fixtures = no results yet, so reset the standings table (clears old points/form).
     await this.standingsService.recalculate(tournamentId);
+    await this.activityLog.log('fixtures_generate', `Đã tạo lịch thi đấu (${drafts.length} trận)`, tournamentId);
     return drafts.length;
   }
 }

@@ -2,13 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { MatchService } from '../fixtures/match.service';
 import { FinalStageService } from '../fixtures/final-stage.service';
 import { StandingsService } from '../standings/standings.service';
-import { NotificationService } from '../notifications/notification.service';
+import { ActivityLogService } from '../../core/services/activity-log.service';
 import { OfflineSyncService } from '../../core/services/offline-sync.service';
 import { Match } from '../../models/match.model';
 
 /**
  * Orchestrates "enter a match result": updates the match document, recalculates the whole
- * tournament's standings, and fires a `result_updated` notification — matching the spec's
+ * tournament's standings, and records an activity log entry — matching the spec's
  * "After saving: Update Standing / Update Statistics / Trigger notifications" requirement.
  *
  * Firestore JS SDK transactions can't easily span an unbounded number of documents (standings
@@ -23,7 +23,7 @@ export class ResultService {
   private matchService = inject(MatchService);
   private finalStageService = inject(FinalStageService);
   private standingsService = inject(StandingsService);
-  private notificationService = inject(NotificationService);
+  private activityLog = inject(ActivityLogService);
   private offlineSync = inject(OfflineSyncService);
 
   async saveResult(
@@ -51,13 +51,10 @@ export class ResultService {
       await this.finalStageService.syncFromResults(match.tournamentId).catch(() => undefined);
     }
 
-    await this.notificationService.broadcast({
-      title: 'Result Updated',
-      body: `${match.homeTeamName ?? 'Home'} ${homeScore} - ${awayScore} ${match.awayTeamName ?? 'Away'}`,
-      type: 'result_updated',
-      audience: 'all',
-      targetUid: null,
-      tournamentId: match.tournamentId,
-    });
+    await this.activityLog.log(
+      'result_update',
+      `Đã cập nhật kết quả: ${match.homeTeamName ?? 'Home'} ${homeScore} - ${awayScore} ${match.awayTeamName ?? 'Away'}`,
+      match.tournamentId
+    );
   }
 }

@@ -126,16 +126,60 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------
-    // notifications/{notificationId} — a user reads only notifications
-    // targeted at them (or broadcast ones); only admin/back-end creates them.
+    // activityLogs/{logId} — admin-only audit trail of every notable mutation
+    // in the app (who did what, when). Any signed-in, non-disabled user may
+    // create an entry, but ONLY stamped with their OWN uid as actorUid (no
+    // spoofing another actor). Only admins may ever read the log; entries are
+    // never editable. Admins MAY delete entries (bulk "clear history" /
+    // "clear filtered results" on the "/history" page — an explicit product
+    // decision to allow pruning, even though it weakens the log as a tamper-
+    // proof trail; ActivityLogService logs the purge itself as a new entry
+    // afterwards so at least the fact that a purge happened isn't erasable).
     // -------------------------------------------------------------------
-    match /notifications/{notificationId} {
-      allow read: if isSignedIn() &&
-        (resource.data.audience == 'all' || resource.data.targetUid == currentUid());
-      allow create: if isAdmin();
-      allow update: if isSignedIn() && !isDisabled() && resource.data.targetUid == currentUid() &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+    match /activityLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() && !isDisabled() &&
+        request.resource.data.actorUid == currentUid() &&
+        request.resource.data.keys().hasOnly(
+          ['actorUid', 'actorEmail', 'actorName', 'action', 'description', 'tournamentId', 'sourcePath', 'menuKey', 'createdDate']
+        ) &&
+        request.resource.data.actorName is string &&
+        request.resource.data.actorName.size() > 0 && request.resource.data.actorName.size() < 200 &&
+        (request.resource.data.actorEmail == null ||
+          (request.resource.data.actorEmail is string && request.resource.data.actorEmail.size() < 320)) &&
+        request.resource.data.action is string && request.resource.data.action.size() < 100 &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() > 0 && request.resource.data.description.size() < 2000 &&
+        (request.resource.data.tournamentId == null ||
+          (request.resource.data.tournamentId is string && request.resource.data.tournamentId.size() < 200)) &&
+        request.resource.data.sourcePath is string && request.resource.data.sourcePath.size() < 500 &&
+        request.resource.data.menuKey is string && request.resource.data.menuKey.size() < 100 &&
+        request.resource.data.createdDate is number;
+      allow update: if false;
       allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------
+    // activityLogSeen/{uid} — one admin's own "last seen" cursor for the
+    // activityLogs feed (doc id = uid), plus a sub-collection of individually
+    // marked-seen entries newer than that cursor ("mark this one as seen").
+    // Private: only that admin may read or write their own cursor/items.
+    // `activityLogs` entries themselves are never touched by any of this.
+    // -------------------------------------------------------------------
+    match /activityLogSeen/{uid} {
+      allow read: if isOwnUser(uid) && isAdmin();
+      allow write: if isOwnUser(uid) && isAdmin() &&
+        request.resource.data.keys().hasOnly(['lastSeenAt']) &&
+        request.resource.data.lastSeenAt is number;
+
+      match /items/{logId} {
+        allow read: if isOwnUser(uid) && isAdmin();
+        allow create: if isOwnUser(uid) && isAdmin() &&
+          request.resource.data.keys().hasOnly(['seenAt']) &&
+          request.resource.data.seenAt is number;
+        allow update: if false;
+        allow delete: if isOwnUser(uid) && isAdmin();
+      }
     }
 
     // -------------------------------------------------------------------
@@ -174,12 +218,14 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------
-    // lineups/{tournamentId}__{email}/images/{slot} — squad lineup screenshots
-    // pushed in by an external capture tool (not this app's own UI), identified
-    // only by the manager's Gmail address, no Firebase Auth involved. Public,
-    // unauthenticated write on purpose (explicit product decision — see the
-    // "Đội hình thi đấu" tab): the mitigations below block junk collections,
-    // oversized payloads and non-image data even without requiring sign-in.
+    // lineups/{tournamentId}__{email}/images/{slot} — squad lineup screenshots,
+    // identified only by the manager's Gmail address, no Firebase Auth involved.
+    // Normally pushed in by an external capture tool; an admin can also write
+    // here manually from this app's own UI (the "Đội hình thi đấu" tab) for
+    // managers who can't run that tool (e.g. console/PS5 players) — same path,
+    // same shape. Public, unauthenticated write on purpose (explicit product
+    // decision): the mitigations below block junk collections, oversized
+    // payloads and non-image data even without requiring sign-in.
     // Only an admin can delete a bad/stale image from the app itself.
     // -------------------------------------------------------------------
     match /lineups/{parentId} {

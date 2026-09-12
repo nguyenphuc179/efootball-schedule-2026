@@ -59,18 +59,27 @@
       ]
     },
     {
-      "collectionGroup": "notifications",
+      "collectionGroup": "activityLogs",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "targetUid", "order": "ASCENDING" },
+        { "fieldPath": "menuKey", "order": "ASCENDING" },
         { "fieldPath": "createdDate", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "notifications",
+      "collectionGroup": "activityLogs",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "audience", "order": "ASCENDING" },
+        { "fieldPath": "actorUid", "order": "ASCENDING" },
+        { "fieldPath": "createdDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "activityLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "actorUid", "order": "ASCENDING" },
+        { "fieldPath": "menuKey", "order": "ASCENDING" },
         { "fieldPath": "createdDate", "order": "DESCENDING" }
       ]
     }

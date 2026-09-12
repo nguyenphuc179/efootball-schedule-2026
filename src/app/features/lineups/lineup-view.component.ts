@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostListener, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, effect, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { of, switchMap } from 'rxjs';
@@ -11,6 +11,7 @@ import { FirestoreBaseService } from '../../core/services/firestore-base.service
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { liveUserProfiles, uidsKey } from '../../shared/utils/live-user-profiles.util';
+import { downscaleToDataUri } from '../../shared/utils/image-downscale.util';
 import { AppUser, userDisplayName } from '../../models/user.model';
 import { LineupImage } from '../../models/lineup.model';
 import { Team } from '../../models/team.model';
@@ -22,9 +23,11 @@ interface ManagerOption {
 }
 
 /**
- * "Đội hình thi đấu" tab. Images here come exclusively from an external capture tool via
- * Firestore's public REST API (see firestore.rules `lineups/{parentId}/images/{slot}`) — this app
- * only reads and (for admins) deletes them. Dropdown is scoped to this tournament's own teams.
+ * "Đội hình thi đấu" tab. Images normally come from an external capture tool via Firestore's
+ * public REST API (see firestore.rules `lineups/{parentId}/images/{slot}`). Managers who can't run
+ * that tool (e.g. console/PS5 players) instead send a screenshot to an admin, who uploads it here
+ * manually — same storage shape, filling whichever of the 4 slots is still free. Admins can also
+ * delete a bad/stale image. Dropdown is scoped to this tournament's own teams.
  */
 @Component({
   selector: 'app-lineup-view',
@@ -47,28 +50,46 @@ interface ManagerOption {
       @if (selectedManager(); as manager) {
         @if (!manager.email) {
           <p class="text-sm text-gray-400">{{ 'LINEUP.NO_ACCOUNT' | translate }}</p>
-        } @else if (images().length === 0) {
-          <app-empty-state icon="image" [title]="'LINEUP.EMPTY_TITLE' | translate" [subtitle]="'LINEUP.EMPTY_SUBTITLE' | translate" />
         } @else {
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            @for (img of images(); track img.id) {
-              <div class="relative rounded-xl overflow-hidden bg-surface-muted aspect-square">
-                <button type="button" class="w-full h-full block" (click)="preview.set(img.image)">
-                  <img [src]="img.image" class="w-full h-full object-contain" alt="" />
-                </button>
-                @if (auth.isAdmin()) {
-                  <button
-                    type="button"
-                    class="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center"
-                    (click)="remove(img.id)"
-                    [attr.aria-label]="'COMMON.REMOVE' | translate"
-                  >
-                    <span class="material-icons text-[16px]">close</span>
+          @if (images().length === 0) {
+            <app-empty-state icon="image" [title]="'LINEUP.EMPTY_TITLE' | translate" [subtitle]="'LINEUP.EMPTY_SUBTITLE' | translate" />
+          }
+          @if (images().length > 0 || canUpload()) {
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" [class.mt-3]="images().length === 0">
+              @for (img of images(); track img.id) {
+                <div class="relative rounded-xl overflow-hidden bg-surface-muted aspect-square">
+                  <button type="button" class="w-full h-full block" (click)="preview.set(img.image)">
+                    <img [src]="img.image" class="w-full h-full object-contain" alt="" />
                   </button>
-                }
-              </div>
-            }
-          </div>
+                  @if (auth.isAdmin()) {
+                    <button
+                      type="button"
+                      class="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center"
+                      (click)="remove(img.id)"
+                      [attr.aria-label]="'COMMON.REMOVE' | translate"
+                    >
+                      <span class="material-icons text-[16px]">close</span>
+                    </button>
+                  }
+                </div>
+              }
+              @if (canUpload() && freeSlots().length > 0) {
+                <button
+                  type="button"
+                  class="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 active:bg-gray-50 disabled:opacity-50"
+                  [disabled]="uploading()"
+                  (click)="fileInput.click()"
+                >
+                  <span class="material-icons text-[24px]">{{ uploading() ? 'hourglass_top' : 'add_a_photo' }}</span>
+                  <span class="text-xs font-medium">{{ 'LINEUP.ADD_IMAGE' | translate }}</span>
+                </button>
+                <input #fileInput type="file" accept="image/*" hidden (change)="onFileSelected($event)" />
+              }
+            </div>
+          }
+          @if (uploadError()) {
+            <p class="text-xs text-red-500 mt-2">{{ uploadError() }}</p>
+          }
         }
       }
     }
@@ -127,6 +148,22 @@ export class LineupViewComponent {
     return list.sort((a, b) => a.name.localeCompare(b.name));
   });
 
+  /** Backfills `teams.managerEmail` for teams saved before that field existed (or whose manager's
+   *  account email changed) — needed so the external capture tool's tournament lookup (a plain
+   *  `where('managerEmail', '==', email)` query, see LINEUP_TOOL_INTEGRATION.md) can find them. Runs
+   *  opportunistically whenever an admin opens this tab, using data already loaded for the dropdown. */
+  private backfillManagerEmails = effect(() => {
+    if (!this.auth.isAdmin()) return;
+    const profiles = this.managerProfiles();
+    for (const team of this.teams()) {
+      if (!team.managerUid) continue;
+      const email = profiles.get(team.managerUid)?.email?.trim().toLowerCase() || null;
+      if (email && team.managerEmail !== email) {
+        this.teamService.update(team.id, { managerEmail: email }).catch((err) => console.error('[Lineup] backfill managerEmail', err));
+      }
+    }
+  });
+
   selectedKey = signal<string>('');
   preview = signal<string | null>(null);
 
@@ -156,6 +193,41 @@ export class LineupViewComponent {
     ),
     { initialValue: [] as LineupImage[] }
   );
+
+  /** Manual upload fallback (e.g. console/PS5 managers who can't run the capture tool) —
+   *  admin-only, and only once the manager has a linked account to key the image under. */
+  canUpload = computed(() => this.auth.isAdmin() && !!this.selectedManager()?.email);
+
+  freeSlots = computed(() => {
+    const used = new Set(this.images().map((img) => img.id));
+    return ['1', '2', '3', '4'].filter((slot) => !used.has(slot));
+  });
+
+  uploading = signal(false);
+  uploadError = signal('');
+
+  async onFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ''; // allow picking the same file again later
+    if (!file) return;
+
+    const manager = this.selectedManager();
+    const slot = this.freeSlots()[0];
+    if (!manager?.email || !slot) return;
+
+    this.uploadError.set('');
+    this.uploading.set(true);
+    try {
+      const image = await downscaleToDataUri(file);
+      await this.lineupService.upload(this.tournamentId(), manager.email, slot, image);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      this.uploadError.set(`${this.translate.instant('LINEUP.UPLOAD_FAILED')} (${detail})`);
+    } finally {
+      this.uploading.set(false);
+    }
+  }
 
   async remove(slot: string): Promise<void> {
     const manager = this.selectedManager();

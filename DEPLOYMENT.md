@@ -97,56 +97,7 @@ file in sync with `environment.prod.ts` whenever you rotate Firebase config.)
 Firebase Hosting → Add custom domain → follow the DNS verification (TXT record) + A/AAAA or CNAME
 records it gives you. TLS is provisioned automatically.
 
-## 8. Recommended (optional) Cloud Function for push fan-out
-
-The client can register FCM tokens and *receive* pushes, but the actual "send to N devices" call
-must happen server-side (FCM Admin SDK, not exposed to browsers). If you want real push delivery
-(not just in-app notification-center entries), add a small Cloud Function:
-
-```bash
-firebase init functions   # TypeScript template
-```
-
-```ts
-// functions/src/index.ts
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
-import { getMessaging } from 'firebase-admin/messaging';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp } from 'firebase-admin/app';
-
-initializeApp();
-
-export const fanOutNotification = onDocumentCreated('notifications/{id}', async (event) => {
-  const notif = event.data?.data();
-  if (!notif) return;
-  const db = getFirestore();
-
-  let tokens: string[] = [];
-  if (notif.audience === 'all') {
-    const usersSnap = await db.collection('users').get();
-    tokens = usersSnap.docs.flatMap((d) => d.data()['fcmTokens'] ?? []);
-  } else if (notif.targetUid) {
-    const userSnap = await db.doc(`users/${notif.targetUid}`).get();
-    tokens = userSnap.data()?.['fcmTokens'] ?? [];
-  }
-  if (!tokens.length) return;
-
-  await getMessaging().sendEachForMulticast({
-    tokens,
-    notification: { title: notif.title, body: notif.body },
-    data: { url: notif.tournamentId ? `/tournaments/${notif.tournamentId}` : '/' },
-  });
-});
-```
-
-```bash
-firebase deploy --only functions
-```
-
-This keeps the front-end architecture "Firebase-only," with the function as a thin, optional fan-out
-worker — the app is fully usable (in-app notifications + realtime data) without it.
-
-## 9. CI/CD (optional GitHub Actions)
+## 8. CI/CD (optional GitHub Actions)
 
 ```yaml
 # .github/workflows/deploy.yml
@@ -171,7 +122,7 @@ jobs:
           channelId: live
 ```
 
-## 10. Production checklist
+## 9. Production checklist
 
 - [ ] Real Firebase config in both environment files + `firebase-messaging-sw.js`
 - [ ] `firestore.rules` deployed and manually re-tested with the Rules Playground
@@ -182,4 +133,3 @@ jobs:
 - [ ] Test offline: airplane mode → browse cached tournament → make an admin edit → re-enable
       network → confirm it syncs
 - [ ] Authorized domains include your production Hosting URL / custom domain
-- [ ] (If using) Cloud Function deployed and a test notification confirmed delivered to a real device

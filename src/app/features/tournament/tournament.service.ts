@@ -12,6 +12,7 @@ import {
 import { map } from 'rxjs';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ActivityLogService } from '../../core/services/activity-log.service';
 import { Tournament, TournamentDraft, normalizeStatus } from '../../models/tournament.model';
 import { toSignal } from '@angular/core/rxjs-interop';
 
@@ -22,6 +23,7 @@ export class TournamentService {
   private fs = inject(FirestoreBaseService);
   private firestore = inject(Firestore);
   private auth = inject(AuthService);
+  private activityLog = inject(ActivityLogService);
 
   /** Realtime list, newest start date first — powers the Tournaments tab and Home's featured rail. */
   readonly all = toSignal(
@@ -39,25 +41,33 @@ export class TournamentService {
 
   async create(draft: TournamentDraft): Promise<string> {
     const uid = this.auth.firebaseUser()?.uid ?? 'unknown';
-    return this.fs.add<Omit<Tournament, 'id' | 'createdDate'>>(PATH, {
+    const id = await this.fs.add<Omit<Tournament, 'id' | 'createdDate'>>(PATH, {
       ...draft,
       status: 'in_progress',
       createdBy: uid,
     });
+    await this.activityLog.log('tournament_create', `Đã tạo giải đấu "${draft.name}"`, id);
+    return id;
   }
 
   async update(id: string, draft: Partial<TournamentDraft>): Promise<void> {
     await this.fs.update(PATH, id, { ...draft });
+    const name = draft.name ?? this.all().find((t) => t.id === id)?.name ?? id;
+    await this.activityLog.log('tournament_update', `Đã cập nhật giải đấu "${name}"`, id);
   }
 
   /** Admin action: mark the tournament Completed. */
   async endTournament(id: string): Promise<void> {
     await this.fs.update(PATH, id, { status: 'completed', endedAt: Date.now() });
+    const name = this.all().find((t) => t.id === id)?.name ?? id;
+    await this.activityLog.log('tournament_end', `Đã kết thúc giải đấu "${name}"`, id);
   }
 
   /** Undo `endTournament` — back to In Progress. */
   async reopenTournament(id: string): Promise<void> {
     await this.fs.update(PATH, id, { status: 'in_progress', endedAt: null });
+    const name = this.all().find((t) => t.id === id)?.name ?? id;
+    await this.activityLog.log('tournament_reopen', `Đã mở lại giải đấu "${name}"`, id);
   }
 
   /**
@@ -66,6 +76,7 @@ export class TournamentService {
    * so we fan out with queries and batch-delete (batches cap at 500).
    */
   async remove(id: string): Promise<void> {
+    const name = this.all().find((t) => t.id === id)?.name ?? id;
     const [teams, matches, standingRows] = await Promise.all([
       getDocs(query(collection(this.firestore, 'teams'), where('tournamentId', '==', id))),
       getDocs(query(collection(this.firestore, 'matches'), where('tournamentId', '==', id))),
@@ -91,6 +102,8 @@ export class TournamentService {
       for (const ref of refs.slice(i, i + 450)) batch.delete(ref);
       await batch.commit();
     }
+
+    await this.activityLog.log('tournament_delete', `Đã xoá giải đấu "${name}"`, null);
   }
 
   async getOnce(id: string): Promise<Tournament | undefined> {

@@ -11,6 +11,7 @@ import {
   collection,
 } from '@angular/fire/firestore';
 import { FirestoreBaseService, PagedResult } from '../../core/services/firestore-base.service';
+import { ActivityLogService } from '../../core/services/activity-log.service';
 import { Match, MatchDraft } from '../../models/match.model';
 
 const PATH = 'matches';
@@ -19,6 +20,7 @@ const PATH = 'matches';
 export class MatchService {
   private fs = inject(FirestoreBaseService);
   private firestore = inject(Firestore);
+  private activityLog = inject(ActivityLogService);
 
   streamByTournament(tournamentId: string) {
     return this.fs.streamCollection<Match>(PATH, where('tournamentId', '==', tournamentId), orderBy('matchDate', 'asc'));
@@ -68,7 +70,13 @@ export class MatchService {
   }
 
   async remove(id: string): Promise<void> {
+    const match = await this.getById(id);
     await this.fs.remove(PATH, id);
+    await this.activityLog.log(
+      'match_delete',
+      `Đã xoá trận đấu: ${match?.homeTeamName ?? 'Home'} - ${match?.awayTeamName ?? 'Away'}`,
+      match?.tournamentId ?? null
+    );
   }
 
   /** Bulk-writes generated fixtures in batches of <=450 (Firestore batch limit is 500 writes). */

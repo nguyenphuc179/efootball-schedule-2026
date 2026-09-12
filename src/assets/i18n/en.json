@@ -8,7 +8,7 @@
     "FAME_FULL": "Hall of Fame",
     "PROFILE": "Profile",
     "SWITCH_LANGUAGE": "Switch language",
-    "NOTIFICATIONS": "Notifications",
+    "HISTORY": "Activity Log",
     "PRIMARY_LANDMARK": "Primary"
   },
   "COMMON": {
@@ -352,9 +352,21 @@
     "DISABLE_CONFIRM_MESSAGE": "{{name}} will be signed out and blocked from doing anything in the app. Their login isn't deleted — re-enable them here any time, or delete the account in Firebase Console to free the email.",
     "THIS_MEMBER": "This member"
   },
-  "NOTIFICATIONS": {
-    "EMPTY_TITLE": "No notifications yet",
-    "EMPTY_SUBTITLE": "Tournament updates will show up here."
+  "ACTIVITY_LOG": {
+    "TITLE": "Activity Log",
+    "EMPTY_TITLE": "No activity yet",
+    "EMPTY_SUBTITLE": "Actions taken across the app will show up here.",
+    "MARK_ALL_SEEN": "Mark all as seen",
+    "MARK_SEEN": "Mark as seen",
+    "FILTER_LABEL": "Filter by screen",
+    "FILTER_ALL": "All screens",
+    "FILTER_MANAGER_LABEL": "Filter by manager",
+    "FILTER_MANAGER_ALL": "All managers",
+    "DELETE_ALL": "Delete all",
+    "DELETE_FILTERED": "Delete filtered",
+    "DELETE_ALL_CONFIRM_MESSAGE": "This permanently deletes the ENTIRE activity history. This cannot be undone.",
+    "DELETE_FILTERED_CONFIRM_MESSAGE": "This permanently deletes every entry matching the current filter ({{scope}}). This cannot be undone.",
+    "LOAD_MORE": "Load more"
   },
   "RESULT_ENTRY": {
     "TITLE": "Enter Result",
@@ -419,6 +431,8 @@
     "NO_ACCOUNT": "This manager has no linked Gmail account yet, so they can't receive images from the tool.",
     "EMPTY_TITLE": "No lineup images yet",
     "EMPTY_SUBTITLE": "Images will show up here automatically once the manager sends them via the tool.",
+    "ADD_IMAGE": "Add image",
+    "UPLOAD_FAILED": "Couldn't upload that image — try another one.",
     "DELETE_CONFIRM_TITLE": "Delete this image?",
     "DELETE_CONFIRM_MESSAGE": "This image will be permanently deleted."
   }

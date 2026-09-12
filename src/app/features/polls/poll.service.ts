@@ -2,6 +2,7 @@ import { Injectable, computed, inject } from '@angular/core';
 import { orderBy } from '@angular/fire/firestore';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
+import { ActivityLogService } from '../../core/services/activity-log.service';
 import { Poll, PollDraft, PollVote } from '../../models/poll.model';
 import { AppUser, userDisplayName } from '../../models/user.model';
 import { liveUserProfiles, uidsKey } from '../../shared/utils/live-user-profiles.util';
@@ -15,6 +16,7 @@ export type PollResolved = Poll & { createdByName: string };
 @Injectable({ providedIn: 'root' })
 export class PollService {
   private fs = inject(FirestoreBaseService);
+  private activityLog = inject(ActivityLogService);
 
   /** Every poll, newest first. */
   readonly all = toSignal(
@@ -47,12 +49,16 @@ export class PollService {
     return this.fs.streamDoc<Poll>(`${PATH}/${id}`);
   }
 
-  create(draft: PollDraft): Promise<string> {
-    return this.fs.add<PollDraft>(PATH, draft);
+  async create(draft: PollDraft): Promise<string> {
+    const id = await this.fs.add<PollDraft>(PATH, draft);
+    await this.activityLog.log('poll_create', `Đã tạo bình chọn "${draft.title}"`);
+    return id;
   }
 
-  remove(id: string): Promise<void> {
-    return this.fs.remove(PATH, id);
+  async remove(id: string): Promise<void> {
+    const title = this.all().find((p) => p.id === id)?.title ?? id;
+    await this.fs.remove(PATH, id);
+    await this.activityLog.log('poll_delete', `Đã xoá bình chọn "${title}"`);
   }
 
   /** Realtime vote tally for a poll — results update live as votes come in. */
@@ -72,5 +78,7 @@ export class PollService {
       optionIndexes,
       votedDate: Date.now(),
     });
+    const title = this.all().find((p) => p.id === pollId)?.title ?? pollId;
+    await this.activityLog.log('poll_vote', `Đã bình chọn trong "${title}"`);
   }
 }
