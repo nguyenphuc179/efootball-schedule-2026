@@ -270,11 +270,10 @@ const SECTIONS: GuideSection[] = [
               >
                 <span class="material-icons text-[18px]">groups</span>
               </span>
-              <h2 class="font-extrabold">4. Đội bóng &amp; cầu thủ</h2>
+              <h2 class="font-extrabold">4. Đội bóng</h2>
             </div>
             <p class="text-sm text-gray-500">
-              Admin tạo đội và gán người quản lý. Người quản lý đội có thể tự
-              thêm/xoá cầu thủ trong đội của mình.
+              Admin tạo đội bóng và gán người quản lý cho từng đội.
             </p>
             <div
               class="rounded-2xl border border-gray-100 shadow-card overflow-hidden"
@@ -295,7 +294,7 @@ const SECTIONS: GuideSection[] = [
                   <div class="min-w-0">
                     <div class="text-xs font-semibold truncate">Team 2</div>
                     <div class="text-[10px] text-gray-400 truncate">
-                      Quản lý: 13DTH17 · 8 cầu thủ
+                      Quản lý: 13DTH17
                     </div>
                   </div>
                 </div>
@@ -309,7 +308,7 @@ const SECTIONS: GuideSection[] = [
                   <div class="min-w-0">
                     <div class="text-xs font-semibold truncate">Team 9</div>
                     <div class="text-[10px] text-gray-400 truncate">
-                      Quản lý: PhucNT18 · 7 cầu thủ
+                      Quản lý: PhucNT18
                     </div>
                   </div>
                 </div>
@@ -330,7 +329,8 @@ const SECTIONS: GuideSection[] = [
             <p class="text-sm text-gray-500">
               Mỗi đội có 4 ô ảnh đội hình. Ảnh có thể tự động gửi lên từ
               <b>tool chụp ảnh</b>, hoặc admin tải ảnh thủ công nếu quản lý
-              không dùng được tool.
+              không dùng được tool. Admin duyệt từng ảnh một — ảnh mới chưa
+              duyệt sẽ không có dấu <b>Đã duyệt</b>.
             </p>
             <div
               class="rounded-2xl border border-gray-100 shadow-card overflow-hidden"

@@ -12,6 +12,19 @@
     "GUIDE": "Guide",
     "PRIMARY_LANDMARK": "Primary"
   },
+  "GUIDE_CHAT": {
+    "OPEN": "Open Pession AI Chatbot",
+    "TITLE": "Pession AI Chatbot",
+    "GREETING": "Hi! Ask me anything — about how to use this site, or anything else on your mind.",
+    "PLACEHOLDER": "Type a question...",
+    "RESET": "New conversation",
+    "SEND_FAILED": "Couldn't send that — check your connection and try again.",
+    "QUOTA_EXCEEDED": "Today's free usage limit has been reached — please try again later.",
+    "SUGGEST_1": "How do I create a new tournament?",
+    "SUGGEST_2": "Who can enter match results?",
+    "SUGGEST_3": "How are ranking points calculated?",
+    "SUGGEST_4": "Do lineup photos need admin approval?"
+  },
   "COMMON": {
     "OFFLINE_BANNER": "You're offline — showing cached data. Changes will sync automatically.",
     "SYNCING_BANNER": "Syncing {{count}} change(s)…",

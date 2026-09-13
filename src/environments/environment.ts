@@ -16,6 +16,10 @@ export const environment = {
     measurementId: 'REPLACE_WITH_MEASUREMENT_ID',
   },
   appName: 'Pession',
+  // reCAPTCHA Enterprise key for Firebase App Check (guards the free-tier Gemini calls from the
+  // guide chat widget against abuse) — this key is meant to be public, registered against this
+  // app's own domains in Google Cloud's Fraud Defense (reCAPTCHA Enterprise) console.
+  recaptchaSiteKey: '6LeinrktAAAAAPVjt_kwlcuhe1WlOyAKY--gwFwS',
 };
 
 

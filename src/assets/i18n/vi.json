@@ -12,6 +12,19 @@
     "GUIDE": "Hướng dẫn",
     "PRIMARY_LANDMARK": "Điều hướng chính"
   },
+  "GUIDE_CHAT": {
+    "OPEN": "Mở Pession AI Chatbot",
+    "TITLE": "Pession AI Chatbot",
+    "GREETING": "Chào bạn! Hỏi tôi bất cứ điều gì nhé — về cách dùng trang web này, hay chuyện gì khác cũng được.",
+    "PLACEHOLDER": "Nhập câu hỏi...",
+    "RESET": "Cuộc trò chuyện mới",
+    "SEND_FAILED": "Không gửi được — kiểm tra kết nối và thử lại.",
+    "QUOTA_EXCEEDED": "Đã dùng hết lượt miễn phí hôm nay — thử lại sau nhé.",
+    "SUGGEST_1": "Làm sao để tạo giải đấu mới?",
+    "SUGGEST_2": "Ai được nhập kết quả trận đấu?",
+    "SUGGEST_3": "Bảng xếp hạng tính điểm thế nào?",
+    "SUGGEST_4": "Ảnh đội hình cần admin duyệt à?"
+  },
   "COMMON": {
     "OFFLINE_BANNER": "Bạn đang offline — đang hiện dữ liệu đã lưu. Thay đổi sẽ tự đồng bộ khi có mạng.",
     "SYNCING_BANNER": "Đang đồng bộ {{count}} thay đổi…",

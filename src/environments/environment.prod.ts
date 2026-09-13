@@ -11,4 +11,5 @@ export const environment = {
     measurementId: 'REPLACE_WITH_MEASUREMENT_ID',
   },
   appName: 'Pession',
+  recaptchaSiteKey: '6LeinrktAAAAAPVjt_kwlcuhe1WlOyAKY--gwFwS',
 };

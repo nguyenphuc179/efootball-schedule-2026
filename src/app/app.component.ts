@@ -8,6 +8,7 @@ import { BottomNavComponent } from './shared/components/bottom-nav/bottom-nav.co
 import { HeaderComponent } from './shared/components/header/header.component';
 import { UserMenuComponent } from './shared/components/user-menu/user-menu.component';
 import { ActivityLogBellComponent } from './features/activity-log/activity-log-bell.component';
+import { GuideChatWidgetComponent } from './shared/components/guide-chat/guide-chat-widget.component';
 import { AuthService } from './core/services/auth.service';
 import { LanguageService } from './core/services/language.service';
 import { OfflineSyncService } from './core/services/offline-sync.service';
@@ -29,6 +30,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
     HeaderComponent,
     UserMenuComponent,
     ActivityLogBellComponent,
+    GuideChatWidgetComponent,
     TranslatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -99,6 +101,11 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
 
       @if (!chromeless()) {
         <app-bottom-nav />
+        <!-- Lazy: keeps the Firebase AI Logic SDK out of every page's initial bundle — it only
+             loads in the background once the shell is idle, not blocking first paint/interactive. -->
+        @defer (on idle) {
+          <app-guide-chat-widget />
+        }
       }
     </div>
   `,
