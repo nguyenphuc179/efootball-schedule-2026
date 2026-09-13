@@ -16,6 +16,12 @@ export const routes: Routes = [
     data: { fullscreen: true },
   },
   {
+    path: 'guide',
+    loadComponent: () => import('./features/guide/guide.component').then((m) => m.GuideComponent),
+    title: 'Pession — Hướng dẫn sử dụng',
+    // No guard — a prospective user should be able to read this before ever signing in.
+  },
+  {
     path: 'tournaments',
     children: [
       {

@@ -1,6 +1,6 @@
 {
   "name": "football-tournament-platform",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Mobile-first Football Tournament Management Platform (Angular 20 + Firebase)",
   "scripts": {
     "ng": "ng",

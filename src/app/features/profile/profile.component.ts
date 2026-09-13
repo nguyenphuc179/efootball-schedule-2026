@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/services/auth.service';
 import { MembersComponent } from '../members/members.component';
@@ -10,7 +10,7 @@ import { downscaleToDataUri } from '../../shared/utils/image-downscale.util';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, MembersComponent, TranslatePipe],
+  imports: [CommonModule, MembersComponent, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-6 max-w-xl mx-auto">
@@ -49,6 +49,10 @@ import { downscaleToDataUri } from '../../shared/utils/image-downscale.util';
           <p class="text-xs text-red-500">{{ avatarError() }}</p>
         }
       </div>
+
+      <a routerLink="/guide" class="btn-secondary w-full flex items-center justify-center gap-2 mb-3">
+        <span class="material-icons text-[18px]">menu_book</span> {{ 'NAV.GUIDE' | translate }}
+      </a>
 
       <button class="btn-secondary w-full flex items-center justify-center gap-2 text-accent-red" (click)="logout()">
         <span class="material-icons text-[18px]">logout</span> {{ 'PROFILE.SIGN_OUT' | translate }}

@@ -130,5 +130,6 @@ export class AppComponent {
     { label: 'NAV.RANKING', icon: 'leaderboard', route: '/ranking' },
     { label: 'NAV.FAME_FULL', icon: 'military_tech', route: '/hall-of-fame' },
     { label: 'POLLS.NAV_LABEL', icon: 'how_to_vote', route: '/polls' },
+    { label: 'NAV.GUIDE', icon: 'menu_book', route: '/guide' },
   ];
 }

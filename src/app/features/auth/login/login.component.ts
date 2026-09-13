@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { friendlyAuthErrorKey } from '../../../core/utils/auth-error.util';
@@ -9,7 +9,7 @@ import { friendlyAuthErrorKey } from '../../../core/utils/auth-error.util';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, TranslatePipe],
+  imports: [CommonModule, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh flex flex-col justify-center px-6 py-10 max-w-md mx-auto">
@@ -27,6 +27,10 @@ import { friendlyAuthErrorKey } from '../../../core/utils/auth-error.util';
         <span class="material-icons text-[18px]">login</span>
         {{ (isLoading() ? 'LOGIN.SIGNING_IN' : 'LOGIN.CONTINUE_WITH_GOOGLE') | translate }}
       </button>
+
+      <a routerLink="/guide" class="text-center text-sm text-primary-600 font-semibold mt-4">
+        {{ 'NAV.GUIDE' | translate }}
+      </a>
     </div>
   `,
 })
