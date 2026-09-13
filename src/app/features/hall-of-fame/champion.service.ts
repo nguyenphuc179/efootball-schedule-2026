@@ -47,6 +47,15 @@ export class ChampionService {
     })
   );
 
+  /** Every Hall of Fame entry that belongs to this manager — matched by `managerUid` when linked,
+   *  otherwise by the resolved display name (same fallback `RankingService` uses for a legacy team
+   *  with no linked account). Powers the trophy list on the "Xếp hạng" row detail view. */
+  forManager(identity: { uid?: string; manager: string }): ChampionResolved[] {
+    return this.allResolved().filter((c) =>
+      identity.uid ? c.managerUid === identity.uid : c.playerName.trim().toLowerCase() === identity.manager.trim().toLowerCase()
+    );
+  }
+
   async create(draft: ChampionDraft): Promise<string> {
     const id = await this.fs.add<ChampionDraft>(PATH, draft);
     await this.activityLog.log(

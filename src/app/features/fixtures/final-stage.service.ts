@@ -4,6 +4,7 @@ import { MatchService } from './match.service';
 import { StandingsService } from '../standings/standings.service';
 import { TournamentService } from '../tournament/tournament.service';
 import { TeamService } from '../teams/team.service';
+import { ActivityLogService } from '../../core/services/activity-log.service';
 import { Match, MatchDraft, matchWinner } from '../../models/match.model';
 import { StandingRow, compareStandingRows } from '../../models/standing.model';
 
@@ -81,6 +82,7 @@ export class FinalStageService {
   private standingsService = inject(StandingsService);
   private tournamentService = inject(TournamentService);
   private teamService = inject(TeamService);
+  private activityLog = inject(ActivityLogService);
 
   isGroupStageComplete(matches: Match[]): boolean {
     const groupMatches = matches.filter((m) => m.groupName);
@@ -270,6 +272,7 @@ export class FinalStageService {
       )
     );
     await this.matchService.bulkCreate(drafts);
+    await this.activityLog.log('final_stage_generate', `Đã tạo vòng loại trực tiếp (${drafts.length} trận)`, tournamentId);
   }
 
   /**
@@ -313,6 +316,7 @@ export class FinalStageService {
       this.draft(tournamentId, b.round, b.home, b.away, baseDate + (b.depth + 1) * 7 * DAY_MS, tournament.location)
     );
     await this.matchService.bulkCreate(drafts);
+    await this.activityLog.log('final_stage_generate', `Đã tạo lại vòng loại trực tiếp (${drafts.length} trận)`, tournamentId);
   }
 
   /**

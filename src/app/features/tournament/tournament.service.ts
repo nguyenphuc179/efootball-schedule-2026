@@ -71,9 +71,9 @@ export class TournamentService {
   }
 
   /**
-   * Deletes the tournament and every record scoped to it — teams (and their `players`
-   * sub-collection), fixtures and the standings table. Firestore has no server-side cascade,
-   * so we fan out with queries and batch-delete (batches cap at 500).
+   * Deletes the tournament and every record scoped to it — teams, fixtures and the standings
+   * table. Firestore has no server-side cascade, so we fan out with queries and batch-delete
+   * (batches cap at 500).
    */
   async remove(id: string): Promise<void> {
     const name = this.all().find((t) => t.id === id)?.name ?? id;
@@ -83,16 +83,10 @@ export class TournamentService {
       getDocs(collection(this.firestore, `standings/${id}/rows`)),
     ]);
 
-    // A team delete doesn't cascade its roster, so collect each team's players too.
-    const playerSnaps = await Promise.all(
-      teams.docs.map((t) => getDocs(collection(this.firestore, `teams/${t.id}/players`)))
-    );
-
     const refs = [
       ...teams.docs.map((d) => d.ref),
       ...matches.docs.map((d) => d.ref),
       ...standingRows.docs.map((d) => d.ref),
-      ...playerSnaps.flatMap((snap) => snap.docs.map((d) => d.ref)),
       doc(this.firestore, `standings/${id}`),
       doc(this.firestore, `${PATH}/${id}`),
     ];

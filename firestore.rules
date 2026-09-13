@@ -87,18 +87,13 @@ service cloud.firestore {
 
     // -------------------------------------------------------------------
     // teams/{teamId} — public read, admin write. Team manager may update
-    // limited fields (e.g. players roster / logo) on their own team.
+    // limited fields (e.g. logo) on their own team.
     // -------------------------------------------------------------------
     match /teams/{teamId} {
       allow read: if true;
       allow create: if isAdmin();
       allow update: if isAdmin() || isTeamManager(teamId);
       allow delete: if isAdmin();
-
-      match /players/{playerId} {
-        allow read: if true;
-        allow write: if isAdmin() || isTeamManager(teamId);
-      }
     }
 
     // -------------------------------------------------------------------

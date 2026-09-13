@@ -4,7 +4,6 @@ import {
   DocumentData,
   Firestore,
   QueryConstraint,
-  QueryDocumentSnapshot,
   addDoc,
   collection,
   collectionData,
@@ -14,26 +13,18 @@ import {
   getCountFromServer,
   getDoc,
   getDocs,
-  limit,
   query,
   setDoc,
-  startAfter,
   updateDoc,
   writeBatch,
 } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 
-export interface PagedResult<T> {
-  items: T[];
-  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
-  hasMore: boolean;
-}
-
 /**
- * Generic typed CRUD + pagination helper over AngularFire/Firestore.
+ * Generic typed CRUD helper over AngularFire/Firestore.
  * Feature services (TournamentService, TeamService, ...) compose this instead of
  * calling the Firestore SDK directly from components — keeps Firestore specifics
- * (converters, query cursors) confined to the infrastructure layer.
+ * confined to the infrastructure layer.
  */
 @Injectable({ providedIn: 'root' })
 export class FirestoreBaseService {
@@ -72,22 +63,6 @@ export class FirestoreBaseService {
   async count(path: string, ...constraints: QueryConstraint[]): Promise<number> {
     const snap = await getCountFromServer(query(this.collectionRef(path), ...constraints));
     return snap.data().count;
-  }
-
-  async getPaged<T>(
-    path: string,
-    pageSize: number,
-    cursor: QueryDocumentSnapshot<DocumentData> | null,
-    ...constraints: QueryConstraint[]
-  ): Promise<PagedResult<T>> {
-    const clauses = cursor
-      ? [...constraints, startAfter(cursor), limit(pageSize)]
-      : [...constraints, limit(pageSize)];
-    const q = query(this.collectionRef(path), ...clauses);
-    const snap = await getDocs(q);
-    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T);
-    const lastDoc = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
-    return { items, lastDoc, hasMore: snap.docs.length === pageSize };
   }
 
   /** `createdDate` is a plain client-clock epoch-millis number (not `serverTimestamp()`) because

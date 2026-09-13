@@ -23,8 +23,6 @@ import {
   persistentMultipleTabManager,
   provideFirestore,
 } from '@angular/fire/firestore';
-import { connectStorageEmulator, getStorage, provideStorage } from '@angular/fire/storage';
-
 import { environment } from '../environments/environment';
 import { routes } from './app.routes';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
@@ -75,14 +73,6 @@ export const appConfig: ApplicationConfig = {
         connectFirestoreEmulator(firestore, 'localhost', 8080);
       }
       return firestore;
-    }),
-
-    provideStorage(() => {
-      const storage = getStorage();
-      if (environment.useEmulators) {
-        connectStorageEmulator(storage, 'localhost', 9199);
-      }
-      return storage;
     }),
 
     // --- PWA ------------------------------------------------------------------------------

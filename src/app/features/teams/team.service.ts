@@ -1,11 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { increment, orderBy, where } from '@angular/fire/firestore';
+import { orderBy, where } from '@angular/fire/firestore';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { ActivityLogService } from '../../core/services/activity-log.service';
 import { TournamentService } from '../tournament/tournament.service';
 import { Team, TeamDraft } from '../../models/team.model';
-import { Player, PlayerDraft } from '../../models/player.model';
 
 const PATH = 'teams';
 
@@ -52,10 +51,7 @@ export class TeamService {
   }
 
   async create(draft: TeamDraft): Promise<string> {
-    const id = await this.fs.add<Omit<Team, 'id' | 'createdDate' | 'playersCount'>>(PATH, {
-      ...draft,
-      playersCount: 0,
-    } as any);
+    const id = await this.fs.add<Omit<Team, 'id' | 'createdDate'>>(PATH, draft);
     const context = await this.describeTeamContext(draft.manager, draft.tournamentId);
     await this.activityLog.log(
       'team_create',
@@ -87,36 +83,6 @@ export class TeamService {
     await this.activityLog.log(
       'team_delete',
       `Đã xoá đội "${team?.teamName ?? id}" ${context}`,
-      team?.tournamentId ?? null,
-      team?.managerUid ?? null
-    );
-  }
-
-  // --- Roster (players sub-collection) -------------------------------------------------
-
-  streamPlayers(teamId: string) {
-    return this.fs.streamCollection<Player>(`${PATH}/${teamId}/players`, orderBy('shirtNumber', 'asc'));
-  }
-
-  async addPlayer(teamId: string, draft: PlayerDraft): Promise<void> {
-    await this.fs.add(`${PATH}/${teamId}/players`, { ...draft, goals: 0, yellowCards: 0, redCards: 0 });
-    await this.fs.update(PATH, teamId, { playersCount: increment(1) as unknown as number });
-    const team = await this.getById(teamId);
-    await this.activityLog.log(
-      'player_add',
-      `Đã thêm cầu thủ "${draft.fullName}" vào đội "${team?.teamName ?? teamId}"`,
-      team?.tournamentId ?? null,
-      team?.managerUid ?? null
-    );
-  }
-
-  async removePlayer(teamId: string, playerId: string): Promise<void> {
-    await this.fs.remove(`${PATH}/${teamId}/players`, playerId);
-    await this.fs.update(PATH, teamId, { playersCount: increment(-1) as unknown as number });
-    const team = await this.getById(teamId);
-    await this.activityLog.log(
-      'player_remove',
-      `Đã xoá 1 cầu thủ khỏi đội "${team?.teamName ?? teamId}"`,
       team?.tournamentId ?? null,
       team?.managerUid ?? null
     );

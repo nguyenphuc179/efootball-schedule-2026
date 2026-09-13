@@ -26,6 +26,13 @@ interface ManagerOption {
   email: string | null;
 }
 
+/** How many of a manager's uploaded lineup slots are approved — powers both the dropdown's
+ *  "N/M đã duyệt" hint and the tournament-wide pending-review summary banner. */
+interface ManagerLineupStatus {
+  total: number;
+  approved: number;
+}
+
 /**
  * "Đội hình thi đấu" tab. Images normally come from an external capture tool via Firestore's
  * public REST API (see firestore.rules `lineups/{parentId}/images/{slot}`). Managers who can't run
@@ -42,11 +49,21 @@ interface ManagerOption {
     @if (managers().length === 0) {
       <app-empty-state icon="groups" [title]="'LINEUP.NO_MANAGERS' | translate" />
     } @else {
+      @if (auth.isAdmin() && pendingApprovalCount() > 0) {
+        <div class="mb-3 text-xs font-medium bg-amber-50 text-amber-700 rounded-lg px-3 py-2 flex items-center gap-1.5">
+          <span class="material-icons text-[16px]">pending_actions</span>
+          {{ 'LINEUP.PENDING_APPROVAL_SUMMARY' | translate: { count: pendingApprovalCount() } }}
+        </div>
+      }
+
       <label class="flex flex-col gap-1 mb-4">
         <span class="text-sm font-medium text-gray-600">{{ 'LINEUP.SELECT_MANAGER_LABEL' | translate }}</span>
         <select class="input-field" [value]="selectedKey()" (change)="selectedKey.set($any($event.target).value)">
           @for (m of managers(); track m.key) {
-            <option [value]="m.key">{{ m.name }}{{ managerHasImage().get(m.key) ? ('LINEUP.HAS_IMAGE_SUFFIX' | translate) : '' }}</option>
+            @let status = managerLineupStatus().get(m.key);
+            <option [value]="m.key">
+              {{ m.name }}{{ status && status.total > 0 ? (' - ' + ('LINEUP.APPROVAL_PROGRESS_SUFFIX' | translate: { approved: status.approved, total: status.total })) : '' }}
+            </option>
           }
         </select>
       </label>
@@ -178,27 +195,41 @@ export class LineupViewComponent {
     return list.sort((a, b) => a.name.localeCompare(b.name));
   });
 
-  /** Live "has this manager uploaded at least one lineup image?" lookup, keyed by `ManagerOption.key`
-   *  — powers the "(đã upload hình)" hint in the dropdown so an admin can tell at a glance who still
-   *  needs a screenshot without clicking through every manager. One listener per manager with a
-   *  linked email (same images subcollection `streamImages` already reads for the selected manager),
-   *  which is fine at this app's team-count scale. Re-subscribes whenever the manager list changes. */
-  managerHasImage = toSignal(
+  /** Live upload/approval tally per manager, keyed by `ManagerOption.key` — powers the "N/M đã
+   *  duyệt" hint in the dropdown so an admin can tell at a glance who still needs a screenshot or a
+   *  review without clicking through every manager, plus `pendingApprovalCount` below. Two
+   *  listeners (images + approvals) per manager with a linked email, which is fine at this app's
+   *  team-count scale. Re-subscribes whenever the manager list changes. */
+  managerLineupStatus = toSignal(
     toObservable(this.managers).pipe(
       switchMap((list) => {
         const withEmail = list.filter((m) => m.email);
-        if (withEmail.length === 0) return of(new Map<string, boolean>());
+        if (withEmail.length === 0) return of(new Map<string, ManagerLineupStatus>());
         return combineLatest(
           withEmail.map((m) =>
-            this.lineupService
-              .streamImages(this.tournamentId(), m.email!)
-              .pipe(map((imgs): [string, boolean] => [m.key, imgs.length > 0]))
+            combineLatest([
+              this.lineupService.streamImages(this.tournamentId(), m.email!),
+              this.lineupService.streamApprovals(this.tournamentId(), m.email!),
+            ]).pipe(
+              map(([imgs, approvals]): [string, ManagerLineupStatus] => [
+                m.key,
+                { total: imgs.length, approved: imgs.filter((img) => approvals.get(img.id)).length },
+              ])
+            )
           )
         ).pipe(map((entries) => new Map(entries)));
       })
     ),
-    { initialValue: new Map<string, boolean>() }
+    { initialValue: new Map<string, ManagerLineupStatus>() }
   );
+
+  /** Sum of not-yet-approved uploaded images across every manager in this tournament — the
+   *  admin-only "N ảnh đang chờ duyệt" banner above the dropdown. */
+  pendingApprovalCount = computed(() => {
+    let pending = 0;
+    for (const status of this.managerLineupStatus().values()) pending += status.total - status.approved;
+    return pending;
+  });
 
   /** Backfills `teams.managerEmail`/`teams.manager` for teams saved before those were in sync with
    *  the manager's account — either the field didn't exist yet, the account's email changed, or an

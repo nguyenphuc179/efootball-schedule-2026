@@ -2,6 +2,7 @@ import { Injectable, computed, inject } from '@angular/core';
 import { where } from '@angular/fire/firestore';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
+import { TournamentService } from '../tournament/tournament.service';
 import { Match, matchWinner } from '../../models/match.model';
 import { Team } from '../../models/team.model';
 import { AppUser, userDisplayName } from '../../models/user.model';
@@ -27,6 +28,22 @@ export interface ManagerRank {
   teamCount: number;
 }
 
+/** One row of `RankingService.historyFor()` — a manager's record with a single team in a single
+ *  tournament (a team belongs to exactly one tournament, so this doubles as "which tournaments
+ *  has this person played in"). */
+export interface ManagerTournamentEntry {
+  tournamentId: string;
+  tournamentName: string;
+  teamName: string;
+  teamLogo: string | null;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalDifference: number;
+  points: number;
+}
+
 /**
  * All-time manager leaderboard. A manager's score is the sum of points across every completed
  * match played by any team they hold, in any tournament (group stage through knockout). Once all
@@ -40,6 +57,7 @@ export interface ManagerRank {
 @Injectable({ providedIn: 'root' })
 export class RankingService {
   private fs = inject(FirestoreBaseService);
+  private tournamentService = inject(TournamentService);
 
   private teams = toSignal(this.fs.streamCollection<Team>('teams'), { initialValue: [] as Team[] });
   private matches = toSignal(
@@ -57,23 +75,28 @@ export class RankingService {
     initialValue: new Map<string, AppUser>(),
   });
 
-  readonly ranking = computed<ManagerRank[]>(() => {
+  /** teamId -> resolved identity, shared by `ranking` and `historyFor`. `key` groups teams under
+   *  the same person even across a rename (uid-based); a team with no linked account groups by its
+   *  raw manager-name string instead. */
+  private identityByTeamId = computed(() => {
     const profiles = this.managerProfiles();
-
-    // teamId -> resolved identity. `key` groups teams under the same person even across a rename
-    // (uid-based); a team with no linked account groups by its raw manager-name string instead.
-    const identityOf = new Map<string, { key: string; name: string; uid?: string; email?: string }>();
+    const map = new Map<string, { key: string; name: string; uid?: string; email?: string }>();
     for (const t of this.teams()) {
       const fallbackName = t.manager?.trim();
       if (t.managerUid) {
         const profile = profiles.get(t.managerUid);
         const name = (profile && userDisplayName(profile, '')) || fallbackName;
         if (!name) continue;
-        identityOf.set(t.id, { key: t.managerUid, name, uid: t.managerUid, email: profile?.email?.trim() || undefined });
+        map.set(t.id, { key: t.managerUid, name, uid: t.managerUid, email: profile?.email?.trim() || undefined });
       } else if (fallbackName) {
-        identityOf.set(t.id, { key: `name:${fallbackName}`, name: fallbackName });
+        map.set(t.id, { key: `name:${fallbackName}`, name: fallbackName });
       }
     }
+    return map;
+  });
+
+  readonly ranking = computed<ManagerRank[]>(() => {
+    const identityOf = this.identityByTeamId();
 
     const teamCountByKey = new Map<string, number>();
     for (const { key } of identityOf.values()) {
@@ -135,4 +158,58 @@ export class RankingService {
         a.manager.localeCompare(b.manager)
     );
   });
+
+  /** One row per team this manager has ever held (= one row per tournament) — the "Xếp hạng" row's
+   *  detail drill-down, since `ranking` above only keeps the all-time total. Matches the same
+   *  identity key `ranking` groups by (`ManagerRank.uid`, falling back to `name:<manager>` for a
+   *  legacy team with no linked account), so a row here always lines up with exactly one leaderboard
+   *  entry. */
+  historyFor(manager: ManagerRank): ManagerTournamentEntry[] {
+    const key = manager.uid ?? `name:${manager.manager}`;
+    const identity = this.identityByTeamId();
+    const tournaments = this.tournamentService.all();
+
+    const entries = new Map<string, ManagerTournamentEntry>(); // teamId -> entry
+    for (const t of this.teams()) {
+      if (identity.get(t.id)?.key !== key) continue;
+      entries.set(t.id, {
+        tournamentId: t.tournamentId,
+        tournamentName: tournaments.find((tt) => tt.id === t.tournamentId)?.name ?? t.tournamentId,
+        teamName: t.teamName,
+        teamLogo: t.logo,
+        played: 0,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        goalDifference: 0,
+        points: 0,
+      });
+    }
+
+    for (const m of this.matches()) {
+      if (m.homeScore == null || m.awayScore == null) continue;
+      const winnerSide = matchWinner(m);
+      for (const side of ['home', 'away'] as const) {
+        const entry = entries.get(side === 'home' ? m.homeTeamId : m.awayTeamId);
+        if (!entry) continue;
+        const gf = side === 'home' ? m.homeScore : m.awayScore;
+        const ga = side === 'home' ? m.awayScore : m.homeScore;
+        entry.played++;
+        entry.goalDifference += gf - ga;
+        if (!winnerSide) {
+          entry.draws++;
+          entry.points += DRAW;
+        } else if (winnerSide === side) {
+          entry.wins++;
+          entry.points += WIN;
+        } else {
+          entry.losses++;
+        }
+      }
+    }
+
+    return [...entries.values()].sort(
+      (a, b) => b.points - a.points || a.tournamentName.localeCompare(b.tournamentName)
+    );
+  }
 }

@@ -17,6 +17,12 @@ import { ActivityAction, ActivityLog } from '../../models/activity-log.model';
 import { timeAgoKey } from '../../shared/utils/time-ago.util';
 
 const PAGE_SIZE = 100;
+/** Window fetched while a keyword search is active — Firestore has no substring/full-text query,
+ *  so the filter runs client-side over this larger, one-shot-sized batch instead of the normal
+ *  paginated `visibleLimit`. "Good enough" at this app's scale, same trade-off as `UNSEEN_CAP`
+ *  elsewhere: a match older than this window just won't surface — narrow the screen/manager filter
+ *  above to search a smaller slice instead. */
+const SEARCH_WINDOW = 500;
 
 interface ManagerOption {
   uid: string;
@@ -34,11 +40,10 @@ const ICONS: Record<ActivityAction, string> = {
   team_create: 'groups',
   team_update: 'groups',
   team_delete: 'group_off',
-  player_add: 'person_add',
-  player_remove: 'person_remove',
   result_update: 'sports_soccer',
   match_delete: 'event_busy',
   fixtures_generate: 'calendar_month',
+  final_stage_generate: 'account_tree',
   poll_create: 'how_to_vote',
   poll_delete: 'delete',
   poll_vote: 'check_circle',
@@ -105,6 +110,23 @@ const ICONS: Record<ActivityAction, string> = {
         </div>
       </div>
 
+      <label class="flex flex-col gap-1 mb-3">
+        <span class="text-sm font-medium text-gray-600">{{ 'ACTIVITY_LOG.SEARCH_LABEL' | translate }}</span>
+        <div class="relative">
+          <span class="material-icons absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-gray-400">search</span>
+          <input
+            type="search"
+            class="input-field !pl-9"
+            [placeholder]="'ACTIVITY_LOG.SEARCH_PLACEHOLDER' | translate"
+            [value]="searchQuery()"
+            (input)="searchQuery.set($any($event.target).value)"
+          />
+        </div>
+        @if (searchWindowTruncated()) {
+          <span class="text-xs text-gray-400">{{ 'ACTIVITY_LOG.SEARCH_TRUNCATED_NOTE' | translate: { count: searchWindow } }}</span>
+        }
+      </label>
+
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-gray-600">{{ 'ACTIVITY_LOG.FILTER_LABEL' | translate }}</span>
@@ -130,7 +152,8 @@ const ICONS: Record<ActivityAction, string> = {
       </div>
 
       <p class="text-sm text-gray-500 mb-3">
-        {{ 'ACTIVITY_LOG.TOTAL_LABEL' | translate }}: <span class="font-semibold text-gray-700">{{ totalCount() ?? '…' }}</span>
+        {{ (isSearching() ? 'ACTIVITY_LOG.SEARCH_RESULTS_LABEL' : 'ACTIVITY_LOG.TOTAL_LABEL') | translate }}:
+        <span class="font-semibold text-gray-700">{{ isSearching() ? logs().length : (totalCount() ?? '…') }}</span>
       </p>
 
       @if (loadError()) {
@@ -140,8 +163,8 @@ const ICONS: Record<ActivityAction, string> = {
       @if (logs().length === 0 && !loading()) {
         <app-empty-state
           icon="history"
-          [title]="(auth.isAdmin() ? 'ACTIVITY_LOG.EMPTY_TITLE' : 'ACTIVITY_LOG.MY_EMPTY_TITLE') | translate"
-          [subtitle]="(auth.isAdmin() ? 'ACTIVITY_LOG.EMPTY_SUBTITLE' : 'ACTIVITY_LOG.MY_EMPTY_SUBTITLE') | translate"
+          [title]="(isSearching() ? 'ACTIVITY_LOG.SEARCH_EMPTY_TITLE' : auth.isAdmin() ? 'ACTIVITY_LOG.EMPTY_TITLE' : 'ACTIVITY_LOG.MY_EMPTY_TITLE') | translate"
+          [subtitle]="(isSearching() ? 'ACTIVITY_LOG.SEARCH_EMPTY_SUBTITLE' : auth.isAdmin() ? 'ACTIVITY_LOG.EMPTY_SUBTITLE' : 'ACTIVITY_LOG.MY_EMPTY_SUBTITLE') | translate"
         />
       } @else {
         <div class="flex flex-col gap-2">
@@ -214,6 +237,7 @@ export class ActivityLogComponent {
   private dialog = inject(MatDialog);
   auth = inject(AuthService);
   icons = ICONS;
+  searchWindow = SEARCH_WINDOW;
   menus = ACTIVITY_MENUS;
 
   /** Translated label for a `sourcePath`'s menu bucket — `path` itself for the "other" fallback
@@ -228,6 +252,9 @@ export class ActivityLogComponent {
 
   selectedMenuKey = signal<string | null>(null);
   selectedManagerUid = signal<string | null>(null);
+  searchQuery = signal('');
+  private normalizedSearch = computed(() => this.searchQuery().trim().toLowerCase());
+  isSearching = computed(() => this.normalizedSearch().length > 0);
   loading = signal(true);
   loadError = signal('');
   marking = signal(false);
@@ -294,22 +321,29 @@ export class ActivityLogComponent {
     this.visibleLimit.set(PAGE_SIZE);
   });
 
-  /** The live source list, capped at `visibleLimit() + 1` — the extra one is a peek used only to
-   *  compute `hasMore` below, never rendered. An admin's query maps straight to Firestore
-   *  constraints; anyone else gets their merged personal feed (`streamMine`, menu-filtered
-   *  server-side too — see `ActivityLogService.streamActorOrSubject`). Errors are caught per-cycle
-   *  (inside the `switchMap`, not around it) so one failed subscription doesn't permanently kill the
-   *  outer live stream. */
+  /** The live source list, capped at `visibleLimit() + 1` (or `SEARCH_WINDOW` while a keyword
+   *  search is active) — the extra one is a peek used only to compute `hasMore` below, never
+   *  rendered. An admin's query maps straight to Firestore constraints; anyone else gets their
+   *  merged personal feed (`streamMine`, menu-filtered server-side too — see
+   *  `ActivityLogService.streamActorOrSubject`). Errors are caught per-cycle (inside the
+   *  `switchMap`, not around it) so one failed subscription doesn't permanently kill the outer live
+   *  stream.
+   *
+   *  Deliberately keys off `isSearching` (a boolean), not the raw search text — the text itself is
+   *  applied purely client-side in `logs()` below, so typing further keystrokes while already
+   *  searching never tears down and re-subscribes this Firestore listener; only the empty <-> non-
+   *  empty transition does. */
   private rawLogs$: Observable<ActivityLog[]> = combineLatest([
     toObservable(this.selectedMenuKey),
     toObservable(this.selectedManagerUid),
     toObservable(this.visibleLimit),
+    toObservable(this.isSearching),
     toObservable(this.auth.isAdmin),
     toObservable(computed(() => this.auth.firebaseUser()?.uid ?? null)),
   ]).pipe(
     tap(() => this.loading.set(true)),
-    switchMap(([menuKey, managerUid, visibleLimit, isAdmin, uid]) => {
-      const windowSize = visibleLimit + 1;
+    switchMap(([menuKey, managerUid, visibleLimit, isSearching, isAdmin, uid]) => {
+      const windowSize = isSearching ? SEARCH_WINDOW : visibleLimit + 1;
       const source$: Observable<ActivityLog[]> = isAdmin
         ? this.activityLogService.streamFiltered(menuKey, managerUid, windowSize)
         : uid
@@ -332,8 +366,20 @@ export class ActivityLogComponent {
 
   private rawLogs = toSignal(this.rawLogs$, { initialValue: [] as ActivityLog[] });
 
-  logs = computed(() => this.rawLogs().slice(0, this.visibleLimit()));
-  hasMore = computed(() => this.rawLogs().length > this.visibleLimit());
+  /** While searching, matches within the fetched `SEARCH_WINDOW` (no further slicing — "Load
+   *  more" is hidden, see `hasMore`); otherwise the normal paginated page. */
+  logs = computed(() => {
+    const q = this.normalizedSearch();
+    if (!q) return this.rawLogs().slice(0, this.visibleLimit());
+    return this.rawLogs().filter(
+      (l) => l.description.toLowerCase().includes(q) || (l.actorEmail?.toLowerCase().includes(q) ?? false)
+    );
+  });
+  hasMore = computed(() => !this.isSearching() && this.rawLogs().length > this.visibleLimit());
+
+  /** True once a keyword search may be hiding older matches beyond `SEARCH_WINDOW` — shown as a
+   *  small hint under the search box so a "no results" isn't mistaken for a guarantee. */
+  searchWindowTruncated = computed(() => this.isSearching() && this.rawLogs().length >= SEARCH_WINDOW);
 
   /** Exact total matching the current filters — shown as "Tổng thông báo" above the listing. Not
    *  itself live (count aggregation is one-shot, see `FirestoreBaseService.count`), so this re-runs

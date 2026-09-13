@@ -18,8 +18,7 @@ export interface Team {
    *  `where('managerEmail', '==', email)` query on this public-read collection, with no Firebase
    *  Auth or backend involved. See LINEUP_TOOL_INTEGRATION.md. */
   managerEmail: string | null;
-  playersCount: number;
   createdDate: number;
 }
 
-export type TeamDraft = Omit<Team, 'id' | 'createdDate' | 'playersCount'>;
+export type TeamDraft = Omit<Team, 'id' | 'createdDate'>;

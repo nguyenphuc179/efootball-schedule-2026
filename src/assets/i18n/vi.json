@@ -176,8 +176,6 @@
     "EMPTY_TITLE": "Chưa có đội nào",
     "EMPTY_SUBTITLE": "Đội bóng thêm vào giải sẽ hiện ở đây.",
     "NO_MANAGER": "Chưa có quản lý",
-    "PLAYER_ONE": "{{count}} cầu thủ",
-    "PLAYER_OTHER": "{{count}} cầu thủ",
     "EDIT_TEAM": "Sửa đội",
     "REMOVE_TEAM": "Xóa đội",
     "REMOVE_CONFIRM_TITLE": "Xóa đội?",
@@ -297,7 +295,13 @@
     "EMPTY_SUBTITLE": "Quản lý sẽ xuất hiện ở đây khi đội của họ đã thi đấu.",
     "SET_PORTRAIT": "Đặt ảnh đại diện",
     "TEAM_COUNT": "{{count}} đội",
-    "PLAYED_COUNT": "{{count}} trận"
+    "PLAYED_COUNT": "{{count}} trận",
+    "DETAIL_WINS": "Thắng",
+    "DETAIL_DRAWS": "Hòa",
+    "DETAIL_LOSSES": "Thua",
+    "DETAIL_TROPHIES": "Danh hiệu",
+    "DETAIL_HISTORY": "Lịch sử theo giải đấu",
+    "DETAIL_HISTORY_EMPTY": "Chưa thi đấu trận nào."
   },
   "MANAGER_IMAGE_FORM": {
     "PORTRAIT": "Ảnh đại diện",
@@ -369,6 +373,12 @@
     "TITLE": "Nhật ký hoạt động",
     "MY_TITLE": "Thông báo của tôi",
     "TOTAL_LABEL": "Tổng thông báo",
+    "SEARCH_LABEL": "Tìm kiếm",
+    "SEARCH_PLACEHOLDER": "Tên đội, tên giải, nội dung...",
+    "SEARCH_RESULTS_LABEL": "Kết quả tìm thấy",
+    "SEARCH_TRUNCATED_NOTE": "Chỉ tìm trong {{count}} dòng gần nhất — thu hẹp bộ lọc bên trên nếu chưa thấy kết quả cần tìm.",
+    "SEARCH_EMPTY_TITLE": "Không tìm thấy kết quả",
+    "SEARCH_EMPTY_SUBTITLE": "Thử từ khoá khác hoặc bỏ bớt bộ lọc bên trên.",
     "EMPTY_TITLE": "Chưa có hoạt động nào",
     "EMPTY_SUBTITLE": "Các hành động trong app sẽ hiện ở đây.",
     "MY_EMPTY_TITLE": "Chưa có thông báo nào",
@@ -454,10 +464,11 @@
     "UPLOAD_FAILED": "Không thể tải ảnh này lên — thử ảnh khác.",
     "DELETE_CONFIRM_TITLE": "Xóa ảnh đội hình?",
     "DELETE_CONFIRM_MESSAGE": "Ảnh này sẽ bị xóa vĩnh viễn.",
-    "HAS_IMAGE_SUFFIX": " - (đã upload hình)",
     "IMAGE_NUMBER": "Hình {{n}}",
     "APPROVE": "Duyệt",
     "APPROVED": "Đã duyệt",
-    "APPROVE_FAILED": "Không thể cập nhật trạng thái duyệt — kiểm tra kết nối và quyền truy cập."
+    "APPROVE_FAILED": "Không thể cập nhật trạng thái duyệt — kiểm tra kết nối và quyền truy cập.",
+    "APPROVAL_PROGRESS_SUFFIX": "{{approved}}/{{total}} đã duyệt",
+    "PENDING_APPROVAL_SUMMARY": "Còn {{count}} ảnh đội hình chưa được duyệt trong giải này."
   }
 }

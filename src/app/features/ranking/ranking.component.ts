@@ -11,6 +11,7 @@ import { BreakpointObserver } from "@angular/cdk/layout";
 import { EmptyStateComponent } from "../../shared/components/empty-state/empty-state.component";
 import { ManagerImageFormComponent } from "./manager-image-form.component";
 import { ManagerImageService } from "./manager-image.service";
+import { ManagerDetailComponent } from "./manager-detail.component";
 import { MatDialog } from "@angular/material/dialog";
 import { initialsAvatar } from "../../shared/utils/avatar.util";
 import { TranslatePipe } from "@ngx-translate/core";
@@ -52,12 +53,13 @@ interface PodiumSlot {
         >
           @for (s of podiumSlots(); track s.place) {
             <div
-              class="w-[44%] sm:w-56 rounded-2xl overflow-hidden bg-surface-muted border relative"
+              class="w-[44%] sm:w-56 rounded-2xl overflow-hidden bg-surface-muted border relative cursor-pointer"
               [class]="
                 s.place === 1
                   ? 'sm:w-64 sm:-translate-y-4 border-amber-400/50 ring-2 ring-amber-400/60 shadow-[0_0_44px_-10px_rgba(245,166,35,0.55)]'
                   : 'border-gray-100'
               "
+              (click)="openDetail(s.p)"
             >
               <div
                 class="relative"
@@ -101,7 +103,7 @@ interface PodiumSlot {
                 @if (auth.isAdmin()) {
                   <button
                     class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/45 text-white flex items-center justify-center"
-                    (click)="editImage(s.p)"
+                    (click)="editImage(s.p); $event.stopPropagation()"
                     [attr.aria-label]="'RANKING.SET_PORTRAIT' | translate"
                   >
                     <span class="material-icons text-[14px]">edit</span>
@@ -137,7 +139,8 @@ interface PodiumSlot {
           <div class="card !p-0 overflow-hidden">
             @for (p of rest(); track p.manager; let i = $index) {
               <div
-                class="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0"
+                class="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0 cursor-pointer"
+                (click)="openDetail(p)"
               >
                 <span
                   class="w-7 text-center text-sm font-extrabold text-gray-300 shrink-0"
@@ -174,7 +177,7 @@ interface PodiumSlot {
                 @if (auth.isAdmin()) {
                   <button
                     class="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0"
-                    (click)="editImage(p)"
+                    (click)="editImage(p); $event.stopPropagation()"
                     [attr.aria-label]="'RANKING.SET_PORTRAIT' | translate"
                   >
                     <span class="material-icons text-[18px]">edit</span>
@@ -235,6 +238,17 @@ export class RankingComponent {
       width: isMobile ? "100vw" : "440px",
       height: isMobile ? "100dvh" : "auto",
       maxWidth: "100vw",
+    });
+  }
+
+  openDetail(r: ManagerRank): void {
+    const isMobile = this.breakpoints.isMatched("(max-width: 767px)");
+    this.dialog.open(ManagerDetailComponent, {
+      data: { manager: r },
+      width: isMobile ? "100vw" : "480px",
+      height: isMobile ? "100dvh" : "auto",
+      maxWidth: "100vw",
+      maxHeight: isMobile ? "100dvh" : "85vh",
     });
   }
 }

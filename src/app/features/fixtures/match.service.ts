@@ -1,16 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import {
-  Firestore,
-  QueryDocumentSnapshot,
-  DocumentData,
-  getDoc,
-  orderBy,
-  where,
-  writeBatch,
-  doc,
-  collection,
-} from '@angular/fire/firestore';
-import { FirestoreBaseService, PagedResult } from '../../core/services/firestore-base.service';
+import { Firestore, getDoc, orderBy, where, writeBatch, doc, collection } from '@angular/fire/firestore';
+import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { ActivityLogService } from '../../core/services/activity-log.service';
 import { Match, MatchDraft } from '../../models/match.model';
 
@@ -39,20 +29,6 @@ export class MatchService {
       PATH,
       where('status', '==', 'completed'),
       orderBy('matchDate', 'desc')
-    );
-  }
-
-  async getPaged(
-    tournamentId: string,
-    pageSize: number,
-    cursor: QueryDocumentSnapshot<DocumentData> | null
-  ): Promise<PagedResult<Match>> {
-    return this.fs.getPaged<Match>(
-      PATH,
-      pageSize,
-      cursor,
-      where('tournamentId', '==', tournamentId),
-      orderBy('matchDate', 'asc')
     );
   }
 

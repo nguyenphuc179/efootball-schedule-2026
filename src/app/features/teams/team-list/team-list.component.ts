@@ -59,7 +59,7 @@ import { Team } from '../../../models/team.model';
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-sm truncate">{{ team.teamName }}</div>
                 <div class="text-xs text-gray-400 truncate">
-                  {{ team.manager || ('TEAM_LIST.NO_MANAGER' | translate) }} · {{ playersLabel(team.playersCount) }}
+                  {{ team.manager || ('TEAM_LIST.NO_MANAGER' | translate) }}
                 </div>
               </div>
 
@@ -122,11 +122,6 @@ export class TeamListComponent {
 
   photo(team: Team): string | null {
     return this.failed().has(team.id) ? null : this.avatar(team).src;
-  }
-
-  playersLabel(count: number): string {
-    this.translate.currentLang();
-    return this.translate.instant(count === 1 ? 'TEAM_LIST.PLAYER_ONE' : 'TEAM_LIST.PLAYER_OTHER', { count });
   }
 
   openForm(team?: Team): void {

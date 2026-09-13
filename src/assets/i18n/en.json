@@ -176,8 +176,6 @@
     "EMPTY_TITLE": "No teams yet",
     "EMPTY_SUBTITLE": "Teams added to this tournament will appear here.",
     "NO_MANAGER": "No manager",
-    "PLAYER_ONE": "{{count}} player",
-    "PLAYER_OTHER": "{{count}} players",
     "EDIT_TEAM": "Edit team",
     "REMOVE_TEAM": "Remove team",
     "REMOVE_CONFIRM_TITLE": "Remove team?",
@@ -297,7 +295,13 @@
     "EMPTY_SUBTITLE": "Managers appear here once their teams have played.",
     "SET_PORTRAIT": "Set portrait",
     "TEAM_COUNT": "{{count}} teams",
-    "PLAYED_COUNT": "{{count}} played"
+    "PLAYED_COUNT": "{{count}} played",
+    "DETAIL_WINS": "Wins",
+    "DETAIL_DRAWS": "Draws",
+    "DETAIL_LOSSES": "Losses",
+    "DETAIL_TROPHIES": "Trophies",
+    "DETAIL_HISTORY": "Tournament history",
+    "DETAIL_HISTORY_EMPTY": "Hasn't played a match yet."
   },
   "MANAGER_IMAGE_FORM": {
     "PORTRAIT": "Portrait image",
@@ -369,6 +373,12 @@
     "TITLE": "Activity Log",
     "MY_TITLE": "My Notifications",
     "TOTAL_LABEL": "Total notifications",
+    "SEARCH_LABEL": "Search",
+    "SEARCH_PLACEHOLDER": "Team name, tournament name, content...",
+    "SEARCH_RESULTS_LABEL": "Results found",
+    "SEARCH_TRUNCATED_NOTE": "Only searching the {{count}} most recent entries — narrow the filters above if you don't see what you're looking for.",
+    "SEARCH_EMPTY_TITLE": "No results found",
+    "SEARCH_EMPTY_SUBTITLE": "Try a different keyword or clear the filters above.",
     "EMPTY_TITLE": "No activity yet",
     "EMPTY_SUBTITLE": "Actions taken across the app will show up here.",
     "MY_EMPTY_TITLE": "No notifications yet",
@@ -454,10 +464,11 @@
     "UPLOAD_FAILED": "Couldn't upload that image — try another one.",
     "DELETE_CONFIRM_TITLE": "Delete this image?",
     "DELETE_CONFIRM_MESSAGE": "This image will be permanently deleted.",
-    "HAS_IMAGE_SUFFIX": " - (photo uploaded)",
     "IMAGE_NUMBER": "Image {{n}}",
     "APPROVE": "Approve",
     "APPROVED": "Approved",
-    "APPROVE_FAILED": "Could not update the approval status — check your connection and permissions."
+    "APPROVE_FAILED": "Could not update the approval status — check your connection and permissions.",
+    "APPROVAL_PROGRESS_SUFFIX": "{{approved}}/{{total}} approved",
+    "PENDING_APPROVAL_SUMMARY": "{{count}} lineup image(s) still awaiting approval in this tournament."
   }
 }

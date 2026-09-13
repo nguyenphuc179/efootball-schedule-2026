@@ -6,19 +6,18 @@
 users/{uid}
 tournaments/{tournamentId}
 teams/{teamId}
-  └── players/{playerId}          (sub-collection)
 matches/{matchId}
 standings/{tournamentId}
   └── rows/{teamId}                (sub-collection — one doc per team's standing row)
-checkins/{checkinId}
 lineups/{tournamentId}__{email}
   └── images/{slot}                (sub-collection, slot ∈ '1'..'4')
+  └── approvals/{slot}             (sub-collection, admin review flag per slot)
 activityLogs/{logId}
 activityLogSeen/{uid}
 ```
 
-Top-level (not nested under `tournaments/{id}/...`) is used for `teams`, `matches`, `activityLogs`
-and `checkins` — each carries a `tournamentId` field instead — because Firestore collection-group
+Top-level (not nested under `tournaments/{id}/...`) is used for `teams`, `matches` and
+`activityLogs` — each carries a `tournamentId` field instead — because Firestore collection-group
 and simple `where()` queries across a flat collection are cheaper and simpler to paginate than deep
 nested paths, and several screens (e.g. "all my upcoming matches across tournaments") need to query
 across tournaments.
@@ -65,21 +64,7 @@ across tournaments.
 | managerUid | string \| null | optional linked account, grants roster/check-in rights |
 | managerPhotoURL | string \| null | cached from the manager's login profile at save time |
 | managerEmail | string \| null | cached from the manager's login profile at save time (lowercased/trimmed); lets the external lineup capture tool find "which tournaments does this Gmail manage a team in" via a public `where('managerEmail', '==', email)` query — see `LINEUP_TOOL_INTEGRATION.md` |
-| playersCount | number | maintained counter |
 | createdDate | Timestamp | |
-
-### `teams/{teamId}/players/{playerId}`
-
-| Field | Type |
-|---|---|
-| id | string |
-| teamId | string |
-| fullName | string |
-| shirtNumber | number |
-| position | `'GK' \| 'DF' \| 'MF' \| 'FW'` |
-| goals | number |
-| yellowCards | number |
-| redCards | number |
 
 ## `matches/{matchId}`
 
@@ -135,17 +120,6 @@ legitimate `recalculate()`, never a lasting data-integrity problem.
 | position | number (computed client-side after sort, or maintained on write) |
 | form | `('W'\|'D'\|'L')[]` | last 5 results, for a Sofascore-style form strip |
 
-## `checkins/{checkinId}`
-
-| Field | Type |
-|---|---|
-| id | string |
-| tournamentId | string |
-| teamId | string |
-| checkedInByUid | string |
-| checkedInAt | Timestamp |
-| method | `'qr_scan' \| 'manual'` |
-
 ## `lineups/{tournamentId}__{email}/images/{slot}`
 
 Squad lineup screenshots, keyed only by the manager's Gmail address (no Firebase Auth involved) —
@@ -190,7 +164,7 @@ as the last step of each action; immutable once written.
 | action | string | machine key, see `ActivityAction` in `src/app/models/activity-log.model.ts` |
 | description | string | human-readable Vietnamese sentence, built inline at the call site |
 | tournamentId | string \| null | present for tournament-scoped actions, null otherwise |
-| subjectUid | string \| null | the user this action is ABOUT when different from the actor — a team's `managerUid` for `team_create`/`team_update`/`team_delete`/`player_add`/`player_remove` (set by `TeamService`), or the manager whose lineup slot an admin/the capture tool touched for `lineup_upload`/`lineup_remove`; `null` when not applicable. Lets that user read the entry back even though they're not the actor — see the read rule below |
+| subjectUid | string \| null | the user this action is ABOUT when different from the actor — a team's `managerUid` for `team_create`/`team_update`/`team_delete` (set by `TeamService`), or the manager whose lineup slot an admin/the capture tool touched for `lineup_upload`/`lineup_remove`; `null` when not applicable. Lets that user read the entry back even though they're not the actor — see the read rule below |
 | sourcePath | string | `Router.url` at write time (e.g. `/ranking`) — which screen the actor was on; auto-captured, never passed by callers |
 | menuKey | string | stable bucket for `sourcePath` (see `menuInfoForPath` in `shared/utils/activity-menu.util.ts`) — lets the "/history" page filter with a plain equality `where()` |
 | createdDate | Timestamp | |
