@@ -20,12 +20,15 @@ import { GuideChatService } from '../../../core/services/guide-chat.service';
       <div
         class="fixed z-40 inset-x-4 bottom-24 md:inset-x-auto md:right-6 md:bottom-24 md:w-96 h-[70dvh] md:h-[32rem] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden"
       >
-        <div class="flex items-center justify-between h-14 px-4 border-b border-gray-100 shrink-0">
+        <div class="flex items-center justify-between min-h-14 py-2 px-4 border-b border-gray-100 shrink-0">
           <div class="flex items-center gap-2 min-w-0">
             <span class="w-8 h-8 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
               <span class="material-icons text-[18px]">smart_toy</span>
             </span>
-            <span class="font-bold text-sm truncate">{{ 'GUIDE_CHAT.TITLE' | translate }}</span>
+            <div class="min-w-0">
+              <div class="font-bold text-sm truncate">{{ 'GUIDE_CHAT.TITLE' | translate }}</div>
+              <div class="text-[10px] text-gray-400 truncate">{{ chat.currentModel() }}</div>
+            </div>
           </div>
           <div class="flex items-center gap-1 shrink-0">
             @if (chat.messages().length > 0) {

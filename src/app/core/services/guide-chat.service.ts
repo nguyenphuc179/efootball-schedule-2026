@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { getApp } from 'firebase/app';
 import { ReCaptchaEnterpriseProvider, initializeAppCheck } from 'firebase/app-check';
 import { ChatSession, GenerativeModel, GoogleAIBackend, getAI, getGenerativeModel } from 'firebase/ai';
@@ -11,11 +11,12 @@ export interface GuideChatMessage {
 
 /** `gemini-3.8-flash`'s free tier turned out to cap at 20 requests/day *per project* (not per
  *  user — everyone using this widget shares that one pool), which real usage blew through almost
- *  immediately. `gemini-3.5-flash-lite` is Google's higher-volume, cost-sensitive free-tier model
- *  and gets a far larger daily allowance — swap back only if quality ever matters more than
- *  quota for this feature. Served under the Gemini Developer API free tier either way (no Cloud
- *  Billing account needed — see `GoogleAIBackend` below). */
-const MODEL_ID = 'gemini-3.5-flash-lite';
+ *  immediately. Each model has its OWN separate daily quota, so this tries them in order —
+ *  cheapest/highest-volume first — and only drops to the next one once the current one actually
+ *  reports HTTP 429, multiplying the effective free daily budget instead of being capped by
+ *  whichever single model has the smallest allowance. All three are free-tier eligible under the
+ *  Gemini Developer API backend (no Cloud Billing account needed — see `GoogleAIBackend` below). */
+const MODEL_CHAIN = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'] as const;
 
 /** Keep in sync with what the app actually does — see `GuideComponent` (the "/guide" page this
  *  is a conversational front-end for) and update both together when a feature changes. Written as
@@ -91,7 +92,7 @@ export class GuideChatService {
   // (Google's steering everyone to Enterprise), so this uses `ReCaptchaEnterpriseProvider` instead
   // — same free tier (10,000 assessments/month, no Cloud Billing needed), registered as a "Fraud
   // Defense" key in Google Cloud for this app's own domains. Field declaration order guarantees
-  // this runs before `model`'s initializer.
+  // this runs before `models`'s initializer.
   private appCheck = initializeAppCheck(getApp(), {
     provider: new ReCaptchaEnterpriseProvider(environment.recaptchaSiteKey),
     isTokenAutoRefreshEnabled: true,
@@ -103,10 +104,21 @@ export class GuideChatService {
   // of every page's eager bundle. `getApp()` returns the same default app `provideFirebaseApp(...)`
   // already initialized; Gemini Developer API backend needs no Cloud Billing account (Spark-plan
   // friendly), and Firebase proxies the call server-side so no API key ever reaches this bundle.
-  private model: GenerativeModel = getGenerativeModel(getAI(getApp(), { backend: new GoogleAIBackend() }), {
-    model: MODEL_ID,
-    systemInstruction: SYSTEM_INSTRUCTION + currentDateContext(),
-  });
+  //
+  // One `GenerativeModel` per entry in `MODEL_CHAIN`, sharing the same `AI` service instance —
+  // `modelIndex` tracks which one is currently in use; `advanceModel()` moves to the next one on a
+  // quota error and never goes back (a model that's out for today stays out for the rest of this
+  // browser session — a fresh page load is what re-tries it).
+  private models: GenerativeModel[] = MODEL_CHAIN.map((model) =>
+    getGenerativeModel(getAI(getApp(), { backend: new GoogleAIBackend() }), {
+      model,
+      systemInstruction: SYSTEM_INSTRUCTION + currentDateContext(),
+    })
+  );
+  private modelIndex = signal(0);
+  /** Which model is currently answering — shown as a small label in the widget so a switch (on
+   *  quota exhaustion) is visible rather than silent. */
+  currentModel = computed(() => MODEL_CHAIN[this.modelIndex()]);
   private chat: ChatSession | null = null;
 
   messages = signal<GuideChatMessage[]>([]);
@@ -114,14 +126,27 @@ export class GuideChatService {
   /** Set on a failed send — the widget shows a translated retry message. Cleared on the next
    *  attempt, success or failure. */
   error = signal(false);
-  /** Set specifically when the shared free-tier daily quota is exhausted (HTTP 429) — the widget
-   *  shows a distinct "try again later" message instead of the generic connectivity one, since
-   *  retrying immediately can't possibly help. */
+  /** Set specifically when every model in `MODEL_CHAIN` has reported HTTP 429 (free-tier daily
+   *  quota exhausted) — the widget shows a distinct "try again later" message instead of the
+   *  generic connectivity one, since retrying immediately can't possibly help. */
   quotaExceeded = signal(false);
 
   private session(): ChatSession {
-    if (!this.chat) this.chat = this.model.startChat();
+    if (!this.chat) this.chat = this.models[this.modelIndex()].startChat();
     return this.chat;
+  }
+
+  /** Moves to the next model in `MODEL_CHAIN`, carrying the current chat history over so the
+   *  conversation continues without the user noticing anything switched — `getHistory()` only
+   *  ever contains turns that fully succeeded (see `send()`'s doc comment), so nothing about the
+   *  failed attempt being retried leaks into it. Returns `false` once every model's been tried. */
+  private async advanceModel(): Promise<boolean> {
+    if (this.modelIndex() >= this.models.length - 1) return false;
+    const history = this.chat ? await this.chat.getHistory() : [];
+    const next = this.modelIndex() + 1;
+    this.modelIndex.set(next);
+    this.chat = this.models[next].startChat({ history });
+    return true;
   }
 
   /** `firebase/ai` reports a rate-limited/quota-exhausted request as an `AIError` whose
@@ -133,15 +158,29 @@ export class GuideChatService {
     return status === 429;
   }
 
+  /** One attempt on whichever model is currently selected: stream first, and if `firebase/ai`'s
+   *  stream throws mid-response for a reason OTHER than quota (a known `AI/parse-failed` SDK
+   *  quirk — the request itself went through fine), fall back to one plain non-streaming resend on
+   *  the same model/session before giving up on it. Safe to retry either way — `ChatSession` only
+   *  commits a turn to its own history once a call fully succeeds (verified in the SDK source), so
+   *  a failed attempt never leaves anything behind to duplicate. Lets a quota error (429) propagate
+   *  straight to the caller, which decides whether to advance to the next model. */
+  private async attemptOnCurrentModel(msgIndex: number, text: string): Promise<void> {
+    try {
+      await this.streamReplyInto(msgIndex, text);
+      return;
+    } catch (streamErr) {
+      if (this.isQuotaExceeded(streamErr)) throw streamErr;
+      console.error('[GuideChat] stream failed, retrying non-streamed', streamErr);
+    }
+    const result = await this.session().sendMessage(text);
+    this.setMessageText(msgIndex, result.response.text());
+  }
+
   /** Sends `text`, streaming the reply into a new trailing message as chunks arrive so the UI can
-   *  show it typing out rather than waiting for the full response. `firebase/ai`'s stream
-   *  occasionally throws mid-response (`AI/parse-failed`) even though the request itself went
-   *  through fine, so a failed stream falls back to one plain, non-streaming resend on the same
-   *  session before giving up — safe to retry because `ChatSession` only commits a turn to its
-   *  own history once a call fully succeeds (verified in the SDK source), so a failed attempt
-   *  never leaves anything behind to duplicate. The one exception is a quota error (429): retrying
-   *  immediately would just burn a second request against the same exhausted daily pool for no
-   *  chance of success, so that skips straight to the error state. */
+   *  show it typing out rather than waiting for the full response. On a quota error (429), cascades
+   *  through the rest of `MODEL_CHAIN` — each has its own separate daily allowance — retrying the
+   *  same message on the next model, before finally giving up once they've all been exhausted. */
   async send(text: string): Promise<void> {
     const trimmed = text.trim();
     if (!trimmed || this.sending()) return;
@@ -153,26 +192,22 @@ export class GuideChatService {
     const modelIndex = this.messages().length - 1;
 
     try {
-      await this.streamReplyInto(modelIndex, trimmed);
-    } catch (streamErr) {
-      if (this.isQuotaExceeded(streamErr)) {
-        console.error('[GuideChat] quota exceeded', streamErr);
-        this.error.set(true);
-        this.quotaExceeded.set(true);
-        this.messages.update((list) => list.slice(0, modelIndex));
-        return;
-      }
-      console.error('[GuideChat] stream failed, retrying non-streamed', streamErr);
-      try {
-        const result = await this.session().sendMessage(trimmed);
-        this.setMessageText(modelIndex, result.response.text());
-      } catch (err) {
-        console.error('[GuideChat] send failed', err);
-        this.error.set(true);
-        this.quotaExceeded.set(this.isQuotaExceeded(err));
-        // Remove only the empty placeholder — the user's own question stays visible, so nothing
-        // is lost and they can just hit send again instead of retyping.
-        this.messages.update((list) => list.slice(0, modelIndex));
+      for (;;) {
+        try {
+          await this.attemptOnCurrentModel(modelIndex, trimmed);
+          return;
+        } catch (err) {
+          if (this.isQuotaExceeded(err) && (await this.advanceModel())) {
+            continue; // same message, next model in the chain
+          }
+          console.error('[GuideChat] send failed', err);
+          this.error.set(true);
+          this.quotaExceeded.set(this.isQuotaExceeded(err));
+          // Remove only the empty placeholder — the user's own question stays visible, so nothing
+          // is lost and they can just hit send again instead of retyping.
+          this.messages.update((list) => list.slice(0, modelIndex));
+          return;
+        }
       }
     } finally {
       this.sending.set(false);
