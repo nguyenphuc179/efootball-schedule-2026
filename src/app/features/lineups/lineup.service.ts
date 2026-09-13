@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { ActivityLogService } from '../../core/services/activity-log.service';
-import { LineupImage } from '../../models/lineup.model';
+import { LineupApproval, LineupImage } from '../../models/lineup.model';
 
 /**
  * Squad lineup images are normally fed by an external capture tool via Firestore's public REST
@@ -29,6 +29,14 @@ export class LineupService {
       .pipe(map((images) => [...images].sort((a, b) => Number(a.id) - Number(b.id))));
   }
 
+  /** Live approved/not-approved lookup by slot for one manager — see `LineupApproval`. */
+  streamApprovals(tournamentId: string, email: string): Observable<Map<string, boolean>> {
+    const path = `lineups/${this.parentId(tournamentId, email)}/approvals`;
+    return this.fs
+      .streamCollection<LineupApproval>(path)
+      .pipe(map((rows) => new Map(rows.map((r) => [r.id, r.approved]))));
+  }
+
   /** Manual fallback for managers who can't use the capture tool — `image` must already satisfy
    *  firestore.rules (a `data:image/...` URI under ~900 KB), e.g. via `downscaleToDataUri`.
    *  `managerName` is the resolved display name (see `userDisplayName`) of the manager the slot
@@ -45,7 +53,10 @@ export class LineupService {
     managerName: string,
     managerUid: string | null
   ): Promise<void> {
-    await this.fs.set(`lineups/${this.parentId(tournamentId, email)}/images`, slot, { image });
+    const parentId = this.parentId(tournamentId, email);
+    await this.fs.set(`lineups/${parentId}/images`, slot, { image });
+    // A new screenshot in this slot needs a fresh review — drop any stale approval from before.
+    await this.fs.remove(`lineups/${parentId}/approvals`, slot);
     await this.activityLog.log(
       'lineup_upload',
       `Đã tải lên ảnh đội hình (ô ${slot}) cho ${managerName}`,
@@ -61,10 +72,32 @@ export class LineupService {
     managerName: string,
     managerUid: string | null
   ): Promise<void> {
-    await this.fs.remove(`lineups/${this.parentId(tournamentId, email)}/images`, slot);
+    const parentId = this.parentId(tournamentId, email);
+    await this.fs.remove(`lineups/${parentId}/images`, slot);
+    await this.fs.remove(`lineups/${parentId}/approvals`, slot);
     await this.activityLog.log(
       'lineup_remove',
       `Đã xoá ảnh đội hình (ô ${slot}) của ${managerName}`,
+      tournamentId,
+      managerUid
+    );
+  }
+
+  /** Admin-only per-image review toggle — see `LineupApproval`. */
+  async setApproved(
+    tournamentId: string,
+    email: string,
+    slot: string,
+    approved: boolean,
+    managerName: string,
+    managerUid: string | null
+  ): Promise<void> {
+    await this.fs.set(`lineups/${this.parentId(tournamentId, email)}/approvals`, slot, { approved });
+    await this.activityLog.log(
+      approved ? 'lineup_approve' : 'lineup_unapprove',
+      approved
+        ? `Đã duyệt ảnh đội hình (ô ${slot}) của ${managerName}`
+        : `Đã bỏ duyệt ảnh đội hình (ô ${slot}) của ${managerName}`,
       tournamentId,
       managerUid
     );

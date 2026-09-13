@@ -8,6 +8,7 @@ import { TournamentService } from '../tournament.service';
 import { MatchService } from '../../fixtures/match.service';
 import { QrService } from '../../../core/services/qr.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ActivityLogService } from '../../../core/services/activity-log.service';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { TeamListComponent } from '../../teams/team-list/team-list.component';
@@ -220,6 +221,7 @@ export class TournamentDetailComponent {
   private tournamentService = inject(TournamentService);
   private matchService = inject(MatchService);
   private standingsService = inject(StandingsService);
+  private activityLog = inject(ActivityLogService);
   private qrService = inject(QrService);
   private dialog = inject(MatDialog);
   private translate = inject(TranslateService);
@@ -391,6 +393,7 @@ export class TournamentDetailComponent {
     try {
       await this.matchService.clearForTournament(t.id);
       await this.standingsService.recalculate(t.id);
+      await this.activityLog.log('tournament_reset_matches', `Đã đặt lại toàn bộ trận đấu của giải đấu "${t.name}"`, t.id);
     } finally {
       this.isResetting.set(false);
     }

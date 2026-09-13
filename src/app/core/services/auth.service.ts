@@ -118,7 +118,12 @@ export class AuthService {
     await updateDoc(doc(this.firestore, `users/${uid}`), { systemDisplayName: value });
   }
 
-  /** Sets (or clears, with `null`) the current user's own avatar — self-service only. */
+  /**
+   * Sets (or clears, with `null`) a user's avatar. Self-service from the Profile page; also
+   * reused by the admin Members panel so an admin can upload a photo on a member's behalf (e.g.
+   * someone who never got around to setting one). firestore.rules allow this for an admin editing
+   * anyone, or a user editing their own profile.
+   */
   async setUserPhotoURL(uid: string, photoURL: string | null): Promise<void> {
     await updateDoc(doc(this.firestore, `users/${uid}`), { photoURL });
   }

@@ -160,6 +160,21 @@ and writes this collection directly via Firestore's public REST API.
 tournament, not a Firestore auto-id. Public read; public create/update (validated by
 `firestore.rules`); delete is admin-only from the app.
 
+## `lineups/{tournamentId}__{email}/approvals/{slot}`
+
+Admin-only "reviewed this screenshot" flag, one doc per slot — kept in its own subcollection
+instead of a field on `images/{slot}` so it never has to satisfy that doc's public,
+locked-down `hasOnly(['image'])` write contract above. `LineupService.upload`/`remove` delete the
+matching approval whenever this app's own UI replaces or deletes an image; the external capture
+tool writes straight to `images/{slot}` and knows nothing about this collection, so a re-upload via
+the tool can leave a stale `approved: true` behind.
+
+| Field | Type | Notes |
+|---|---|---|
+| approved | boolean | the only field allowed on the doc |
+
+Public read (so a manager can see their own approval status); create/update/delete all admin-only.
+
 ## `activityLogs/{logId}`
 
 Admin-only audit trail — one entry per notable mutation across the app (tournament/team CRUD,

@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ActivityLogService } from '../../core/services/activity-log.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { initialsAvatar } from '../../shared/utils/avatar.util';
+import { downscaleToDataUri } from '../../shared/utils/image-downscale.util';
 import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -46,23 +47,32 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
               <div class="flex flex-col divide-y divide-gray-100">
             @for (m of members(); track m.uid) {
               <div class="flex items-center gap-3 py-2.5" [class.opacity-50]="m.disabled">
-                <div
-                  class="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shrink-0"
-                  [style.background-color]="avatar(m).bg"
-                >
-                  @if (m.photoURL && !failedPhotos().has(m.uid)) {
-                    <img
-                      [src]="m.photoURL"
-                      [alt]="nameOf(m)"
-                      class="w-full h-full object-cover"
-                      width="36"
-                      height="36"
-                      referrerpolicy="no-referrer"
-                      (error)="markPhotoFailed(m.uid)"
-                    />
-                  } @else {
-                    <span class="text-xs font-bold" [style.color]="avatar(m).fg">{{ avatar(m).initials }}</span>
-                  }
+                <div class="relative w-9 h-9 shrink-0">
+                  <button
+                    type="button"
+                    class="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden disabled:opacity-50"
+                    [style.background-color]="avatar(m).bg"
+                    [disabled]="uploadingPhotoUid() === m.uid"
+                    (click)="photoInput.click()"
+                    [attr.aria-label]="'MEMBERS.UPLOAD_PHOTO' | translate"
+                  >
+                    @if (uploadingPhotoUid() === m.uid) {
+                      <span class="material-icons text-white text-[16px]">hourglass_top</span>
+                    } @else if (m.photoURL && !failedPhotos().has(m.uid)) {
+                      <img
+                        [src]="m.photoURL"
+                        [alt]="nameOf(m)"
+                        class="w-full h-full object-cover"
+                        width="36"
+                        height="36"
+                        referrerpolicy="no-referrer"
+                        (error)="markPhotoFailed(m.uid)"
+                      />
+                    } @else {
+                      <span class="text-xs font-bold" [style.color]="avatar(m).fg">{{ avatar(m).initials }}</span>
+                    }
+                  </button>
+                  <input #photoInput type="file" accept="image/*" hidden (change)="onPhotoSelected(m, $event)" />
                 </div>
 
                 @if (editingUid() === m.uid) {
@@ -158,6 +168,7 @@ export class MembersComponent {
   savingUid = signal<string | null>(null);
   errorMsg = signal('');
   failedPhotos = signal<Set<string>>(new Set());
+  uploadingPhotoUid = signal<string | null>(null);
 
   /** Which member's name is being edited inline, plus the seeded draft value. */
   editingUid = signal<string | null>(null);
@@ -190,6 +201,37 @@ export class MembersComponent {
 
   markPhotoFailed(uid: string): void {
     this.failedPhotos.update((set) => new Set(set).add(uid));
+  }
+
+  async onPhotoSelected(member: AppUser, event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ''; // allow picking the same file again later
+    if (!file) return;
+
+    this.errorMsg.set('');
+    this.uploadingPhotoUid.set(member.uid);
+    try {
+      const dataUri = await downscaleToDataUri(file);
+      await this.auth.setUserPhotoURL(member.uid, dataUri);
+      this.failedPhotos.update((set) => {
+        if (!set.has(member.uid)) return set;
+        const next = new Set(set);
+        next.delete(member.uid);
+        return next;
+      });
+      await this.activityLog.log(
+        'user_photo_set',
+        `Đã tải ảnh đại diện lên cho ${member.email ?? member.uid}`,
+        null,
+        member.uid
+      );
+    } catch (err) {
+      console.error('[Members] setUserPhotoURL', err);
+      this.errorMsg.set(this.translate.instant('MEMBERS.UPLOAD_PHOTO_FAILED'));
+    } finally {
+      this.uploadingPhotoUid.set(null);
+    }
   }
 
   startEditName(member: AppUser): void {

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, HostListener, computed, effect, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { of, switchMap } from 'rxjs';
+import { combineLatest, map, of, switchMap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { TeamService } from '../teams/team.service';
@@ -46,7 +46,7 @@ interface ManagerOption {
         <span class="text-sm font-medium text-gray-600">{{ 'LINEUP.SELECT_MANAGER_LABEL' | translate }}</span>
         <select class="input-field" [value]="selectedKey()" (change)="selectedKey.set($any($event.target).value)">
           @for (m of managers(); track m.key) {
-            <option [value]="m.key">{{ m.name }}</option>
+            <option [value]="m.key">{{ m.name }}{{ managerHasImage().get(m.key) ? ('LINEUP.HAS_IMAGE_SUFFIX' | translate) : '' }}</option>
           }
         </select>
       </label>
@@ -61,10 +61,17 @@ interface ManagerOption {
           @if (images().length > 0 || canUpload()) {
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" [class.mt-3]="images().length === 0">
               @for (img of images(); track img.id) {
-                <div class="relative rounded-xl overflow-hidden bg-surface-muted aspect-square">
+                <div
+                  class="relative rounded-xl overflow-hidden bg-surface-muted aspect-square"
+                  [class.ring-2]="approvals().get(img.id)"
+                  [class.ring-green-500]="approvals().get(img.id)"
+                >
                   <button type="button" class="w-full h-full block" (click)="preview.set(img.image)">
                     <img [src]="img.image" class="w-full h-full object-contain" alt="" />
                   </button>
+                  <span class="absolute top-1.5 left-1.5 text-[10px] font-semibold bg-black/60 text-white rounded px-1.5 py-0.5">
+                    {{ 'LINEUP.IMAGE_NUMBER' | translate: { n: img.id } }}
+                  </span>
                   @if (auth.isAdmin()) {
                     <button
                       type="button"
@@ -74,6 +81,22 @@ interface ManagerOption {
                     >
                       <span class="material-icons text-[16px]">close</span>
                     </button>
+                    <button
+                      type="button"
+                      class="absolute bottom-1.5 inset-x-1.5 text-[11px] font-semibold rounded-lg py-1 flex items-center justify-center gap-1 disabled:opacity-50"
+                      [class]="approvals().get(img.id) ? 'bg-green-600 text-white' : 'bg-black/60 text-white'"
+                      [disabled]="approvingSlot() === img.id"
+                      (click)="toggleApprove(img.id, !approvals().get(img.id))"
+                    >
+                      <span class="material-icons text-[14px]">
+                        {{ approvingSlot() === img.id ? 'hourglass_top' : (approvals().get(img.id) ? 'check_circle' : 'radio_button_unchecked') }}
+                      </span>
+                      {{ (approvals().get(img.id) ? 'LINEUP.APPROVED' : 'LINEUP.APPROVE') | translate }}
+                    </button>
+                  } @else if (approvals().get(img.id)) {
+                    <span class="absolute bottom-1.5 inset-x-1.5 text-[11px] font-semibold rounded-lg py-1 bg-green-600 text-white text-center">
+                      {{ 'LINEUP.APPROVED' | translate }}
+                    </span>
                   }
                 </div>
               }
@@ -93,6 +116,9 @@ interface ManagerOption {
           }
           @if (uploadError()) {
             <p class="text-xs text-red-500 mt-2">{{ uploadError() }}</p>
+          }
+          @if (approveError()) {
+            <p class="text-xs text-red-500 mt-2">{{ approveError() }}</p>
           }
         }
       }
@@ -152,6 +178,28 @@ export class LineupViewComponent {
     return list.sort((a, b) => a.name.localeCompare(b.name));
   });
 
+  /** Live "has this manager uploaded at least one lineup image?" lookup, keyed by `ManagerOption.key`
+   *  — powers the "(đã upload hình)" hint in the dropdown so an admin can tell at a glance who still
+   *  needs a screenshot without clicking through every manager. One listener per manager with a
+   *  linked email (same images subcollection `streamImages` already reads for the selected manager),
+   *  which is fine at this app's team-count scale. Re-subscribes whenever the manager list changes. */
+  managerHasImage = toSignal(
+    toObservable(this.managers).pipe(
+      switchMap((list) => {
+        const withEmail = list.filter((m) => m.email);
+        if (withEmail.length === 0) return of(new Map<string, boolean>());
+        return combineLatest(
+          withEmail.map((m) =>
+            this.lineupService
+              .streamImages(this.tournamentId(), m.email!)
+              .pipe(map((imgs): [string, boolean] => [m.key, imgs.length > 0]))
+          )
+        ).pipe(map((entries) => new Map(entries)));
+      })
+    ),
+    { initialValue: new Map<string, boolean>() }
+  );
+
   /** Backfills `teams.managerEmail`/`teams.manager` for teams saved before those were in sync with
    *  the manager's account — either the field didn't exist yet, the account's email changed, or an
    *  admin renamed the account (`systemDisplayName`) after the team was last saved. Both are cached
@@ -205,6 +253,18 @@ export class LineupViewComponent {
       })
     ),
     { initialValue: [] as LineupImage[] }
+  );
+
+  /** Live approved/not-approved lookup for the selected manager's slots — see `LineupApproval`. */
+  approvals = toSignal(
+    toObservable(this.imageQueryKey).pipe(
+      switchMap((key) => {
+        if (!key) return of(new Map<string, boolean>());
+        const [tournamentId, email] = key.split('|');
+        return this.lineupService.streamApprovals(tournamentId, email);
+      })
+    ),
+    { initialValue: new Map<string, boolean>() }
   );
 
   /** Manual upload fallback (e.g. console/PS5 managers who can't run the capture tool) —
@@ -261,5 +321,24 @@ export class LineupViewComponent {
     if (!confirmed) return;
 
     await this.lineupService.remove(this.tournamentId(), manager.email, slot, manager.name, manager.uid);
+  }
+
+  approvingSlot = signal<string | null>(null);
+  approveError = signal('');
+
+  async toggleApprove(slot: string, approved: boolean): Promise<void> {
+    const manager = this.selectedManager();
+    if (!manager?.email || this.approvingSlot()) return;
+
+    this.approveError.set('');
+    this.approvingSlot.set(slot);
+    try {
+      await this.lineupService.setApproved(this.tournamentId(), manager.email, slot, approved, manager.name, manager.uid);
+    } catch (err) {
+      console.error('[Lineup] setApproved', err);
+      this.approveError.set(this.translate.instant('LINEUP.APPROVE_FAILED'));
+    } finally {
+      this.approvingSlot.set(null);
+    }
   }
 }

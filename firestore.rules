@@ -302,6 +302,17 @@ service cloud.firestore {
           && request.resource.data.image.size() < 900000;
         allow delete: if isAdmin();
       }
+
+      // approvals/{slot} — admin-only "reviewed this screenshot" flag, kept in its own
+      // subcollection (not a field on images/{slot}) so it never has to satisfy that doc's public,
+      // locked-down `hasOnly(['image'])` write contract above.
+      match /approvals/{slot} {
+        allow read: if true;
+        allow create, update: if isAdmin() && slot in ['1', '2', '3', '4']
+          && request.resource.data.keys().hasOnly(['approved'])
+          && request.resource.data.approved is bool;
+        allow delete: if isAdmin();
+      }
     }
 
     // Fallback: deny everything else by default.

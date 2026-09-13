@@ -351,7 +351,9 @@
     "UPDATE_MEMBER_FAILED": "Không thể cập nhật thành viên này — kiểm tra kết nối và quyền truy cập.",
     "DISABLE_CONFIRM_TITLE": "Khóa thành viên?",
     "DISABLE_CONFIRM_MESSAGE": "{{name}} sẽ bị đăng xuất và chặn mọi thao tác trong ứng dụng. Tài khoản đăng nhập không bị xóa — có thể mở khóa lại bất cứ lúc nào ở đây, hoặc xóa tài khoản trong Firebase Console để giải phóng email.",
-    "THIS_MEMBER": "Thành viên này"
+    "THIS_MEMBER": "Thành viên này",
+    "UPLOAD_PHOTO": "Tải ảnh đại diện cho thành viên này",
+    "UPLOAD_PHOTO_FAILED": "Không thể tải ảnh lên — kiểm tra kết nối và quyền truy cập."
   },
   "ACTIVITY_MENU": {
     "HOME": "Trang chủ",
@@ -451,6 +453,11 @@
     "ADD_IMAGE": "Thêm ảnh",
     "UPLOAD_FAILED": "Không thể tải ảnh này lên — thử ảnh khác.",
     "DELETE_CONFIRM_TITLE": "Xóa ảnh đội hình?",
-    "DELETE_CONFIRM_MESSAGE": "Ảnh này sẽ bị xóa vĩnh viễn."
+    "DELETE_CONFIRM_MESSAGE": "Ảnh này sẽ bị xóa vĩnh viễn.",
+    "HAS_IMAGE_SUFFIX": " - (đã upload hình)",
+    "IMAGE_NUMBER": "Hình {{n}}",
+    "APPROVE": "Duyệt",
+    "APPROVED": "Đã duyệt",
+    "APPROVE_FAILED": "Không thể cập nhật trạng thái duyệt — kiểm tra kết nối và quyền truy cập."
   }
 }

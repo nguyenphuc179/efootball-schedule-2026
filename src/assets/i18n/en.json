@@ -351,7 +351,9 @@
     "UPDATE_MEMBER_FAILED": "Could not update that member — check your connection and permissions.",
     "DISABLE_CONFIRM_TITLE": "Disable member?",
     "DISABLE_CONFIRM_MESSAGE": "{{name}} will be signed out and blocked from doing anything in the app. Their login isn't deleted — re-enable them here any time, or delete the account in Firebase Console to free the email.",
-    "THIS_MEMBER": "This member"
+    "THIS_MEMBER": "This member",
+    "UPLOAD_PHOTO": "Upload a photo for this member",
+    "UPLOAD_PHOTO_FAILED": "Could not upload that photo — check your connection and permissions."
   },
   "ACTIVITY_MENU": {
     "HOME": "Home",
@@ -451,6 +453,11 @@
     "ADD_IMAGE": "Add image",
     "UPLOAD_FAILED": "Couldn't upload that image — try another one.",
     "DELETE_CONFIRM_TITLE": "Delete this image?",
-    "DELETE_CONFIRM_MESSAGE": "This image will be permanently deleted."
+    "DELETE_CONFIRM_MESSAGE": "This image will be permanently deleted.",
+    "HAS_IMAGE_SUFFIX": " - (photo uploaded)",
+    "IMAGE_NUMBER": "Image {{n}}",
+    "APPROVE": "Approve",
+    "APPROVED": "Approved",
+    "APPROVE_FAILED": "Could not update the approval status — check your connection and permissions."
   }
 }

@@ -8,6 +8,7 @@ import { BottomNavComponent } from './shared/components/bottom-nav/bottom-nav.co
 import { HeaderComponent } from './shared/components/header/header.component';
 import { UserMenuComponent } from './shared/components/user-menu/user-menu.component';
 import { ActivityLogBellComponent } from './features/activity-log/activity-log-bell.component';
+import { AuthService } from './core/services/auth.service';
 import { LanguageService } from './core/services/language.service';
 import { OfflineSyncService } from './core/services/offline-sync.service';
 
@@ -41,21 +42,23 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
           </div>
           <nav class="flex flex-col gap-1 p-3">
             @for (item of desktopNavItems; track item.route) {
-              <a
-                [routerLink]="item.route"
-                routerLinkActive
-                #rla="routerLinkActive"
-                [routerLinkActiveOptions]="{ exact: item.route === '/' }"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors"
-                [class]="
-                  rla.isActive
-                    ? 'bg-primary-50 text-primary-700 font-semibold'
-                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
-                "
-              >
-                <span class="material-icons text-[20px]">{{ item.icon }}</span>
-                {{ item.label | translate }}
-              </a>
+              @if (!item.requiresAuth || auth.isSignedIn()) {
+                <a
+                  [routerLink]="item.route"
+                  routerLinkActive
+                  #rla="routerLinkActive"
+                  [routerLinkActiveOptions]="{ exact: item.route === '/' }"
+                  class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors"
+                  [class]="
+                    rla.isActive
+                      ? 'bg-primary-50 text-primary-700 font-semibold'
+                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                  "
+                >
+                  <span class="material-icons text-[20px]">{{ item.icon }}</span>
+                  {{ item.label | translate }}
+                </a>
+              }
             }
           </nav>
         </aside>
@@ -101,6 +104,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
   `,
 })
 export class AppComponent {
+  auth = inject(AuthService);
   lang = inject(LanguageService);
   offlineSync = inject(OfflineSyncService);
   private router = inject(Router);
@@ -124,12 +128,14 @@ export class AppComponent {
     return false;
   }
 
-  desktopNavItems = [
+  /** `requiresAuth` items (currently just Polls, which redirects to /login for a guest anyway)
+   *  are hidden from the sidebar until signed in, rather than shown as a dead end. */
+  desktopNavItems: { label: string; icon: string; route: string; requiresAuth?: boolean }[] = [
     { label: 'NAV.HOME', icon: 'home', route: '/' },
     { label: 'NAV.TOURNAMENTS', icon: 'emoji_events', route: '/tournaments' },
     { label: 'NAV.RANKING', icon: 'leaderboard', route: '/ranking' },
     { label: 'NAV.FAME_FULL', icon: 'military_tech', route: '/hall-of-fame' },
-    { label: 'POLLS.NAV_LABEL', icon: 'how_to_vote', route: '/polls' },
+    { label: 'POLLS.NAV_LABEL', icon: 'how_to_vote', route: '/polls', requiresAuth: true },
     { label: 'NAV.GUIDE', icon: 'menu_book', route: '/guide' },
   ];
 }
