@@ -74,7 +74,9 @@ export const routes: Routes = [
     path: 'history',
     loadComponent: () =>
       import('./features/activity-log/activity-log.component').then((m) => m.ActivityLogComponent),
-    canActivate: [authGuard, adminGuard],
+    // Any signed-in member, not just admins — an admin sees the full "/history" audit trail, a
+    // regular member sees only their own personal feed (see ActivityLogComponent/getMine()).
+    canActivate: [authGuard],
   },
   {
     path: 'polls',

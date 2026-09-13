@@ -354,8 +354,11 @@
   },
   "ACTIVITY_LOG": {
     "TITLE": "Activity Log",
+    "MY_TITLE": "My Notifications",
     "EMPTY_TITLE": "No activity yet",
     "EMPTY_SUBTITLE": "Actions taken across the app will show up here.",
+    "MY_EMPTY_TITLE": "No notifications yet",
+    "MY_EMPTY_SUBTITLE": "Actions related to you will show up here.",
     "MARK_ALL_SEEN": "Mark all as seen",
     "MARK_SEEN": "Mark as seen",
     "FILTER_LABEL": "Filter by screen",

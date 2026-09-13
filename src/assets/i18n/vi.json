@@ -354,8 +354,11 @@
   },
   "ACTIVITY_LOG": {
     "TITLE": "Nhật ký hoạt động",
+    "MY_TITLE": "Thông báo của tôi",
     "EMPTY_TITLE": "Chưa có hoạt động nào",
     "EMPTY_SUBTITLE": "Các hành động trong app sẽ hiện ở đây.",
+    "MY_EMPTY_TITLE": "Chưa có thông báo nào",
+    "MY_EMPTY_SUBTITLE": "Các hành động liên quan đến bạn sẽ hiện ở đây.",
     "MARK_ALL_SEEN": "Đánh dấu đã xem tất cả",
     "MARK_SEEN": "Đánh dấu đã xem",
     "FILTER_LABEL": "Lọc theo màn hình",

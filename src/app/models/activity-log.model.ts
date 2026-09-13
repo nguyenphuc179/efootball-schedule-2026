@@ -27,17 +27,29 @@ export type ActivityAction =
   | 'manager_image_remove'
   | 'activity_log_purge';
 
-/** Admin-only audit trail entry — one per notable mutation across the app. Immutable once written
- *  (see firestore.rules `activityLogs/{logId}`); `actorEmail`/`actorName` are a snapshot at write
- *  time so history stays truthful even if the account is later renamed. */
+/** Audit trail entry — one per notable mutation across the app. Immutable once written (see
+ *  firestore.rules `activityLogs/{logId}`); `actorEmail`/`actorName` are a snapshot at write time
+ *  so history stays truthful even if the account is later renamed. Admins can read every entry
+ *  ("/history"); a non-admin can only read entries where they're the `actorUid` or the
+ *  `subjectUid` — their own personal "Thông báo của tôi" view on the same page/route. */
 export interface ActivityLog {
   id: string;
+  /** Real Firebase Auth uid for app-originated actions. The external lineup capture tool (no
+   *  Firebase Auth session — see `LineupService`/`LINEUP_TOOL_INTEGRATION.md`) instead writes the
+   *  fixed sentinel `'capture-tool'`, enforced by firestore.rules; it never matches a real manager,
+   *  so these entries don't show up under the "/history" actor filter, only in the unfiltered list. */
   actorUid: string;
   actorEmail: string | null;
   actorName: string;
   action: ActivityAction;
   description: string;
   tournamentId: string | null;
+  /** The user this action is ABOUT, when different from whoever performed it — e.g. on
+   *  `lineup_upload`/`lineup_remove` this is the team manager whose slot was touched (the actor is
+   *  usually an admin, or the `'capture-tool'` sentinel). `null` when not applicable (most actions
+   *  have no distinct "subject"). Lets that manager read the entry under firestore.rules even
+   *  though they're not the actor — see `subjectUid` branch of the `activityLogs` read rule. */
+  subjectUid: string | null;
   /** The app route the actor was on when the action happened (Angular `Router.url`, e.g.
    *  `/ranking` or `/tournaments/abc123`) — auto-captured by `ActivityLogService.log()`, never
    *  passed in by callers. Lets an admin see which screen a change was made from. */
@@ -49,10 +61,10 @@ export interface ActivityLog {
   createdDate: number;
 }
 
-/** Per-admin bulk read cursor — doc id is the admin's own uid. Everything with `createdDate <=
- *  lastSeenAt` counts as seen for that admin regardless of `activityLogSeen/{uid}/items`. Kept
- *  separate from individual entries because `activityLogs` itself is immutable
- *  (`allow update: if false`), so "mark all as seen" stays a single cheap write. */
+/** Per-user bulk read cursor — doc id is the owner's own uid (any signed-in, non-disabled user, not
+ *  just admins). Everything with `createdDate <= lastSeenAt` counts as seen for that user regardless
+ *  of `activityLogSeen/{uid}/items`. Kept separate from individual entries because `activityLogs`
+ *  itself is immutable (`allow update: if false`), so "mark all as seen" stays a single cheap write. */
 export interface ActivityLogSeen {
   lastSeenAt: number;
 }

@@ -18,6 +18,10 @@ import { Team } from '../../models/team.model';
 
 interface ManagerOption {
   key: string; // managerUid, or `team:<teamId>` when there's no linked account
+  /** Same as `key` when there's a linked account, `null` otherwise — kept separate from `key` so
+   *  callers logging an action about this manager (see `LineupService.upload`/`remove`) never
+   *  accidentally stamp the `team:<teamId>` placeholder as a Firebase uid. */
+  uid: string | null;
   name: string;
   email: string | null;
 }
@@ -143,23 +147,32 @@ export class LineupViewComponent {
       const profile = t.managerUid ? profiles.get(t.managerUid) : undefined;
       const name = (profile && userDisplayName(profile, '')) || t.manager?.trim() || t.teamName;
       const email = profile?.email?.trim().toLowerCase() || null;
-      list.push({ key, name, email });
+      list.push({ key, uid: t.managerUid ?? null, name, email });
     }
     return list.sort((a, b) => a.name.localeCompare(b.name));
   });
 
-  /** Backfills `teams.managerEmail` for teams saved before that field existed (or whose manager's
-   *  account email changed) — needed so the external capture tool's tournament lookup (a plain
-   *  `where('managerEmail', '==', email)` query, see LINEUP_TOOL_INTEGRATION.md) can find them. Runs
-   *  opportunistically whenever an admin opens this tab, using data already loaded for the dropdown. */
-  private backfillManagerEmails = effect(() => {
+  /** Backfills `teams.managerEmail`/`teams.manager` for teams saved before those were in sync with
+   *  the manager's account — either the field didn't exist yet, the account's email changed, or an
+   *  admin renamed the account (`systemDisplayName`) after the team was last saved. Both are cached
+   *  snapshots (not live), and the external capture tool reads them straight off this public-read
+   *  `teams` doc: `managerEmail` for its tournament lookup, `manager` as the nice display name to
+   *  log with instead of a raw Gmail address (see LINEUP_TOOL_INTEGRATION.md). Runs opportunistically
+   *  whenever an admin opens this tab, using data already loaded for the dropdown. */
+  private backfillManagerFields = effect(() => {
     if (!this.auth.isAdmin()) return;
     const profiles = this.managerProfiles();
     for (const team of this.teams()) {
       if (!team.managerUid) continue;
-      const email = profiles.get(team.managerUid)?.email?.trim().toLowerCase() || null;
-      if (email && team.managerEmail !== email) {
-        this.teamService.update(team.id, { managerEmail: email }).catch((err) => console.error('[Lineup] backfill managerEmail', err));
+      const profile = profiles.get(team.managerUid);
+      if (!profile) continue;
+      const email = profile.email?.trim().toLowerCase() || null;
+      const name = userDisplayName(profile, team.manager);
+      const patch: { managerEmail?: string; manager?: string } = {};
+      if (email && team.managerEmail !== email) patch.managerEmail = email;
+      if (name && team.manager !== name) patch.manager = name;
+      if (Object.keys(patch).length > 0) {
+        this.teamService.update(team.id, patch).catch((err) => console.error('[Lineup] backfill manager fields', err));
       }
     }
   });
@@ -220,7 +233,7 @@ export class LineupViewComponent {
     this.uploading.set(true);
     try {
       const image = await downscaleToDataUri(file);
-      await this.lineupService.upload(this.tournamentId(), manager.email, slot, image);
+      await this.lineupService.upload(this.tournamentId(), manager.email, slot, image, manager.name, manager.uid);
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       this.uploadError.set(`${this.translate.instant('LINEUP.UPLOAD_FAILED')} (${detail})`);
@@ -247,6 +260,6 @@ export class LineupViewComponent {
     const confirmed = await ref.afterClosed().toPromise();
     if (!confirmed) return;
 
-    await this.lineupService.remove(this.tournamentId(), manager.email, slot);
+    await this.lineupService.remove(this.tournamentId(), manager.email, slot, manager.name, manager.uid);
   }
 }

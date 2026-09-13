@@ -3,6 +3,12 @@ export interface Team {
   tournamentId: string;
   teamName: string;
   logo: string | null;
+  /** Cached display name (admin override → login name → email, see `userDisplayName`) from the
+   *  manager's account at save time — kept in sync opportunistically by `LineupViewComponent`'s
+   *  backfill effect. Besides being shown in team lists, the external capture tool reads this off
+   *  the same public `teams` doc it already queries by `managerEmail` and uses it as the
+   *  human-friendly `actorName` for its "/history" entries instead of a raw Gmail address — see
+   *  LINEUP_TOOL_INTEGRATION.md. */
   manager: string;
   managerUid: string | null;
   /** Cached from the manager's login profile at save time — used as the avatar when no logo is set. */

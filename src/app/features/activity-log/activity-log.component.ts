@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { DocumentData, QueryDocumentSnapshot } from '@angular/fire/firestore';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { Observable, catchError, combineLatest, map, of, switchMap, tap } from 'rxjs';
 import { ActivityLogService, SeenState } from '../../core/services/activity-log.service';
+import { AuthService } from '../../core/services/auth.service';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { TeamService } from '../teams/team.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
@@ -54,14 +55,20 @@ const ICONS: Record<ActivityAction, string> = {
 };
 
 /**
- * "/history" — admin-only audit trail (who did what, when, from which screen). Read access is
- * enforced by firestore.rules (`activityLogs` collection: `allow read: if isAdmin()`) and by
- * `adminGuard` on the route; this component doesn't re-check `auth.isAdmin()` itself.
+ * "/history" — for an admin, the full audit trail (who did what, when, from which screen), with
+ * screen + manager filters and bulk delete. For anyone else, the same page/route instead shows
+ * "Thông báo của tôi" — just the entries where they're the actor or the `subjectUid` (see
+ * `ActivityLogService.streamMine()`), no manager filter (there's only one manager to filter to:
+ * them) and no delete (that stays admin-only, per firestore.rules). Read access itself is enforced
+ * by firestore.rules (`activityLogs`: admin reads everything, anyone else only their own
+ * actor/subject entries) — this component's `auth.isAdmin()` checks only decide which UI/query path
+ * to use, not security.
  *
- * One-shot paginated fetches (`ActivityLogService.getPaged`, 100/page, "Xem thêm" to load the next
- * page) rather than a live stream — this is a historical record you browse, not a feed you watch
- * update in real time (the bell badge — `ActivityLogBellComponent` — covers "is there anything
- * new" separately).
+ * Live Firestore listeners, not one-shot fetches — the listing used to only refresh on navigating
+ * away and back (unlike the bell badge, which was always live), which read as broken once the bell
+ * and the list could visibly disagree. `visibleLimit` grows on "Load more" instead of a Firestore
+ * cursor, so `logs$` below just re-subscribes with a bigger `limit(...)` each time — simpler than
+ * stitching cursor-paged snapshots together, and it keeps every page live.
  */
 @Component({
   selector: 'app-activity-log',
@@ -71,7 +78,7 @@ const ICONS: Record<ActivityAction, string> = {
   template: `
     <div class="app-content-area px-4 pt-4 max-w-2xl mx-auto">
       <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
-        <h1 class="text-xl font-extrabold">{{ 'ACTIVITY_LOG.TITLE' | translate }}</h1>
+        <h1 class="text-xl font-extrabold">{{ (auth.isAdmin() ? 'ACTIVITY_LOG.TITLE' : 'ACTIVITY_LOG.MY_TITLE') | translate }}</h1>
         <div class="flex items-center gap-3">
           <button
             type="button"
@@ -81,14 +88,16 @@ const ICONS: Record<ActivityAction, string> = {
           >
             {{ 'ACTIVITY_LOG.MARK_ALL_SEEN' | translate }}
           </button>
-          <button
-            type="button"
-            class="text-xs font-semibold text-accent-red disabled:opacity-50 shrink-0"
-            [disabled]="deleting() || logs().length === 0"
-            (click)="deleteAll()"
-          >
-            {{ (hasActiveFilter() ? 'ACTIVITY_LOG.DELETE_FILTERED' : 'ACTIVITY_LOG.DELETE_ALL') | translate }}
-          </button>
+          @if (auth.isAdmin()) {
+            <button
+              type="button"
+              class="text-xs font-semibold text-accent-red disabled:opacity-50 shrink-0"
+              [disabled]="deleting() || logs().length === 0"
+              (click)="deleteAll()"
+            >
+              {{ (hasActiveFilter() ? 'ACTIVITY_LOG.DELETE_FILTERED' : 'ACTIVITY_LOG.DELETE_ALL') | translate }}
+            </button>
+          }
         </div>
       </div>
 
@@ -103,15 +112,17 @@ const ICONS: Record<ActivityAction, string> = {
           </select>
         </label>
 
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">{{ 'ACTIVITY_LOG.FILTER_MANAGER_LABEL' | translate }}</span>
-          <select class="input-field" [value]="selectedManagerUid() ?? ''" (change)="selectedManagerUid.set($any($event.target).value || null)">
-            <option value="">{{ 'ACTIVITY_LOG.FILTER_MANAGER_ALL' | translate }}</option>
-            @for (m of activeManagersWithActivity(); track m.uid) {
-              <option [value]="m.uid">{{ m.name }}</option>
-            }
-          </select>
-        </label>
+        @if (auth.isAdmin()) {
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium text-gray-600">{{ 'ACTIVITY_LOG.FILTER_MANAGER_LABEL' | translate }}</span>
+            <select class="input-field" [value]="selectedManagerUid() ?? ''" (change)="selectedManagerUid.set($any($event.target).value || null)">
+              <option value="">{{ 'ACTIVITY_LOG.FILTER_MANAGER_ALL' | translate }}</option>
+              @for (m of activeManagersWithActivity(); track m.uid) {
+                <option [value]="m.uid">{{ m.name }}</option>
+              }
+            </select>
+          </label>
+        }
       </div>
 
       @if (loadError()) {
@@ -119,7 +130,11 @@ const ICONS: Record<ActivityAction, string> = {
       }
 
       @if (logs().length === 0 && !loading()) {
-        <app-empty-state icon="history" [title]="'ACTIVITY_LOG.EMPTY_TITLE' | translate" [subtitle]="'ACTIVITY_LOG.EMPTY_SUBTITLE' | translate" />
+        <app-empty-state
+          icon="history"
+          [title]="(auth.isAdmin() ? 'ACTIVITY_LOG.EMPTY_TITLE' : 'ACTIVITY_LOG.MY_EMPTY_TITLE') | translate"
+          [subtitle]="(auth.isAdmin() ? 'ACTIVITY_LOG.EMPTY_SUBTITLE' : 'ACTIVITY_LOG.MY_EMPTY_SUBTITLE') | translate"
+        />
       } @else {
         <div class="flex flex-col gap-2">
           @for (l of logs(); track l.id) {
@@ -179,15 +194,14 @@ export class ActivityLogComponent {
   private translate = inject(TranslateService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
+  auth = inject(AuthService);
   icons = ICONS;
   menus = ACTIVITY_MENUS;
   menuLabel = (path: string) => menuInfoForPath(path).label;
 
   selectedMenuKey = signal<string | null>(null);
   selectedManagerUid = signal<string | null>(null);
-  logs = signal<ActivityLog[]>([]);
-  hasMore = signal(false);
-  loading = signal(false);
+  loading = signal(true);
   loadError = signal('');
   marking = signal(false);
   markingIds = signal<Set<string>>(new Set());
@@ -222,10 +236,13 @@ export class ActivityLogComponent {
 
   /** `activeManagerCandidates`, narrowed to only those who've actually logged at least one action
    *  — a one-shot check per candidate (small, fixed-size list), re-run whenever the candidate set
-   *  changes. Not meant to be instant-realtime; a filter dropdown doesn't need that. */
+   *  changes. Not meant to be instant-realtime; a filter dropdown doesn't need that. Admin-only:
+   *  the manager filter itself is hidden for anyone else, and `hasActed(otherUid)` would fail under
+   *  firestore.rules for a non-admin anyway (they can only read their own actor/subject entries). */
   activeManagersWithActivity = signal<ManagerOption[]>([]);
   private refreshManagersWithActivity = effect(() => {
     const candidates = this.activeManagerCandidates();
+    if (!this.auth.isAdmin()) return;
     (async () => {
       try {
         const flags = await Promise.all(candidates.map((m) => this.activityLogService.hasActed(m.uid)));
@@ -236,56 +253,71 @@ export class ActivityLogComponent {
     })();
   });
 
-  private cursor: QueryDocumentSnapshot<DocumentData> | null = null;
+  /** Grows on "Load more" instead of a Firestore cursor — `rawLogs$` below just re-subscribes with
+   *  a bigger `limit(...)`, which is what keeps every already-revealed row live too. */
+  private visibleLimit = signal(PAGE_SIZE);
+
+  /** Resets to the first page whenever a filter (or the admin/non-admin path itself) changes —
+   *  matches the old cursor-reset behavior; doesn't itself read `visibleLimit`, so no feedback loop
+   *  with `rawLogs$` below. */
+  private resetLimitOnFilterChange = effect(() => {
+    this.selectedMenuKey();
+    this.selectedManagerUid();
+    this.auth.isAdmin();
+    this.visibleLimit.set(PAGE_SIZE);
+  });
+
+  /** The live source list, capped at `visibleLimit() + 1` — the extra one is a peek used only to
+   *  compute `hasMore` below, never rendered. An admin's query maps straight to Firestore
+   *  constraints; anyone else gets their merged personal feed (`streamMine`), filtered by menu
+   *  client-side since that merge can't be expressed as a single Firestore query (see
+   *  `ActivityLogService.streamMine`). Errors are caught per-cycle (inside the `switchMap`, not
+   *  around it) so one failed subscription doesn't permanently kill the outer live stream. */
+  private rawLogs$: Observable<ActivityLog[]> = combineLatest([
+    toObservable(this.selectedMenuKey),
+    toObservable(this.selectedManagerUid),
+    toObservable(this.visibleLimit),
+    toObservable(this.auth.isAdmin),
+    toObservable(computed(() => this.auth.firebaseUser()?.uid ?? null)),
+  ]).pipe(
+    tap(() => this.loading.set(true)),
+    switchMap(([menuKey, managerUid, visibleLimit, isAdmin, uid]) => {
+      const windowSize = visibleLimit + 1;
+      const source$: Observable<ActivityLog[]> = isAdmin
+        ? this.activityLogService.streamFiltered(menuKey, managerUid, windowSize)
+        : uid
+          ? this.activityLogService
+              .streamMine(uid, windowSize)
+              .pipe(map((list) => (menuKey ? list.filter((l) => l.menuKey === menuKey) : list)))
+          : of<ActivityLog[]>([]);
+      return source$.pipe(
+        tap(() => {
+          this.loading.set(false);
+          this.loadError.set('');
+        }),
+        catchError((err) => {
+          console.error('[ActivityLog] stream failed', err);
+          this.loading.set(false);
+          this.loadError.set(err instanceof Error ? err.message : String(err));
+          return of<ActivityLog[]>([]);
+        })
+      );
+    })
+  );
+
+  private rawLogs = toSignal(this.rawLogs$, { initialValue: [] as ActivityLog[] });
+
+  logs = computed(() => this.rawLogs().slice(0, this.visibleLimit()));
+  hasMore = computed(() => this.rawLogs().length > this.visibleLimit());
 
   isUnseen(log: ActivityLog): boolean {
     const state = this.seenState();
     return log.createdDate > state.lastSeenAt && !state.seenIds.has(log.id);
   }
 
-  /** Reloads page 1 whenever either filter changes (runs once immediately too). */
-  private reloadOnFilterChange = effect(() => {
-    const menuKey = this.selectedMenuKey();
-    const managerUid = this.selectedManagerUid();
-    this.loadFirstPage(menuKey, managerUid);
-  });
-
-  private async loadFirstPage(menuKey: string | null, managerUid: string | null): Promise<void> {
-    this.loading.set(true);
-    this.loadError.set('');
-    try {
-      const page = await this.activityLogService.getPaged(PAGE_SIZE, null, menuKey, managerUid);
-      this.logs.set(page.items);
-      this.cursor = page.lastDoc;
-      this.hasMore.set(page.hasMore);
-    } catch (err) {
-      console.error('[ActivityLog] loadFirstPage failed', err);
-      this.loadError.set(err instanceof Error ? err.message : String(err));
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
-  async loadMore(): Promise<void> {
-    if (!this.hasMore() || this.loading()) return;
-    this.loading.set(true);
-    this.loadError.set('');
-    try {
-      const page = await this.activityLogService.getPaged(
-        PAGE_SIZE,
-        this.cursor,
-        this.selectedMenuKey(),
-        this.selectedManagerUid()
-      );
-      this.logs.update((list) => [...list, ...page.items]);
-      this.cursor = page.lastDoc;
-      this.hasMore.set(page.hasMore);
-    } catch (err) {
-      console.error('[ActivityLog] loadMore failed', err);
-      this.loadError.set(err instanceof Error ? err.message : String(err));
-    } finally {
-      this.loading.set(false);
-    }
+  loadMore(): void {
+    if (!this.hasMore()) return;
+    this.visibleLimit.update((n) => n + PAGE_SIZE);
   }
 
   async markSeen(log: ActivityLog): Promise<void> {
@@ -337,7 +369,8 @@ export class ActivityLogComponent {
     this.deleting.set(true);
     try {
       await this.activityLogService.deleteAll(menuKey, managerUid);
-      await this.loadFirstPage(menuKey, managerUid);
+      // No manual reload needed — `rawLogs$` is a live listener, so the deleted rows disappear on
+      // their own once Firestore confirms the batch.
     } catch (err) {
       console.error('[ActivityLog] deleteAll failed', err);
       this.loadError.set(err instanceof Error ? err.message : String(err));

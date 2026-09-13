@@ -61,7 +61,7 @@ across tournaments.
 | tournamentId | string | FK |
 | teamName | string | |
 | logo | string (URL) | |
-| manager | string | display name of the manager |
+| manager | string | cached display name of the manager (`userDisplayName` at save time — admin override name if set, else login name/email); also read by the external capture tool off this same public doc as the human-friendly `actorName` for its "/history" entries — see `LINEUP_TOOL_INTEGRATION.md` |
 | managerUid | string \| null | optional linked account, grants roster/check-in rights |
 | managerPhotoURL | string \| null | cached from the manager's login profile at save time |
 | managerEmail | string \| null | cached from the manager's login profile at save time (lowercased/trimmed); lets the external lineup capture tool find "which tournaments does this Gmail manage a team in" via a public `where('managerEmail', '==', email)` query — see `LINEUP_TOOL_INTEGRATION.md` |
@@ -157,27 +157,44 @@ as the last step of each action; immutable once written.
 | action | string | machine key, see `ActivityAction` in `src/app/models/activity-log.model.ts` |
 | description | string | human-readable Vietnamese sentence, built inline at the call site |
 | tournamentId | string \| null | present for tournament-scoped actions, null otherwise |
+| subjectUid | string \| null | the user this action is ABOUT when different from the actor (e.g. the manager whose lineup slot an admin or the capture tool touched); `null` when not applicable. Lets that user read the entry back even though they're not the actor — see the read rule below |
 | sourcePath | string | `Router.url` at write time (e.g. `/ranking`) — which screen the actor was on; auto-captured, never passed by callers |
 | menuKey | string | stable bucket for `sourcePath` (see `menuInfoForPath` in `shared/utils/activity-menu.util.ts`) — lets the "/history" page filter with a plain equality `where()` |
 | createdDate | Timestamp | |
 
-Public create (any signed-in, non-disabled user, but only stamped with their own uid); read is
-admin-only; entries can never be edited, but an admin MAY delete them (bulk "Xoá tất cả" / "Xoá
-theo bộ lọc" on "/history", via `ActivityLogService.deleteAll` — equality-only filters, no
-composite index needed since there's no `orderBy` on a delete). This is a deliberate compromise on
-the "immutable audit trail" ideal; `deleteAll` always logs the purge itself as a fresh
-`activity_log_purge` entry afterwards, so at minimum the fact that a purge happened survives. The
-"/history" page paginates this collection (`ActivityLogService.getPaged`, 100/page) rather than
-streaming it live.
+Public create (any signed-in, non-disabled user, but only stamped with their own uid); entries can
+never be edited, but an admin MAY delete them (bulk "Xoá tất cả" / "Xoá theo bộ lọc" on "/history",
+via `ActivityLogService.deleteAll` — equality-only filters, no composite index needed since there's
+no `orderBy` on a delete). This is a deliberate compromise on the "immutable audit trail" ideal;
+`deleteAll` always logs the purge itself as a fresh `activity_log_purge` entry afterwards, so at
+minimum the fact that a purge happened survives.
+
+Read is admin-only for the FULL collection ("/history"'s admin view, `ActivityLogService.getPaged`,
+100/page). A second read rule additionally lets any signed-in, non-disabled user read an entry
+where they're the `actorUid` OR the `subjectUid` — their own personal feed on that same "/history"
+route/page, "Thông báo của tôi" (`ActivityLogService.getMine()`, fetched once and paginated
+client-side rather than via Firestore cursor, since one person's own volume is small). The manager
+filter and bulk delete are hidden from that view (delete stays admin-only regardless).
+
+A third `create` rule (see `firestore.rules`) also lets the external lineup capture tool write its
+own `lineup_upload` entries directly, unauthenticated — same tradeoff as the public write on
+`lineups` below. These are pinned to `actorUid == 'capture-tool'`, `action == 'lineup_upload'`, and
+a `sourcePath`/`menuKey` that must point at the tournament the image belongs to, so the branch can't
+be used to write anything else. See `LINEUP_TOOL_INTEGRATION.md` for the exact write the tool must
+perform, including the optional `subjectUid` it should send so the manager sees it on their own
+feed. Because `'capture-tool'` is never a real Firebase uid, these entries never match the
+"/history" admin per-manager filter (which only lists real managers) — they only ever appear in the
+unfiltered admin list, the "Giải đấu"/tournaments menu filter, or the subject manager's own feed.
 
 ## `activityLogSeen/{uid}` + `activityLogSeen/{uid}/items/{logId}`
 
-One admin's own "seen" state for the activity log bell badge — doc id is the admin's uid. Every
-`activityLogs` entry with `createdDate > lastSeenAt` counts as unseen UNLESS its id also has a doc
-in the `items` sub-collection ("mark this one as seen" on the "/history" page). "Mark all as seen"
-only ever touches the parent doc (bumps `lastSeenAt` to now); it doesn't need to clean up `items`
-since anything covered by the new `lastSeenAt` is already seen regardless. Kept fully separate from
-(and never writes to) the immutable `activityLogs` entries themselves.
+One user's own "seen" state for their view of the activity log bell badge (the full feed for an
+admin, their personal feed for anyone else) — doc id is that user's uid. Every `activityLogs` entry
+with `createdDate > lastSeenAt` counts as unseen UNLESS its id also has a doc in the `items`
+sub-collection ("mark this one as seen" on the "/history" page). "Mark all as seen" only ever
+touches the parent doc (bumps `lastSeenAt` to now); it doesn't need to clean up `items` since
+anything covered by the new `lastSeenAt` is already seen regardless. Kept fully separate from (and
+never writes to) the immutable `activityLogs` entries themselves.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -187,17 +204,19 @@ since anything covered by the new `lastSeenAt` is already seen regardless. Kept 
 |---|---|---|
 | seenAt | number (epoch millis) | doc id is the `activityLogs` entry's own id |
 
-Private: only that uid (and only if they're an admin) may read or write their own cursor/items.
+Private: only that uid — signed in and not disabled, no admin requirement — may read or write their
+own cursor/items.
 
 ## Indexing
 
 See `firestore.indexes.json` for the composite indexes required by the query patterns above
 (matches by tournament+date, matches by tournament+round+date, matches by tournament+status, teams
 by tournament+name, tournaments by status+date, check-ins by tournament+date). `activityLogs` has
-three, one per "/history" filter combination: `menuKey`+date (screen filter alone), `actorUid`+date
-(manager filter alone), and `actorUid`+`menuKey`+date (both filters together). The unfiltered
-listing and the bell's unseen-count query need no composite index — both are a single
-`orderBy`/inequality on `createdDate`, served by the automatic single-field index.
+four: `menuKey`+date and `actorUid`+date and `actorUid`+`menuKey`+date (the admin "/history" filter
+combinations), plus `subjectUid`+date (a non-admin's personal feed and unseen-count, filtered/sorted
+by `subjectUid` instead of `actorUid`). The admin's unfiltered listing and unseen-count query need no
+composite index — both are a single `orderBy`/inequality on `createdDate`, served by the automatic
+single-field index; a non-admin's `actorUid`-side query reuses the existing `actorUid`+date index.
 
 The "/history" manager filter itself only lists managers who are both active (`!disabled` on their
 `users/{uid}` profile) and have logged at least one action (`ActivityLogService.hasActed`, a

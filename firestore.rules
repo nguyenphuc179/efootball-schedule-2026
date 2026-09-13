@@ -126,22 +126,42 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------
-    // activityLogs/{logId} — admin-only audit trail of every notable mutation
-    // in the app (who did what, when). Any signed-in, non-disabled user may
-    // create an entry, but ONLY stamped with their OWN uid as actorUid (no
-    // spoofing another actor). Only admins may ever read the log; entries are
-    // never editable. Admins MAY delete entries (bulk "clear history" /
-    // "clear filtered results" on the "/history" page — an explicit product
+    // activityLogs/{logId} — audit trail of every notable mutation in the app
+    // (who did what, when). Any signed-in, non-disabled user may create an
+    // entry, but ONLY stamped with their OWN uid as actorUid (no spoofing
+    // another actor). Admins may read every entry ("/history"); a non-admin
+    // may only read entries where they're the actor OR the `subjectUid` (see
+    // below) — their own personal feed on that same page. Entries are never
+    // editable. Admins MAY delete entries (bulk "clear history" / "clear
+    // filtered results" on the "/history" page — an explicit product
     // decision to allow pruning, even though it weakens the log as a tamper-
     // proof trail; ActivityLogService logs the purge itself as a new entry
     // afterwards so at least the fact that a purge happened isn't erasable).
+    //
+    // A second, narrower `create` branch below lets the external lineup
+    // capture tool (see `lineups/{parentId}` below and
+    // LINEUP_TOOL_INTEGRATION.md) log its own uploads even though it has no
+    // Firebase Auth session — same "public write, locked-down schema"
+    // tradeoff already made for `lineups`. It's pinned to a fixed sentinel
+    // `actorUid` (never a real uid, so it never matches the "/history" actor
+    // filter, which only lists real managers), a single `action`, and a
+    // `sourcePath`/`menuKey` that must point at the tournament the image
+    // belongs to — it cannot be used to write an arbitrary log entry.
+    //
+    // `subjectUid` names the user the action is ABOUT when that's someone
+    // other than the actor (e.g. the manager whose lineup slot an admin or
+    // the capture tool touched) — optional and unvalidated beyond type/size
+    // (it's only ever used to grant read access to that one user, never to
+    // change what the write itself is allowed to do).
     // -------------------------------------------------------------------
     match /activityLogs/{logId} {
       allow read: if isAdmin();
+      allow read: if isSignedIn() && !isDisabled() &&
+        (resource.data.actorUid == currentUid() || resource.data.get('subjectUid', null) == currentUid());
       allow create: if isSignedIn() && !isDisabled() &&
         request.resource.data.actorUid == currentUid() &&
         request.resource.data.keys().hasOnly(
-          ['actorUid', 'actorEmail', 'actorName', 'action', 'description', 'tournamentId', 'sourcePath', 'menuKey', 'createdDate']
+          ['actorUid', 'actorEmail', 'actorName', 'action', 'description', 'tournamentId', 'subjectUid', 'sourcePath', 'menuKey', 'createdDate']
         ) &&
         request.resource.data.actorName is string &&
         request.resource.data.actorName.size() > 0 && request.resource.data.actorName.size() < 200 &&
@@ -152,33 +172,58 @@ service cloud.firestore {
         request.resource.data.description.size() > 0 && request.resource.data.description.size() < 2000 &&
         (request.resource.data.tournamentId == null ||
           (request.resource.data.tournamentId is string && request.resource.data.tournamentId.size() < 200)) &&
+        (request.resource.data.get('subjectUid', null) == null ||
+          (request.resource.data.subjectUid is string && request.resource.data.subjectUid.size() < 200)) &&
         request.resource.data.sourcePath is string && request.resource.data.sourcePath.size() < 500 &&
         request.resource.data.menuKey is string && request.resource.data.menuKey.size() < 100 &&
+        request.resource.data.createdDate is number;
+      allow create: if request.resource.data.actorUid == 'capture-tool' &&
+        request.resource.data.action == 'lineup_upload' &&
+        request.resource.data.keys().hasOnly(
+          ['actorUid', 'actorEmail', 'actorName', 'action', 'description', 'tournamentId', 'subjectUid', 'sourcePath', 'menuKey', 'createdDate']
+        ) &&
+        request.resource.data.actorName is string &&
+        request.resource.data.actorName.size() > 0 && request.resource.data.actorName.size() < 200 &&
+        request.resource.data.actorEmail is string &&
+        request.resource.data.actorEmail.matches('^[^@\\s]+@[^@\\s]+[.][^@\\s]+$') &&
+        request.resource.data.actorEmail.size() < 320 &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() > 0 && request.resource.data.description.size() < 2000 &&
+        request.resource.data.tournamentId is string &&
+        exists(/databases/$(database)/documents/tournaments/$(request.resource.data.tournamentId)) &&
+        (request.resource.data.get('subjectUid', null) == null ||
+          (request.resource.data.subjectUid is string && request.resource.data.subjectUid.size() < 200)) &&
+        request.resource.data.sourcePath == '/tournaments/' + request.resource.data.tournamentId &&
+        request.resource.data.menuKey == 'tournaments' &&
         request.resource.data.createdDate is number;
       allow update: if false;
       allow delete: if isAdmin();
     }
 
     // -------------------------------------------------------------------
-    // activityLogSeen/{uid} — one admin's own "last seen" cursor for the
-    // activityLogs feed (doc id = uid), plus a sub-collection of individually
+    // activityLogSeen/{uid} — one user's own "last seen" cursor for their view
+    // of the activityLogs feed (doc id = uid) — the full "/history" for an
+    // admin, or just their own actor/subject entries for anyone else (see
+    // `activityLogs` above) — plus a sub-collection of individually
     // marked-seen entries newer than that cursor ("mark this one as seen").
-    // Private: only that admin may read or write their own cursor/items.
-    // `activityLogs` entries themselves are never touched by any of this.
+    // Private: only that user may read or write their own cursor/items; being
+    // signed in and not disabled is enough, no admin check (everyone gets
+    // their own bell badge now, not just admins). `activityLogs` entries
+    // themselves are never touched by any of this.
     // -------------------------------------------------------------------
     match /activityLogSeen/{uid} {
-      allow read: if isOwnUser(uid) && isAdmin();
-      allow write: if isOwnUser(uid) && isAdmin() &&
+      allow read: if isOwnUser(uid) && !isDisabled();
+      allow write: if isOwnUser(uid) && !isDisabled() &&
         request.resource.data.keys().hasOnly(['lastSeenAt']) &&
         request.resource.data.lastSeenAt is number;
 
       match /items/{logId} {
-        allow read: if isOwnUser(uid) && isAdmin();
-        allow create: if isOwnUser(uid) && isAdmin() &&
+        allow read: if isOwnUser(uid) && !isDisabled();
+        allow create: if isOwnUser(uid) && !isDisabled() &&
           request.resource.data.keys().hasOnly(['seenAt']) &&
           request.resource.data.seenAt is number;
         allow update: if false;
-        allow delete: if isOwnUser(uid) && isAdmin();
+        allow delete: if isOwnUser(uid) && !isDisabled();
       }
     }
 

@@ -6,7 +6,9 @@ import { AuthService } from '../../core/services/auth.service';
 import { ActivityLogService } from '../../core/services/activity-log.service';
 
 /**
- * Admin-only bell icon + unseen-count badge, linking to "/history". Used identically in both
+ * Bell icon + unseen-count badge, linking to "/history", for any signed-in member — an admin's
+ * badge counts unseen entries across the whole audit trail, anyone else's counts just their own
+ * personal feed (see `ActivityLogService.streamUnseenCount()`). Used identically in both
  * `header.component.ts` (mobile) and `app.component.ts` (desktop top bar) so the live
  * `streamUnseenCount()` subscription exists exactly once per rendered spot instead of being
  * copy-pasted with its own signal in each header.
@@ -17,7 +19,7 @@ import { ActivityLogService } from '../../core/services/activity-log.service';
   imports: [RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (auth.isAdmin()) {
+    @if (auth.isSignedIn()) {
       <a
         routerLink="/history"
         class="relative flex items-center justify-center rounded-full active:bg-gray-100 hover:bg-gray-100"
