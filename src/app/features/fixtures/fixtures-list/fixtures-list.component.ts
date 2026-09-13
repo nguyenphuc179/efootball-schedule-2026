@@ -58,7 +58,7 @@ import { Team } from '../../../models/team.model';
                   [managers]="managerByTeam()"
                   [avatars]="avatarsByTeam()"
                   [showRound]="false"
-                  [showResultLink]="auth.isAdmin() && m.status !== 'completed'"
+                  [showResultLink]="canEditResult(m)"
                 />
               }
             </div>
@@ -98,6 +98,22 @@ export class FixturesListComponent {
     ),
     { initialValue: [] as Team[] }
   );
+
+  /** Team ids the signed-in user manages, within `tournamentId` — see `canEditResult`. Empty (so
+   *  only admins get an edit link) in the unscoped "upcoming across every tournament" view, since
+   *  `teams` itself isn't loaded there. */
+  private myTeamIds = computed(() => {
+    const uid = this.auth.firebaseUser()?.uid;
+    return new Set(uid ? this.teams().filter((t) => t.managerUid === uid).map((t) => t.id) : []);
+  });
+
+  /** Admin can edit any result; a team manager can edit results only for matches their own team
+   *  played in (either side) — enforced for real by firestore.rules (`matches` update rule), this
+   *  just decides whether the "/matches/:id/result" link shows up at all. */
+  canEditResult(match: Match): boolean {
+    return this.auth.isAdmin() || this.myTeamIds().has(match.homeTeamId) || this.myTeamIds().has(match.awayTeamId);
+  }
+
   managerByTeam = computed(() =>
     Object.fromEntries(this.teams().filter((t) => t.manager).map((t) => [t.id, t.manager]))
   );

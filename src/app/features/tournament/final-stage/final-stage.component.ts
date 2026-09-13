@@ -199,12 +199,7 @@ const roundBase = (round: string) => round.replace(/ \d+$/, "");
                   [managers]="managerByTeam()"
                   [avatars]="avatarsByTeam()"
                   [showRound]="false"
-                  [showResultLink]="
-                    auth.isAdmin() &&
-                    mt.status !== 'completed' &&
-                    !!mt.homeTeamId &&
-                    !!mt.awayTeamId
-                  "
+                  [showResultLink]="canEditResult(mt) && !!mt.homeTeamId && !!mt.awayTeamId"
                 />
               }
             </div>
@@ -255,6 +250,20 @@ export class FinalStageComponent {
     ),
     { initialValue: [] as Team[] },
   );
+
+  /** Team ids the signed-in user manages, within this tournament — see `canEditResult`. */
+  private myTeamIds = computed(() => {
+    const uid = this.auth.firebaseUser()?.uid;
+    return new Set(uid ? this.teams().filter((t) => t.managerUid === uid).map((t) => t.id) : []);
+  });
+
+  /** Admin can edit any result; a team manager can edit results only for matches their own team
+   *  played in (either side) — enforced for real by firestore.rules (`matches` update rule), this
+   *  just decides whether the "/matches/:id/result" link shows up at all. */
+  canEditResult(match: Match): boolean {
+    return this.auth.isAdmin() || this.myTeamIds().has(match.homeTeamId) || this.myTeamIds().has(match.awayTeamId);
+  }
+
   managerByTeam = computed(() =>
     Object.fromEntries(
       this.teams()

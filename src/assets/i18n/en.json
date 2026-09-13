@@ -92,7 +92,7 @@
     "GENERIC": "Something went wrong. Please try again.{{codeSuffix}}"
   },
   "HOME": {
-    "WELCOME_TITLE": "Welcome to PitchPro",
+    "WELCOME_TITLE": "Welcome to Pession",
     "WELCOME_SUBTITLE": "Manage & follow your eFootball tournaments — fixtures, results and live standings.",
     "VIEW_TOURNAMENTS": "View tournaments →"
   },
@@ -352,9 +352,20 @@
     "DISABLE_CONFIRM_MESSAGE": "{{name}} will be signed out and blocked from doing anything in the app. Their login isn't deleted — re-enable them here any time, or delete the account in Firebase Console to free the email.",
     "THIS_MEMBER": "This member"
   },
+  "ACTIVITY_MENU": {
+    "HOME": "Home",
+    "MATCHES": "Enter match results",
+    "TOURNAMENTS": "Tournaments",
+    "RANKING": "Ranking",
+    "HALL_OF_FAME": "Hall of Fame",
+    "POLLS": "Polls",
+    "PROFILE": "Profile",
+    "HISTORY": "Activity Log"
+  },
   "ACTIVITY_LOG": {
     "TITLE": "Activity Log",
     "MY_TITLE": "My Notifications",
+    "TOTAL_LABEL": "Total notifications",
     "EMPTY_TITLE": "No activity yet",
     "EMPTY_SUBTITLE": "Actions taken across the app will show up here.",
     "MY_EMPTY_TITLE": "No notifications yet",
@@ -376,7 +387,9 @@
     "LOADING": "Loading match…",
     "PENALTY_SHOOTOUT": "Penalty shootout",
     "PEN": "PEN",
-    "SAVE_RESULT": "Save Result"
+    "SAVE_RESULT": "Save Result",
+    "ACCESS_DENIED_TITLE": "You can't edit this match",
+    "ACCESS_DENIED_SUBTITLE": "Only an admin or a manager of one of the two teams can enter/edit this result."
   },
   "TOURNAMENT_FORM": {
     "EDIT_TITLE": "Edit Tournament",

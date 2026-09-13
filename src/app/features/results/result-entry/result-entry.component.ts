@@ -8,6 +8,8 @@ import {
 } from "@angular/core";
 
 import { CommonModule } from "@angular/common";
+import { AuthService } from "../../../core/services/auth.service";
+import { EmptyStateComponent } from "../../../shared/components/empty-state/empty-state.component";
 import { LoadingSpinnerComponent } from "../../../shared/components/loading-spinner/loading-spinner.component";
 import { Match } from "../../../models/match.model";
 import { MatchService } from "../../fixtures/match.service";
@@ -27,7 +29,7 @@ import { TranslatePipe } from "@ngx-translate/core";
 @Component({
   selector: "app-result-entry",
   standalone: true,
-  imports: [CommonModule, LoadingSpinnerComponent, TranslatePipe],
+  imports: [CommonModule, EmptyStateComponent, LoadingSpinnerComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh flex flex-col bg-white">
@@ -41,7 +43,13 @@ import { TranslatePipe } from "@ngx-translate/core";
         <h1 class="font-bold ml-1">{{ 'RESULT_ENTRY.TITLE' | translate }}</h1>
       </div>
 
-      @if (!match()) {
+      @if (accessDenied()) {
+        <app-empty-state
+          icon="block"
+          [title]="'RESULT_ENTRY.ACCESS_DENIED_TITLE' | translate"
+          [subtitle]="'RESULT_ENTRY.ACCESS_DENIED_SUBTITLE' | translate"
+        />
+      } @else if (!match()) {
         <app-loading-spinner [label]="'RESULT_ENTRY.LOADING' | translate" />
       } @else {
         <div
@@ -200,9 +208,16 @@ export class ResultEntryComponent {
   private teamAvatars = inject(TeamAvatarService);
   private tournamentService = inject(TournamentService);
   private resultService = inject(ResultService);
+  private auth = inject(AuthService);
 
   private matchId = this.route.snapshot.paramMap.get("id")!;
   match = signal<Match | undefined>(undefined);
+  /** True once `load()` has resolved the match's two teams and found the signed-in user is
+   *  neither an admin nor the manager of either one — the route itself only requires being
+   *  signed in (see app.routes.ts), so this is what actually keeps the edit form away from
+   *  someone who has no business touching this match. The real enforcement is
+   *  firestore.rules' `matches` update rule; this is just the UI reflecting it early. */
+  accessDenied = signal(false);
   homeTeam = signal<Team | undefined>(undefined);
   awayTeam = signal<Team | undefined>(undefined);
   homeAvatar = computed(() => this.teamAvatars.resolve(this.homeTeam()));
@@ -231,18 +246,29 @@ export class ResultEntryComponent {
   private async load(): Promise<void> {
     const found = await this.matchService.getById(this.matchId);
     if (!found) return;
-    this.match.set(found);
-    this.homeScore.set(found.homeScore ?? 0);
-    this.awayScore.set(found.awayScore ?? 0);
-    this.penHome.set(found.penaltyHome ?? 0);
-    this.penAway.set(found.penaltyAway ?? 0);
 
     const [teams, tournament] = await Promise.all([
       this.teamService.getByTournamentOnce(found.tournamentId),
       this.tournamentService.getOnce(found.tournamentId),
     ]);
-    this.homeTeam.set(teams.find((t) => t.id === found.homeTeamId));
-    this.awayTeam.set(teams.find((t) => t.id === found.awayTeamId));
+    const homeTeam = teams.find((t) => t.id === found.homeTeamId);
+    const awayTeam = teams.find((t) => t.id === found.awayTeamId);
+
+    const uid = this.auth.firebaseUser()?.uid;
+    const allowed =
+      this.auth.isAdmin() || (!!uid && (homeTeam?.managerUid === uid || awayTeam?.managerUid === uid));
+    if (!allowed) {
+      this.accessDenied.set(true);
+      return;
+    }
+
+    this.match.set(found);
+    this.homeScore.set(found.homeScore ?? 0);
+    this.awayScore.set(found.awayScore ?? 0);
+    this.penHome.set(found.penaltyHome ?? 0);
+    this.penAway.set(found.penaltyAway ?? 0);
+    this.homeTeam.set(homeTeam);
+    this.awayTeam.set(awayTeam);
     this.tournamentType.set(tournament?.type);
   }
 

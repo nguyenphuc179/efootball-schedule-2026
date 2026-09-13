@@ -114,7 +114,7 @@ type TabKey =
               <span class="material-icons text-[18px]">edit</span>
             </a>
             <button
-              class="w-8 h-8 flex items-center justify-center text-gray-400 disabled:opacity-40"
+              class="w-8 h-8 flex items-center justify-center text-accent-red disabled:opacity-40"
               [disabled]="isDeleting()"
               (click)="deleteTournament()"
               [attr.aria-label]="'TOURNAMENT_DETAIL.DELETE_TOURNAMENT' | translate"

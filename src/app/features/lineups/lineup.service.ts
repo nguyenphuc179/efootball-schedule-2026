@@ -33,10 +33,10 @@ export class LineupService {
    *  firestore.rules (a `data:image/...` URI under ~900 KB), e.g. via `downscaleToDataUri`.
    *  `managerName` is the resolved display name (see `userDisplayName`) of the manager the slot
    *  belongs to, for the "/history" description — callers pass the raw email as a fallback when no
-   *  nicer name is known. The admin performing the upload is named inline too (via
-   *  `ActivityLogService.currentActorName()`), since the two are usually different people.
-   *  `managerUid`, when known, is stamped as `subjectUid` so that manager can read this entry back
-   *  under firestore.rules on their own personal "/history" feed even though they're not the actor. */
+   *  nicer name is known. Who actually performed the upload is stamped onto the description
+   *  automatically by `ActivityLogService.log()`, not built here. `managerUid`, when known, is
+   *  stamped as `subjectUid` so that manager can read this entry back under firestore.rules on
+   *  their own personal "/history" feed even though they're not the actor. */
   async upload(
     tournamentId: string,
     email: string,
@@ -46,10 +46,9 @@ export class LineupService {
     managerUid: string | null
   ): Promise<void> {
     await this.fs.set(`lineups/${this.parentId(tournamentId, email)}/images`, slot, { image });
-    const actorName = this.activityLog.currentActorName();
     await this.activityLog.log(
       'lineup_upload',
-      `${actorName} đã tải lên ảnh đội hình (ô ${slot}) cho ${managerName}`,
+      `Đã tải lên ảnh đội hình (ô ${slot}) cho ${managerName}`,
       tournamentId,
       managerUid
     );
@@ -63,10 +62,9 @@ export class LineupService {
     managerUid: string | null
   ): Promise<void> {
     await this.fs.remove(`lineups/${this.parentId(tournamentId, email)}/images`, slot);
-    const actorName = this.activityLog.currentActorName();
     await this.activityLog.log(
       'lineup_remove',
-      `${actorName} đã xoá ảnh đội hình (ô ${slot}) của ${managerName}`,
+      `Đã xoá ảnh đội hình (ô ${slot}) của ${managerName}`,
       tournamentId,
       managerUid
     );

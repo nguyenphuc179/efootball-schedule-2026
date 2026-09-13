@@ -136,7 +136,7 @@ import { userDisplayName } from '../../models/user.model';
         <section class="flex flex-col gap-2">
           <h2 class="text-sm font-extrabold uppercase tracking-wide text-gray-500">{{ 'MY_OVERVIEW.UPCOMING' | translate }}</h2>
           @for (m of upcoming(); track m.id) {
-            <app-match-row [match]="m" [managers]="managersMap()" [avatars]="avatarsMap()" [showResultLink]="auth.isAdmin()" />
+            <app-match-row [match]="m" [managers]="managersMap()" [avatars]="avatarsMap()" [showResultLink]="canEditResult(m)" />
           }
         </section>
       }
@@ -181,7 +181,16 @@ export class MyOverviewComponent {
     { initialValue: [] as Team[] }
   );
 
-  private myTeamIds = computed(() => new Set(this.myTeams().map((t) => t.id)));
+  myTeamIds = computed(() => new Set(this.myTeams().map((t) => t.id)));
+
+  /** Admin can edit any result; a team manager can edit results only for matches their own team
+   *  played in (either side) — enforced for real by firestore.rules (`matches` update rule), this
+   *  just decides whether the "/matches/:id/result" link shows up at all. Every match in
+   *  `upcoming()`/`recent()` already involves one of the viewer's own teams (see `myMatches`
+   *  below), so this is mostly a formality here, but kept for consistency with the other tabs. */
+  canEditResult(match: Match): boolean {
+    return this.auth.isAdmin() || this.myTeamIds().has(match.homeTeamId) || this.myTeamIds().has(match.awayTeamId);
+  }
   private myTournamentIds = computed(() => [...new Set(this.myTeams().map((t) => t.tournamentId))]);
 
   /** Emits the sorted tournament-id list (as a stable key) whenever it actually changes. */

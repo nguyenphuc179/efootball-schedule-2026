@@ -150,9 +150,7 @@ function roundNumber(m: Match): number {
                     [match]="mt"
                     [managers]="managerByTeam()"
                     [avatars]="avatarsByTeam()"
-                    [showResultLink]="
-                      auth.isAdmin() && mt.status !== 'completed'
-                    "
+                    [showResultLink]="canEditResult(mt)"
                   />
                 } @empty {
                   <p class="text-sm text-gray-400 py-2">{{ 'GROUP_STAGE.NO_MATCH_FILTER' | translate }}</p>
@@ -204,9 +202,7 @@ function roundNumber(m: Match): number {
                     [match]="mt"
                     [managers]="managerByTeam()"
                     [avatars]="avatarsByTeam()"
-                    [showResultLink]="
-                      auth.isAdmin() && mt.status !== 'completed'
-                    "
+                    [showResultLink]="canEditResult(mt)"
                   />
                 } @empty {
                   <p class="text-sm text-gray-400 py-2">{{ 'GROUP_STAGE.NO_MATCH_FILTER' | translate }}</p>
@@ -260,6 +256,21 @@ export class GroupStageComponent {
     ),
     { initialValue: [] as Team[] },
   );
+
+  /** Team ids the signed-in user manages, within this tournament — admins can edit every result
+   *  regardless (see `canEditResult`), so this is only consulted for non-admins. */
+  private myTeamIds = computed(() => {
+    const uid = this.auth.firebaseUser()?.uid;
+    return new Set(uid ? this.teams().filter((t) => t.managerUid === uid).map((t) => t.id) : []);
+  });
+
+  /** Admin can edit any result; a team manager can edit results only for matches their own team
+   *  played in (either side) — enforced for real by firestore.rules (`matches` update rule), this
+   *  just decides whether the "/matches/:id/result" link shows up at all. */
+  canEditResult(match: Match): boolean {
+    return this.auth.isAdmin() || this.myTeamIds().has(match.homeTeamId) || this.myTeamIds().has(match.awayTeamId);
+  }
+
   managerByTeam = computed(() =>
     Object.fromEntries(
       this.teams()

@@ -102,26 +102,44 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------
-    // matches/{matchId} — public read, admin write (fixtures + results).
+    // matches/{matchId} — public read, admin write (fixtures). Results are
+    // the one exception: a team manager may also update a match they're
+    // playing in (home or away), but ONLY the result fields — the diff
+    // check below rejects a manager touching anything else (schedule,
+    // teams, round, tournamentId, ...), which stays admin-only.
     // -------------------------------------------------------------------
     match /matches/{matchId} {
       allow read: if true;
       allow create: if isAdmin();
-      allow update: if isAdmin();
+      allow update: if isAdmin() ||
+        (isSignedIn() && !isDisabled() &&
+          (isTeamManager(resource.data.homeTeamId) || isTeamManager(resource.data.awayTeamId)) &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['homeScore', 'awayScore', 'penaltyHome', 'penaltyAway', 'status']));
       allow delete: if isAdmin();
     }
 
     // -------------------------------------------------------------------
-    // standings/{tournamentId} — derived/denormalized data, public read,
-    // written only by admin actions (result entry recalculates standings).
+    // standings/{tournamentId} — derived/denormalized data, public read.
+    // `StandingsService.recalculate()` re-derives and batch-writes EVERY
+    // team's row in the tournament as one atomic commit whenever any match
+    // in it changes — Firestore batches are all-or-nothing, so once a team
+    // manager can update their own match's result (see `matches` above),
+    // write access here can't stay scoped to just their own row (that
+    // would make the batch's OTHER rows fail and roll back the whole
+    // thing). Opened to any signed-in, non-disabled member instead — an
+    // acceptable tradeoff since this collection is a fully recomputable
+    // cache of `matches` (the real source of truth), never source data
+    // itself, so worst case a bad write here is undone by the next
+    // legitimate recalculate.
     // -------------------------------------------------------------------
     match /standings/{tournamentId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isSignedIn() && !isDisabled();
 
       match /rows/{teamId} {
         allow read: if true;
-        allow write: if isAdmin();
+        allow write: if isSignedIn() && !isDisabled();
       }
     }
 

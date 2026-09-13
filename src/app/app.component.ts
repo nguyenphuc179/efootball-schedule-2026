@@ -37,7 +37,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
       @if (!chromeless()) {
         <aside class="hidden md:flex md:w-60 md:flex-col bg-white border-r border-gray-100 md:sticky md:top-0 md:h-dvh">
           <div class="h-14 flex items-center gap-2 px-4 border-b border-gray-100 font-extrabold text-lg">
-            <span class="material-icons text-primary-500">sports_soccer</span> PitchPro
+            <img src="assets/images/logo-mark.png" alt="" class="w-6 h-6" /> Pession
           </div>
           <nav class="flex flex-col gap-1 p-3">
             @for (item of desktopNavItems; track item.route) {

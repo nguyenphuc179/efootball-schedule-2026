@@ -97,6 +97,15 @@ across tournaments.
 | matchTime | string | `"HH:mm"` |
 | location | string | pitch/venue name |
 | status | `'scheduled' \| 'live' \| 'completed' \| 'postponed'` | |
+| penaltyHome, penaltyAway | number \| null | shootout score; only set on a level knockout match |
+
+Public read; create/delete are admin-only. Update is admin-only for every field EXCEPT the result
+fields (`homeScore`, `awayScore`, `penaltyHome`, `penaltyAway`, `status`), which a team manager may
+also set for a match their own team is playing in (home or away) — enforced by firestore.rules via
+`request.resource.data.diff(resource.data).affectedKeys().hasOnly([...])`, so a manager touching any
+other field (schedule, teams, round, tournamentId, ...) is rejected outright. Re-editing an already
+`completed` match is allowed (for both admin and the manager) — `StandingsService.recalculate()` is
+a full recompute from every match's current data, not an incremental delta, so it's safe to re-run.
 
 ## `standings/{tournamentId}` + `standings/{tournamentId}/rows/{teamId}`
 
@@ -104,6 +113,15 @@ Parent doc just tracks `lastUpdated`; each team's row is its own sub-document so
 the whole sub-collection with one `collectionData()` call, already sorted by the query
 (`orderBy('points','desc'), orderBy('goalDifference','desc'), orderBy('goalsFor','desc'), orderBy('teamName','asc')`)
 mirroring the required ranking priority.
+
+Public read; write is open to any signed-in, non-disabled member (not scoped to admin or to "your
+own team's row"). This looks broader than it needs to be, but it's forced by how writes actually
+happen: `recalculate()` re-derives and batch-writes EVERY team's row in the tournament as one atomic
+commit whenever any match changes, and Firestore batches are all-or-nothing — once a team manager
+can update their own match's result, restricting this to "your own row" would make the batch's
+OTHER rows fail the rule and roll back the entire write. Acceptable because `standings` is a fully
+recomputable cache of `matches` (the real source of truth) — a bad write here is undone by the next
+legitimate `recalculate()`, never a lasting data-integrity problem.
 
 | Field | Type |
 |---|---|
@@ -157,7 +175,7 @@ as the last step of each action; immutable once written.
 | action | string | machine key, see `ActivityAction` in `src/app/models/activity-log.model.ts` |
 | description | string | human-readable Vietnamese sentence, built inline at the call site |
 | tournamentId | string \| null | present for tournament-scoped actions, null otherwise |
-| subjectUid | string \| null | the user this action is ABOUT when different from the actor (e.g. the manager whose lineup slot an admin or the capture tool touched); `null` when not applicable. Lets that user read the entry back even though they're not the actor — see the read rule below |
+| subjectUid | string \| null | the user this action is ABOUT when different from the actor — a team's `managerUid` for `team_create`/`team_update`/`team_delete`/`player_add`/`player_remove` (set by `TeamService`), or the manager whose lineup slot an admin/the capture tool touched for `lineup_upload`/`lineup_remove`; `null` when not applicable. Lets that user read the entry back even though they're not the actor — see the read rule below |
 | sourcePath | string | `Router.url` at write time (e.g. `/ranking`) — which screen the actor was on; auto-captured, never passed by callers |
 | menuKey | string | stable bucket for `sourcePath` (see `menuInfoForPath` in `shared/utils/activity-menu.util.ts`) — lets the "/history" page filter with a plain equality `where()` |
 | createdDate | Timestamp | |
@@ -212,16 +230,21 @@ own cursor/items.
 See `firestore.indexes.json` for the composite indexes required by the query patterns above
 (matches by tournament+date, matches by tournament+round+date, matches by tournament+status, teams
 by tournament+name, tournaments by status+date, check-ins by tournament+date). `activityLogs` has
-four: `menuKey`+date and `actorUid`+date and `actorUid`+`menuKey`+date (the admin "/history" filter
-combinations), plus `subjectUid`+date (a non-admin's personal feed and unseen-count, filtered/sorted
-by `subjectUid` instead of `actorUid`). The admin's unfiltered listing and unseen-count query need no
-composite index — both are a single `orderBy`/inequality on `createdDate`, served by the automatic
-single-field index; a non-admin's `actorUid`-side query reuses the existing `actorUid`+date index.
+five: `menuKey`+date, `actorUid`+date, `actorUid`+`menuKey`+date, `subjectUid`+date, and
+`subjectUid`+`menuKey`+date. The admin "/history" manager filter and a non-admin's personal feed
+both need the `subjectUid`-side indexes too, not just `actorUid`-side — see below. The admin's
+unfiltered listing and unseen-count query need no composite index — both are a single
+`orderBy`/inequality on `createdDate`, served by the automatic single-field index.
 
-The "/history" manager filter itself only lists managers who are both active (`!disabled` on their
-`users/{uid}` profile) and have logged at least one action (`ActivityLogService.hasActed`, a
-`where('actorUid','==',uid) limit(1)` check per candidate — cheap since the candidate list, built
-from `teams.managerUid` across every tournament, is small).
+The "/history" manager filter dropdown lists managers who are both active (`!disabled` on their
+`users/{uid}` profile) and have SOME activity to show (`ActivityLogService.hasActed` — checks both
+`actorUid == uid` and `subjectUid == uid`, since a manager's only trace in the log is often a
+capture-tool/admin-driven `lineup_upload` entry where they're the `subjectUid`, not the actor;
+checking `actorUid` alone silently hid every such manager from the dropdown, and from the filtered
+results even if they had been selectable — `ActivityLogService.streamFiltered`/`deleteAll` both
+merge `actorUid == managerUid` and `subjectUid == managerUid` for the same reason). Candidates come
+from `teams.managerUid` across every tournament, a small list, so the per-candidate check stays
+cheap even doing two lookups instead of one.
 
 ## Pagination pattern
 

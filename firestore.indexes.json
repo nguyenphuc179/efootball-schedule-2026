@@ -90,6 +90,15 @@
         { "fieldPath": "subjectUid", "order": "ASCENDING" },
         { "fieldPath": "createdDate", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "activityLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subjectUid", "order": "ASCENDING" },
+        { "fieldPath": "menuKey", "order": "ASCENDING" },
+        { "fieldPath": "createdDate", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

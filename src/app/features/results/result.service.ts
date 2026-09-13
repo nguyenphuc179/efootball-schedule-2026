@@ -51,9 +51,12 @@ export class ResultService {
       await this.finalStageService.syncFromResults(match.tournamentId).catch(() => undefined);
     }
 
+    // Team names are often numbered ("Team 2", "Team 9"), so a bare "Team 2 3 - 2 Team 9" reads as
+    // one confusing run of digits — "vs" plus a "tỉ số là:" lead-in keeps team names and the score
+    // visually separate.
     await this.activityLog.log(
       'result_update',
-      `Đã cập nhật kết quả: ${match.homeTeamName ?? 'Home'} ${homeScore} - ${awayScore} ${match.awayTeamName ?? 'Away'}`,
+      `Đã cập nhật kết quả trận ${match.homeTeamName ?? 'Home'} vs ${match.awayTeamName ?? 'Away'}, tỉ số là: ${homeScore} - ${awayScore}`,
       match.tournamentId
     );
   }

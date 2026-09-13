@@ -177,7 +177,7 @@ interface PodiumSlot {
                     (click)="editImage(p)"
                     [attr.aria-label]="'RANKING.SET_PORTRAIT' | translate"
                   >
-                    <span class="material-icons text-[18px]">image</span>
+                    <span class="material-icons text-[18px]">edit</span>
                   </button>
                 }
                 <span class="text-right shrink-0 leading-none">

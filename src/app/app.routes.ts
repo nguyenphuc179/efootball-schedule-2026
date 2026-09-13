@@ -6,7 +6,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
-    title: 'PitchPro — Home',
+    title: 'Pession — Home',
   },
   {
     path: 'login',
@@ -67,7 +67,11 @@ export const routes: Routes = [
     path: 'matches/:id/result',
     loadComponent: () =>
       import('./features/results/result-entry/result-entry.component').then((m) => m.ResultEntryComponent),
-    canActivate: [authGuard, adminGuard],
+    // Any signed-in member, not just admins — a team manager may also enter/edit results for
+    // their own team's matches. ResultEntryComponent itself checks admin-or-manager-of-either-team
+    // and shows an access-denied state otherwise; firestore.rules (`matches` update rule) is the
+    // real enforcement either way.
+    canActivate: [authGuard],
     data: { fullscreen: true },
   },
   {

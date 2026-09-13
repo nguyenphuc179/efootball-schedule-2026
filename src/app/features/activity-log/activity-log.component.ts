@@ -107,7 +107,7 @@ const ICONS: Record<ActivityAction, string> = {
           <select class="input-field" [value]="selectedMenuKey() ?? ''" (change)="selectedMenuKey.set($any($event.target).value || null)">
             <option value="">{{ 'ACTIVITY_LOG.FILTER_ALL' | translate }}</option>
             @for (m of menus; track m.key) {
-              <option [value]="m.key">{{ m.label }}</option>
+              <option [value]="m.key">{{ m.labelKey | translate }}</option>
             }
           </select>
         </label>
@@ -125,6 +125,10 @@ const ICONS: Record<ActivityAction, string> = {
         }
       </div>
 
+      <p class="text-sm text-gray-500 mb-3">
+        {{ 'ACTIVITY_LOG.TOTAL_LABEL' | translate }}: <span class="font-semibold text-gray-700">{{ totalCount() ?? '…' }}</span>
+      </p>
+
       @if (loadError()) {
         <p class="text-sm text-red-500 mb-3">{{ loadError() }}</p>
       }
@@ -138,24 +142,34 @@ const ICONS: Record<ActivityAction, string> = {
       } @else {
         <div class="flex flex-col gap-2">
           @for (l of logs(); track l.id) {
-            <div class="card flex gap-3 !py-3" [class.bg-primary-50]="isUnseen(l)">
-              <span class="material-icons text-primary-500 mt-0.5">{{ icons[l.action] }}</span>
+            <div
+              class="card flex gap-3 !py-3"
+              [class.bg-primary-50]="isUnseen(l)"
+              [class.opacity-70]="!isUnseen(l)"
+              [class.cursor-pointer]="isUnseen(l)"
+              (click)="onCardClick(l)"
+            >
+              <span class="material-icons mt-0.5" [class.text-primary-500]="isUnseen(l)" [class.text-gray-400]="!isUnseen(l)">{{ icons[l.action] }}</span>
               <div class="flex-1 min-w-0">
-                <div class="font-semibold text-sm">{{ l.description }}</div>
-                <div class="text-xs text-gray-500 truncate">
-                  {{ l.actorName }}{{ l.actorEmail ? ' · ' + l.actorEmail : '' }}
+                <div class="text-sm" [class.font-semibold]="isUnseen(l)">{{ l.description }}</div>
+                <div class="flex flex-wrap items-center gap-x-1 text-[11px] text-gray-400 mt-1">
+                  @if (l.sourcePath) {
+                    <button
+                      type="button"
+                      class="text-primary-600 hover:underline"
+                      (click)="go(l.sourcePath)"
+                      [title]="fullUrl(l.sourcePath)"
+                    >
+                      {{ menuLabel(l.sourcePath) }}
+                    </button>
+                    <span>·</span>
+                  }
+                  @if (l.actorEmail) {
+                    <span class="truncate max-w-full">{{ l.actorEmail }}</span>
+                    <span>·</span>
+                  }
+                  <span>{{ timeAgo(l.createdDate) }}</span>
                 </div>
-                <div class="text-[11px] text-gray-400 mt-1">{{ timeAgo(l.createdDate) }}</div>
-                @if (l.sourcePath) {
-                  <button
-                    type="button"
-                    class="text-[11px] text-primary-600 hover:underline flex items-center gap-1 mt-1 max-w-full"
-                    (click)="go(l.sourcePath)"
-                  >
-                    <span class="material-icons text-[12px] shrink-0">open_in_new</span>
-                    <span class="truncate">{{ menuLabel(l.sourcePath) }} · {{ fullUrl(l.sourcePath) }}</span>
-                  </button>
-                }
               </div>
               @if (isUnseen(l)) {
                 <button
@@ -197,7 +211,16 @@ export class ActivityLogComponent {
   auth = inject(AuthService);
   icons = ICONS;
   menus = ACTIVITY_MENUS;
-  menuLabel = (path: string) => menuInfoForPath(path).label;
+
+  /** Translated label for a `sourcePath`'s menu bucket — `path` itself for the "other" fallback
+   *  (no sensible label to translate for a route outside `ACTIVITY_MENUS`). Reads `currentLang()`
+   *  first purely to register a reactive dependency on it (same pattern as `timeAgo`), since this is
+   *  called directly from the template rather than through the `translate` pipe. */
+  menuLabel = (path: string): string => {
+    this.translate.currentLang();
+    const { labelKey } = menuInfoForPath(path);
+    return labelKey ? this.translate.instant(labelKey) : path;
+  };
 
   selectedMenuKey = signal<string | null>(null);
   selectedManagerUid = signal<string | null>(null);
@@ -269,10 +292,10 @@ export class ActivityLogComponent {
 
   /** The live source list, capped at `visibleLimit() + 1` — the extra one is a peek used only to
    *  compute `hasMore` below, never rendered. An admin's query maps straight to Firestore
-   *  constraints; anyone else gets their merged personal feed (`streamMine`), filtered by menu
-   *  client-side since that merge can't be expressed as a single Firestore query (see
-   *  `ActivityLogService.streamMine`). Errors are caught per-cycle (inside the `switchMap`, not
-   *  around it) so one failed subscription doesn't permanently kill the outer live stream. */
+   *  constraints; anyone else gets their merged personal feed (`streamMine`, menu-filtered
+   *  server-side too — see `ActivityLogService.streamActorOrSubject`). Errors are caught per-cycle
+   *  (inside the `switchMap`, not around it) so one failed subscription doesn't permanently kill the
+   *  outer live stream. */
   private rawLogs$: Observable<ActivityLog[]> = combineLatest([
     toObservable(this.selectedMenuKey),
     toObservable(this.selectedManagerUid),
@@ -286,9 +309,7 @@ export class ActivityLogComponent {
       const source$: Observable<ActivityLog[]> = isAdmin
         ? this.activityLogService.streamFiltered(menuKey, managerUid, windowSize)
         : uid
-          ? this.activityLogService
-              .streamMine(uid, windowSize)
-              .pipe(map((list) => (menuKey ? list.filter((l) => l.menuKey === menuKey) : list)))
+          ? this.activityLogService.streamMine(uid, menuKey, windowSize)
           : of<ActivityLog[]>([]);
       return source$.pipe(
         tap(() => {
@@ -310,6 +331,33 @@ export class ActivityLogComponent {
   logs = computed(() => this.rawLogs().slice(0, this.visibleLimit()));
   hasMore = computed(() => this.rawLogs().length > this.visibleLimit());
 
+  /** Exact total matching the current filters — shown as "Tổng thông báo" above the listing. Not
+   *  itself live (count aggregation is one-shot, see `FirestoreBaseService.count`), so this re-runs
+   *  whenever `rawLogs` changes too — that's exactly when the total could have changed, so it tracks
+   *  the live listing closely without needing its own listener. `null` while the first count for the
+   *  current filters hasn't resolved yet (renders as "…" rather than a misleading `0`). */
+  totalCount = signal<number | null>(null);
+  private refreshTotalCount = effect(() => {
+    const menuKey = this.selectedMenuKey();
+    const managerUid = this.selectedManagerUid();
+    const isAdmin = this.auth.isAdmin();
+    const uid = this.auth.firebaseUser()?.uid ?? null;
+    this.rawLogs(); // re-count whenever the live listing itself changes, not just on filter change
+    this.totalCount.set(null);
+    (async () => {
+      try {
+        const count = isAdmin
+          ? await this.activityLogService.countFiltered(menuKey, managerUid)
+          : uid
+            ? await this.activityLogService.countMine(uid, menuKey)
+            : 0;
+        this.totalCount.set(count);
+      } catch (err) {
+        console.error('[ActivityLog] countFiltered/countMine failed', err);
+      }
+    })();
+  });
+
   isUnseen(log: ActivityLog): boolean {
     const state = this.seenState();
     return log.createdDate > state.lastSeenAt && !state.seenIds.has(log.id);
@@ -318,6 +366,14 @@ export class ActivityLogComponent {
   loadMore(): void {
     if (!this.hasMore()) return;
     this.visibleLimit.update((n) => n + PAGE_SIZE);
+  }
+
+  /** Clicking anywhere on an unseen record marks it seen — not just the small checkmark button
+   *  (which stays, both as an explicit affordance and because the same click bubbles up to this
+   *  handler from it anyway; `markSeen`'s own `markingIds` guard makes that harmless). No-op once
+   *  already seen, so this is safe to leave on the whole card unconditionally. */
+  onCardClick(log: ActivityLog): void {
+    if (this.isUnseen(log)) this.markSeen(log);
   }
 
   async markSeen(log: ActivityLog): Promise<void> {
@@ -348,7 +404,8 @@ export class ActivityLogComponent {
     const managerUid = this.selectedManagerUid();
     const manager = managerUid ? this.activeManagersWithActivity().find((m) => m.uid === managerUid) : null;
     const menu = menuKey ? this.menus.find((m) => m.key === menuKey) : null;
-    const scopeLabel = [manager?.name, menu?.label].filter(Boolean).join(' · ');
+    const menuLabel = menu ? this.translate.instant(menu.labelKey) : null;
+    const scopeLabel = [manager?.name, menuLabel].filter(Boolean).join(' · ');
 
     const ref = this.dialog.open(ConfirmDialogComponent, {
       data: {
@@ -385,6 +442,8 @@ export class ActivityLogComponent {
     return this.translate.instant(key, params);
   }
 
+  /** Full URL for the link's `title` tooltip — the button itself only shows the short menu label
+   *  (see `menuLabel`), but hovering reveals exactly where it navigates to. */
   fullUrl(path: string): string {
     return `${location.origin}${path}`;
   }

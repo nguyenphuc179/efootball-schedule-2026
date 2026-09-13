@@ -11,6 +11,7 @@ import {
   deleteDoc,
   doc,
   docData,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -65,6 +66,14 @@ export class FirestoreBaseService {
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T);
   }
 
+  /** Exact document count matching the given constraints, server-computed via Firestore's count
+   *  aggregation — cheap (billed as a small fixed read, not per matched document), but a one-shot
+   *  snapshot, not a live listener (the JS SDK doesn't support `onSnapshot` on aggregate queries). */
+  async count(path: string, ...constraints: QueryConstraint[]): Promise<number> {
+    const snap = await getCountFromServer(query(this.collectionRef(path), ...constraints));
+    return snap.data().count;
+  }
+
   async getPaged<T>(
     path: string,
     pageSize: number,
@@ -117,6 +126,19 @@ export class FirestoreBaseService {
       await batch.commit();
     }
     return refs.length;
+  }
+
+  /** Deletes an explicit list of documents by id, batched (Firestore's write-batch cap is 500) —
+   *  for a caller that already resolved which ids to delete by merging more than one query (e.g.
+   *  matching on either of two fields), where a single `removeMatching` constraint set can't
+   *  express "OR" and issuing it twice would double-count/double-delete any id both sides match. */
+  async removeByIds(path: string, ids: string[]): Promise<number> {
+    for (let i = 0; i < ids.length; i += 450) {
+      const batch = writeBatch(this.firestore);
+      for (const id of ids.slice(i, i + 450)) batch.delete(this.docRef(path, id));
+      await batch.commit();
+    }
+    return ids.length;
   }
 
   docRef(path: string, id: string) {

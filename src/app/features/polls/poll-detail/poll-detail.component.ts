@@ -45,7 +45,7 @@ const CHART_COLORS = ['#0fa863', '#3b82f6', '#f5a623', '#e5484d', '#8b5cf6', '#1
             </div>
             @if (canDelete()) {
               <button
-                class="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0"
+                class="w-8 h-8 flex items-center justify-center text-accent-red shrink-0"
                 (click)="remove()"
                 [attr.aria-label]="'COMMON.DELETE' | translate"
               >

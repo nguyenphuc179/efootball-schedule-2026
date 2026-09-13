@@ -92,7 +92,7 @@ import { TranslatePipe, TranslateService } from "@ngx-translate/core";
                       <span class="material-icons text-[16px]">edit</span>
                     </button>
                     <button
-                      class="w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center"
+                      class="w-8 h-8 rounded-full bg-black/40 text-accent-red flex items-center justify-center"
                       (click)="remove(f)"
                     >
                       <span class="material-icons text-[16px]"
@@ -148,7 +148,7 @@ import { TranslatePipe, TranslateService } from "@ngx-translate/core";
                       <span class="material-icons text-[14px]">edit</span>
                     </button>
                     <button
-                      class="w-7 h-7 rounded-full bg-black/40 text-white flex items-center justify-center"
+                      class="w-7 h-7 rounded-full bg-black/40 text-accent-red flex items-center justify-center"
                       (click)="remove(c)"
                     >
                       <span class="material-icons text-[14px]"

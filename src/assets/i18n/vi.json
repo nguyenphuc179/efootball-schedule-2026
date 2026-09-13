@@ -92,7 +92,7 @@
     "GENERIC": "Có lỗi xảy ra. Vui lòng thử lại.{{codeSuffix}}"
   },
   "HOME": {
-    "WELCOME_TITLE": "Chào mừng đến với PitchPro",
+    "WELCOME_TITLE": "Chào mừng đến với Pession",
     "WELCOME_SUBTITLE": "Quản lý & theo dõi giải đấu eFootball của bạn — lịch thi đấu, kết quả và bảng xếp hạng thời gian thực.",
     "VIEW_TOURNAMENTS": "Xem các giải đấu →"
   },
@@ -352,9 +352,20 @@
     "DISABLE_CONFIRM_MESSAGE": "{{name}} sẽ bị đăng xuất và chặn mọi thao tác trong ứng dụng. Tài khoản đăng nhập không bị xóa — có thể mở khóa lại bất cứ lúc nào ở đây, hoặc xóa tài khoản trong Firebase Console để giải phóng email.",
     "THIS_MEMBER": "Thành viên này"
   },
+  "ACTIVITY_MENU": {
+    "HOME": "Trang chủ",
+    "MATCHES": "Nhập kết quả trận đấu",
+    "TOURNAMENTS": "Giải đấu",
+    "RANKING": "Xếp hạng",
+    "HALL_OF_FAME": "Đại sảnh Vinh danh",
+    "POLLS": "Bình chọn",
+    "PROFILE": "Hồ sơ",
+    "HISTORY": "Nhật ký hoạt động"
+  },
   "ACTIVITY_LOG": {
     "TITLE": "Nhật ký hoạt động",
     "MY_TITLE": "Thông báo của tôi",
+    "TOTAL_LABEL": "Tổng thông báo",
     "EMPTY_TITLE": "Chưa có hoạt động nào",
     "EMPTY_SUBTITLE": "Các hành động trong app sẽ hiện ở đây.",
     "MY_EMPTY_TITLE": "Chưa có thông báo nào",
@@ -363,8 +374,8 @@
     "MARK_SEEN": "Đánh dấu đã xem",
     "FILTER_LABEL": "Lọc theo màn hình",
     "FILTER_ALL": "Tất cả màn hình",
-    "FILTER_MANAGER_LABEL": "Lọc theo manager",
-    "FILTER_MANAGER_ALL": "Tất cả manager",
+    "FILTER_MANAGER_LABEL": "Lọc theo quản lý",
+    "FILTER_MANAGER_ALL": "Tất cả quản lý",
     "DELETE_ALL": "Xoá tất cả",
     "DELETE_FILTERED": "Xoá theo bộ lọc",
     "DELETE_ALL_CONFIRM_MESSAGE": "Toàn bộ lịch sử hoạt động sẽ bị xoá vĩnh viễn. Không thể hoàn tác.",
@@ -376,7 +387,9 @@
     "LOADING": "Đang tải trận đấu…",
     "PENALTY_SHOOTOUT": "Sút luân lưu",
     "PEN": "LL",
-    "SAVE_RESULT": "Lưu kết quả"
+    "SAVE_RESULT": "Lưu kết quả",
+    "ACCESS_DENIED_TITLE": "Không có quyền sửa trận này",
+    "ACCESS_DENIED_SUBTITLE": "Chỉ admin hoặc quản lý của 1 trong 2 đội thi đấu mới được nhập/sửa kết quả."
   },
   "TOURNAMENT_FORM": {
     "EDIT_TITLE": "Sửa giải đấu",
