@@ -328,8 +328,12 @@ const SECTIONS: GuideSection[] = [
             </div>
             <p class="text-sm text-gray-500">
               Mỗi đội có 4 ô ảnh đội hình. Ảnh có thể tự động gửi lên từ
-              <b>tool chụp ảnh</b>, hoặc admin tải ảnh thủ công nếu quản lý
-              không dùng được tool. Admin duyệt từng ảnh một — ảnh mới chưa
+              <b>tool chụp ảnh</b>, hoặc chính quản lý tự
+              <b>chụp ảnh trực tiếp từ điện thoại</b> ngay trên web (không cần
+              cài tool — tiện cho người chơi trên PS5/console), hoặc admin tải
+              ảnh thủ công thay quản lý. Quản lý xóa được ảnh mình vừa tải lên
+              nếu ảnh đó <b>chưa được admin duyệt</b>; ảnh đã duyệt thì chỉ
+              admin mới xóa được. Admin duyệt từng ảnh một — ảnh mới chưa
               duyệt sẽ không có dấu <b>Đã duyệt</b>.
             </p>
             <div

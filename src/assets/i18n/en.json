@@ -474,6 +474,7 @@
     "EMPTY_TITLE": "No lineup images yet",
     "EMPTY_SUBTITLE": "Images will show up here automatically once the manager sends them via the tool.",
     "ADD_IMAGE": "Add image",
+    "TAKE_PHOTO": "Take photo",
     "UPLOAD_FAILED": "Couldn't upload that image — try another one.",
     "DELETE_CONFIRM_TITLE": "Delete this image?",
     "DELETE_CONFIRM_MESSAGE": "This image will be permanently deleted.",

@@ -110,23 +110,49 @@ interface ManagerLineupStatus {
                       </span>
                       {{ (approvals().get(img.id) ? 'LINEUP.APPROVED' : 'LINEUP.APPROVE') | translate }}
                     </button>
-                  } @else if (approvals().get(img.id)) {
-                    <span class="absolute bottom-1.5 inset-x-1.5 text-[11px] font-semibold rounded-lg py-1 bg-green-600 text-white text-center">
-                      {{ 'LINEUP.APPROVED' | translate }}
-                    </span>
+                  } @else {
+                    @if (canUpload() && !approvals().get(img.id)) {
+                      <button
+                        type="button"
+                        class="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center"
+                        (click)="remove(img.id)"
+                        [attr.aria-label]="'COMMON.REMOVE' | translate"
+                      >
+                        <span class="material-icons text-[16px]">close</span>
+                      </button>
+                    }
+                    @if (approvals().get(img.id)) {
+                      <span class="absolute bottom-1.5 inset-x-1.5 text-[11px] font-semibold rounded-lg py-1 bg-green-600 text-white text-center">
+                        {{ 'LINEUP.APPROVED' | translate }}
+                      </span>
+                    }
                   }
                 </div>
               }
               @if (canUpload() && freeSlots().length > 0) {
-                <button
-                  type="button"
-                  class="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 active:bg-gray-50 disabled:opacity-50"
-                  [disabled]="uploading()"
-                  (click)="fileInput.click()"
-                >
-                  <span class="material-icons text-[24px]">{{ uploading() ? 'hourglass_top' : 'add_a_photo' }}</span>
-                  <span class="text-xs font-medium">{{ 'LINEUP.ADD_IMAGE' | translate }}</span>
-                </button>
+                <div class="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2 p-2">
+                  <button
+                    type="button"
+                    class="flex flex-col items-center gap-0.5 text-gray-500 active:text-primary-600 disabled:opacity-50"
+                    [disabled]="uploading()"
+                    (click)="cameraInput.click()"
+                  >
+                    <span class="material-icons text-[22px]">{{ uploading() ? 'hourglass_top' : 'photo_camera' }}</span>
+                    <span class="text-[11px] font-medium">{{ 'LINEUP.TAKE_PHOTO' | translate }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="flex flex-col items-center gap-0.5 text-gray-400 active:text-primary-600 disabled:opacity-50"
+                    [disabled]="uploading()"
+                    (click)="fileInput.click()"
+                  >
+                    <span class="material-icons text-[18px]">add_photo_alternate</span>
+                    <span class="text-[11px] font-medium">{{ 'LINEUP.ADD_IMAGE' | translate }}</span>
+                  </button>
+                </div>
+                <!-- capture="environment" opens the device's rear camera directly on mobile, skipping the
+                     gallery/camera chooser — for managers on console (PS5, etc.) photographing their TV screen. -->
+                <input #cameraInput type="file" accept="image/*" capture="environment" hidden (change)="onFileSelected($event)" />
                 <input #fileInput type="file" accept="image/*" hidden (change)="onFileSelected($event)" />
               }
             </div>
@@ -259,6 +285,16 @@ export class LineupViewComponent {
   selectedKey = signal<string>('');
   preview = signal<string | null>(null);
 
+  /** A signed-in non-admin manager should land straight on their own team's slot instead of
+   *  whichever manager sorts first alphabetically — that's the one they can actually upload to. */
+  private autoSelectOwnManager = effect(() => {
+    if (this.auth.isAdmin() || this.selectedKey()) return;
+    const uid = this.auth.firebaseUser()?.uid;
+    if (!uid) return;
+    const mine = this.managers().find((m) => m.uid === uid);
+    if (mine) this.selectedKey.set(mine.key);
+  });
+
   @HostListener('document:keydown.escape')
   closePreview(): void {
     this.preview.set(null);
@@ -298,9 +334,17 @@ export class LineupViewComponent {
     { initialValue: new Map<string, boolean>() }
   );
 
-  /** Manual upload fallback (e.g. console/PS5 managers who can't run the capture tool) —
-   *  admin-only, and only once the manager has a linked account to key the image under. */
-  canUpload = computed(() => this.auth.isAdmin() && !!this.selectedManager()?.email);
+  /** Manual upload fallback (e.g. console/PS5 managers who can't run the capture tool) — either an
+   *  admin uploading on the manager's behalf, or the manager themselves (signed in, linked account,
+   *  viewing their own slot) capturing/picking a photo of their own screen directly. Never lets a
+   *  manager upload into another manager's slot. */
+  canUpload = computed(() => {
+    const manager = this.selectedManager();
+    if (!manager?.email) return false;
+    if (this.auth.isAdmin()) return true;
+    const uid = this.auth.firebaseUser()?.uid;
+    return !!uid && !!manager.uid && uid === manager.uid;
+  });
 
   freeSlots = computed(() => {
     const used = new Set(this.images().map((img) => img.id));

@@ -51,6 +51,16 @@ service cloud.firestore {
         get(/databases/$(database)/documents/teams/$(teamId)).data.managerUid == currentUid();
     }
 
+    // The signed-in manager a `lineups/{parentId}` doc belongs to — parentId is
+    // `{tournamentId}__{email}` (see LineupService.parentId), so ownership is proven by matching
+    // the caller's own verified email (from their Google-signed ID token, not client-supplied data)
+    // against that suffix. Lets a manager manage only their own slots, never another manager's.
+    function isLineupOwner(parentId) {
+      return isSignedIn() && !isDisabled() &&
+        request.auth.token.email != null &&
+        parentId.split('__')[1] == request.auth.token.email.lower();
+    }
+
     function validTournamentType(t) {
       return t in ['round_robin', 'knockout', 'group_knockout'];
     }
@@ -278,13 +288,14 @@ service cloud.firestore {
     // -------------------------------------------------------------------
     // lineups/{tournamentId}__{email}/images/{slot} — squad lineup screenshots,
     // identified only by the manager's Gmail address, no Firebase Auth involved.
-    // Normally pushed in by an external capture tool; an admin can also write
-    // here manually from this app's own UI (the "Đội hình thi đấu" tab) for
-    // managers who can't run that tool (e.g. console/PS5 players) — same path,
-    // same shape. Public, unauthenticated write on purpose (explicit product
-    // decision): the mitigations below block junk collections, oversized
-    // payloads and non-image data even without requiring sign-in.
-    // Only an admin can delete a bad/stale image from the app itself.
+    // Normally pushed in by an external capture tool; an admin (or the manager
+    // themselves, signed in) can also write here manually from this app's own UI (the
+    // "Đội hình thi đấu" tab) for managers who can't run that tool (e.g. console/PS5
+    // players) — same path, same shape. Public, unauthenticated write on purpose
+    // (explicit product decision): the mitigations below block junk collections,
+    // oversized payloads and non-image data even without requiring sign-in.
+    // Delete: an admin any time, or the owning manager for their own not-yet-approved
+    // slot — once admin has approved it, only admin can remove it.
     // -------------------------------------------------------------------
     match /lineups/{parentId} {
       match /images/{slot} {
@@ -295,18 +306,23 @@ service cloud.firestore {
           && request.resource.data.image is string
           && request.resource.data.image.matches('^data:image/.*')
           && request.resource.data.image.size() < 900000;
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() ||
+          (isLineupOwner(parentId) &&
+            (!exists(/databases/$(database)/documents/lineups/$(parentId)/approvals/$(slot)) ||
+              get(/databases/$(database)/documents/lineups/$(parentId)/approvals/$(slot)).data.approved != true));
       }
 
-      // approvals/{slot} — admin-only "reviewed this screenshot" flag, kept in its own
-      // subcollection (not a field on images/{slot}) so it never has to satisfy that doc's public,
-      // locked-down `hasOnly(['image'])` write contract above.
+      // approvals/{slot} — "reviewed this screenshot" flag, kept in its own subcollection (not a
+      // field on images/{slot}) so it never has to satisfy that doc's public, locked-down
+      // `hasOnly(['image'])` write contract above. Only an admin sets/clears the flag itself, but
+      // the owning manager may also delete it — needed so LineupService.upload's "drop any stale
+      // approval" step succeeds when that manager replaces their own screenshot.
       match /approvals/{slot} {
         allow read: if true;
         allow create, update: if isAdmin() && slot in ['1', '2', '3', '4']
           && request.resource.data.keys().hasOnly(['approved'])
           && request.resource.data.approved is bool;
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() || isLineupOwner(parentId);
       }
     }
 

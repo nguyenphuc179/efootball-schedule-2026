@@ -45,7 +45,7 @@ THÔNG TIN VỀ TRANG WEB:
 
 5. Đội bóng: admin tạo đội bóng và gán người quản lý cho từng đội (qua tài khoản Gmail).
 
-6. Đội hình thi đấu: mỗi đội có tối đa 4 ô ảnh đội hình, đánh số "Hình 1" đến "Hình 4". Ảnh có thể tự động gửi lên từ một tool chụp màn hình bên ngoài, hoặc admin tải ảnh thủ công nếu quản lý không dùng được tool đó. Admin duyệt từng ảnh riêng lẻ bằng nút "Duyệt" — ảnh mới upload sẽ chưa có dấu "Đã duyệt" cho tới khi admin bấm duyệt.
+6. Đội hình thi đấu: mỗi đội có tối đa 4 ô ảnh đội hình, đánh số "Hình 1" đến "Hình 4". Ảnh có thể tự động gửi lên từ một tool chụp màn hình bên ngoài, hoặc chính quản lý tự chụp ảnh trực tiếp bằng camera điện thoại (nút "Chụp ảnh") hay chọn ảnh có sẵn (nút "Thêm ảnh") ngay trên web — không cần cài tool, tiện cho người chơi trên PS5/console — hoặc admin tải ảnh thủ công thay quản lý. Quản lý xoá được ảnh mình vừa tải lên nếu ảnh đó CHƯA được duyệt; ảnh đã duyệt rồi thì chỉ admin xoá được. Admin duyệt từng ảnh riêng lẻ bằng nút "Duyệt" — ảnh mới upload sẽ chưa có dấu "Đã duyệt" cho tới khi admin bấm duyệt.
 
 7. Nhập/sửa kết quả: admin nhập được kết quả của mọi trận. Quản lý đội chỉ nhập được kết quả trận của chính đội mình, kể cả sửa lại sau khi trận đã kết thúc.
 

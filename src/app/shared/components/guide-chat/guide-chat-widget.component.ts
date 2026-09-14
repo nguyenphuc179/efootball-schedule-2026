@@ -106,14 +106,16 @@ import { GuideChatService } from '../../../core/services/guide-chat.service';
       </div>
     }
 
-    <button
-      type="button"
-      class="fixed z-40 bottom-20 md:bottom-6 right-4 md:right-6 w-14 h-14 rounded-full bg-primary-600 text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform"
-      (click)="open.set(!open())"
-      [attr.aria-label]="(open() ? 'COMMON.CLOSE' : 'GUIDE_CHAT.OPEN') | translate"
-    >
-      <span class="material-icons text-[26px]">{{ open() ? 'close' : 'smart_toy' }}</span>
-    </button>
+    @if (!open()) {
+      <button
+        type="button"
+        class="fixed z-40 bottom-20 md:bottom-6 right-4 md:right-6 w-14 h-14 rounded-full bg-primary-600 text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform"
+        (click)="open.set(true)"
+        [attr.aria-label]="'GUIDE_CHAT.OPEN' | translate"
+      >
+        <span class="material-icons text-[26px]">smart_toy</span>
+      </button>
+    }
   `,
 })
 export class GuideChatWidgetComponent {

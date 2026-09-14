@@ -474,6 +474,7 @@
     "EMPTY_TITLE": "Chưa có ảnh đội hình",
     "EMPTY_SUBTITLE": "Ảnh sẽ tự động hiện ở đây khi manager gửi qua tool.",
     "ADD_IMAGE": "Thêm ảnh",
+    "TAKE_PHOTO": "Chụp ảnh",
     "UPLOAD_FAILED": "Không thể tải ảnh này lên — thử ảnh khác.",
     "DELETE_CONFIRM_TITLE": "Xóa ảnh đội hình?",
     "DELETE_CONFIRM_MESSAGE": "Ảnh này sẽ bị xóa vĩnh viễn.",

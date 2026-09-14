@@ -61,6 +61,10 @@ export class AuthService {
 
   async loginWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();
+    // Signing out only clears Firebase's own session, not the browser's underlying Google session —
+    // without this, Google silently re-authenticates whichever account is already active instead of
+    // letting the user pick (or confirm) one, so "log out then log back in" looked like a stuck session.
+    provider.setCustomParameters({ prompt: 'select_account' });
     const cred = await signInWithPopup(this.auth, provider);
     await this.ensureUserProfile(
       cred.user.uid,
