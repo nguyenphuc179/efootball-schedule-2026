@@ -40,6 +40,8 @@ import { downscaleToDataUri } from '../../utils/image-downscale.util';
         <input
           class="input-field flex-1 min-w-0"
           appImageUrlInput
+          [maxEdge]="maxEdge"
+          [maxBytes]="maxBytes"
           [formControl]="control"
           inputmode="url"
           [placeholder]="placeholder"
@@ -81,6 +83,10 @@ export class ImageUrlFieldComponent {
   }
 
   @Input() placeholder = 'Paste a link — or paste a copied image';
+  /** Raise these for a field displaying its image much larger than a small logo/avatar (e.g. a
+   *  full-width banner) — the defaults look visibly blurry stretched across something that wide. */
+  @Input() maxEdge?: number;
+  @Input() maxBytes?: number;
   @Output() changed = new EventEmitter<void>();
 
   isInlineImage = computed(() => /^data:image\//i.test(this.value()));
@@ -103,7 +109,7 @@ export class ImageUrlFieldComponent {
     this.uploadError.set('');
     this.uploading.set(true);
     try {
-      this._control.setValue(await downscaleToDataUri(file));
+      this._control.setValue(await downscaleToDataUri(file, { maxEdge: this.maxEdge, maxBytes: this.maxBytes }));
       this.changed.emit();
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);

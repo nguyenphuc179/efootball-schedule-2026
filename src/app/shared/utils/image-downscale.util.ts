@@ -1,9 +1,20 @@
-/** Longest edge (px) and quality for a downscaled image. Keeps the data URI well under Firestore's
- *  1 MiB document limit (webp is typically 20–90 KB) while staying sharp enough for a logo/poster. */
-const MAX_EDGE = 800;
+/** Default longest edge (px) and quality for a downscaled image. Keeps the data URI well under
+ *  Firestore's 1 MiB document limit (webp is typically 20–90 KB) while staying sharp enough for a
+ *  small logo/avatar. A caller displaying the image much larger (e.g. a full-width hero banner)
+ *  should pass a bigger `maxEdge` — this default looks visibly blurry stretched across a wide
+ *  banner, since it's upscaling a ~800px-wide source. */
+const DEFAULT_MAX_EDGE = 800;
 const QUALITY = 0.85;
-/** Refuse anything still huge after downscaling (e.g. a big PNG on a browser without webp encode). */
-const MAX_DATA_URI_BYTES = 800_000;
+/** Refuse anything still huge after downscaling (e.g. a big PNG on a browser without webp encode).
+ *  Default leaves headroom under firestore.rules' explicit 900,000-byte caps (lineup images); other
+ *  documents (e.g. `tournaments`) aren't rule-capped below Firestore's own 1 MiB document ceiling,
+ *  so a caller like the banner field can raise this closer to that limit. */
+const DEFAULT_MAX_BYTES = 800_000;
+
+export interface DownscaleOptions {
+  maxEdge?: number;
+  maxBytes?: number;
+}
 
 /** Encodes a canvas to a compact data URI. Safari has no webp encoder and `toDataURL('image/webp', …)`
  *  silently falls back to PNG there — fine for a clean screenshot, but a photographed TV screen (camera
@@ -32,7 +43,8 @@ function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
 }
 
 /** Downscales an image file/blob (pasted bitmap or a picked file) to a compact webp data URI. */
-export async function downscaleToDataUri(file: Blob): Promise<string> {
+export async function downscaleToDataUri(file: Blob, options?: DownscaleOptions): Promise<string> {
+  const maxBytes = options?.maxBytes ?? DEFAULT_MAX_BYTES;
   let img: HTMLImageElement;
   try {
     img = await loadImageFromBlob(file);
@@ -47,7 +59,7 @@ export async function downscaleToDataUri(file: Blob): Promise<string> {
 
   // A photo straight from a camera (vs. a clean screenshot) can still be too big after one pass —
   // shrink further and retry a few times before giving up.
-  let edge = MAX_EDGE;
+  let edge = options?.maxEdge ?? DEFAULT_MAX_EDGE;
   let quality = QUALITY;
   for (let attempt = 0; attempt < 6; attempt++) {
     const scale = Math.min(1, edge / Math.max(img.naturalWidth, img.naturalHeight));
@@ -60,7 +72,7 @@ export async function downscaleToDataUri(file: Blob): Promise<string> {
     canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
 
     const dataUri = encode(canvas, quality);
-    if (dataUri.length <= MAX_DATA_URI_BYTES) return dataUri;
+    if (dataUri.length <= maxBytes) return dataUri;
 
     quality = Math.max(0.4, quality - 0.15);
     edge = Math.round(edge * 0.8);

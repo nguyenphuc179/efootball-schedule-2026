@@ -17,6 +17,10 @@ export interface Tournament {
   createdBy: string; // uid
   createdDate: number;
   endedAt?: number | null; // set when an admin manually ends the tournament -> status stays 'completed'
+  /** uid of the one non-admin manager (if any) an admin has designated to click the fixture/bracket
+   *  "Generate" buttons themselves, for visible transparency around the draw — see the "Phân quyền"
+   *  tab. Admin can always generate too; this only ever adds permission, never removes it. */
+  fixtureGeneratorUid?: string | null;
 }
 
 export type TournamentDraft = Omit<

@@ -3,12 +3,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { TeamService } from '../team.service';
 import { MemberService } from '../../members/member.service';
 import { Team } from '../../../models/team.model';
 import { AppUser, userDisplayName } from '../../../models/user.model';
 import { ImageUrlFieldComponent } from '../../../shared/components/image-url-field/image-url-field.component';
+import { AppSelectComponent, AppSelectOption } from '../../../shared/components/app-select/app-select.component';
 import { IMAGE_SRC_PATTERN, isImageSrc, isUserImage } from '../../../shared/utils/image-url.util';
 import { initialsAvatarDataUri } from '../../../shared/utils/avatar.util';
 
@@ -31,7 +32,7 @@ export interface TeamFormDialogData {
 @Component({
   selector: 'app-team-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent, TranslatePipe],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent, AppSelectComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh w-full flex flex-col bg-white">
@@ -70,12 +71,7 @@ export interface TeamFormDialogData {
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-gray-600">{{ 'TEAM_FORM.MANAGER' | translate }}</span>
-          <select class="input-field" formControlName="managerUid" (change)="imgError.set(false)">
-            <option value="">{{ 'TEAM_FORM.NO_MANAGER_OPTION' | translate }}</option>
-            @for (m of activeMembers(); track m.uid) {
-              <option [value]="m.uid">{{ m.name }}</option>
-            }
-          </select>
+          <app-select [control]="form.controls.managerUid" [options]="managerSelectOptions()" (valueChange)="imgError.set(false)" />
           <span class="text-xs text-gray-400">{{ 'TEAM_FORM.MANAGER_HINT' | translate }}</span>
         </label>
       </form>
@@ -86,6 +82,7 @@ export class TeamFormComponent {
   private fb = inject(FormBuilder);
   private teamService = inject(TeamService);
   private memberService = inject(MemberService);
+  private translate = inject(TranslateService);
 
   isSaving = signal(false);
   imgError = signal(false);
@@ -100,6 +97,16 @@ export class TeamFormComponent {
       .map((m) => ({ uid: m.uid, name: userDisplayName(m, m.uid), photoURL: m.photoURL ?? null, email: m.email ?? null }))
       .sort((a, b) => a.name.localeCompare(b.name))
   );
+
+  /** A plain method (not `computed`) so `translate.instant()` re-runs on every check and stays in
+   *  the current language — this template also uses the `translate` pipe elsewhere, which marks
+   *  this OnPush component dirty on a language switch. */
+  managerSelectOptions(): AppSelectOption[] {
+    return [
+      { value: '', label: this.translate.instant('TEAM_FORM.NO_MANAGER_OPTION') },
+      ...this.activeMembers().map((m) => ({ value: m.uid, label: m.name })),
+    ];
+  }
 
   form = this.fb.nonNullable.group({
     teamName: [

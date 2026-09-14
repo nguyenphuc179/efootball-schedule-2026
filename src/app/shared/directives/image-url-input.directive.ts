@@ -1,4 +1,4 @@
-import { Directive, ElementRef, HostListener, inject } from '@angular/core';
+import { Directive, ElementRef, HostListener, Input, inject } from '@angular/core';
 import { NgControl } from '@angular/forms';
 import { downscaleToDataUri } from '../utils/image-downscale.util';
 
@@ -22,6 +22,11 @@ export class ImageUrlInputDirective {
   private ngControl = inject(NgControl, { self: true, optional: true });
   private el = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
+  /** Passed through to `downscaleToDataUri` for a "paste the image itself" — a caller displaying
+   *  the image much larger than a small logo/avatar (e.g. a full-width banner) should raise this. */
+  @Input() maxEdge?: number;
+  @Input() maxBytes?: number;
+
   @HostListener('input', ['$event'])
   onInput(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -39,7 +44,7 @@ export class ImageUrlInputDirective {
     if (!file) return;
     event.preventDefault();
     try {
-      this.write(await downscaleToDataUri(file));
+      this.write(await downscaleToDataUri(file, { maxEdge: this.maxEdge, maxBytes: this.maxBytes }));
     } catch {
       /* conversion failed — leave the field untouched */
     }

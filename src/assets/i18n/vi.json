@@ -39,6 +39,7 @@
     "BACK": "Quay lại",
     "LOADING": "Đang tải…",
     "SHARE": "Chia sẻ",
+    "DOWNLOAD": "Tải ảnh xuống",
     "YES": "Có",
     "NO": "Không",
     "LINK_COPIED": "Đã copy link!",
@@ -178,10 +179,20 @@
     "TAB_STATISTICS": "Thống kê",
     "TAB_STATS_SHORT": "Thống kê",
     "TAB_LINEUP": "Đội hình thi đấu",
+    "TAB_PERMISSIONS": "Phân quyền",
+    "TAB_PERMISSIONS_SHORT": "Phân quyền",
     "RESET_CONFIRM_TITLE": "Đặt lại toàn bộ trận đấu?",
     "RESET_CONFIRM_MESSAGE": "Toàn bộ trận đấu và kết quả của giải này sẽ bị xóa vĩnh viễn để bạn tạo lại lịch thi đấu và nhập kết quả từ đầu. Đội bóng không bị ảnh hưởng. Không thể hoàn tác.",
     "DELETE_CONFIRM_TITLE": "Xóa giải đấu?",
     "DELETE_CONFIRM_MESSAGE": "\"{{name}}\" cùng toàn bộ đội bóng, lịch thi đấu, kết quả và bảng xếp hạng sẽ bị xóa vĩnh viễn. Không thể hoàn tác."
+  },
+  "TOURNAMENT_PERMISSIONS": {
+    "DESCRIPTION": "Chỉ định 1 quản lý được quyền bấm các nút \"Tạo\" (lịch thi đấu, vòng bảng, vòng loại trực tiếp) — để họ tự tạo trực tiếp, minh bạch với mọi người. Admin luôn giữ quyền này song song, không bị mất quyền.",
+    "NO_MANAGERS": "Giải đấu chưa có đội bóng nào có quản lý.",
+    "SELECT_LABEL": "Quản lý được chỉ định",
+    "NONE_OPTION": "Không chỉ định (chỉ admin)",
+    "ACTIVE_HINT": "{{name}} hiện có thể tự bấm các nút \"Tạo\" cho giải đấu này.",
+    "SAVE_FAILED": "Không thể lưu thay đổi — kiểm tra kết nối và quyền truy cập."
   },
   "TEAM_LIST": {
     "ADD_TEAM": "Thêm đội",
@@ -225,7 +236,7 @@
     "REGENERATE_ARIA": "Tạo lại vòng bảng",
     "REGENERATE": "Tạo lại",
     "ROUND_LABEL": "Vòng",
-    "ALL_SHORT": "TẤT CẢ",
+    "ALL_SHORT": "All",
     "NO_MATCH_FILTER": "Không có trận nào khớp bộ lọc.",
     "NO_MATCH_MANAGER": "Không có trận nào của \"{{manager}}\"."
   },
@@ -369,8 +380,13 @@
     "DISABLE_CONFIRM_TITLE": "Khóa thành viên?",
     "DISABLE_CONFIRM_MESSAGE": "{{name}} sẽ bị đăng xuất và chặn mọi thao tác trong ứng dụng. Tài khoản đăng nhập không bị xóa — có thể mở khóa lại bất cứ lúc nào ở đây, hoặc xóa tài khoản trong Firebase Console để giải phóng email.",
     "THIS_MEMBER": "Thành viên này",
-    "UPLOAD_PHOTO": "Tải ảnh đại diện cho thành viên này",
-    "UPLOAD_PHOTO_FAILED": "Không thể tải ảnh lên — kiểm tra kết nối và quyền truy cập."
+    "UPLOAD_PHOTO": "Upload avatar",
+    "UPLOAD_PHOTO_FAILED": "Không thể tải ảnh lên — kiểm tra kết nối và quyền truy cập.",
+    "VIEW_PHOTO": "Xem ảnh đại diện",
+    "ACTIONS": "Tuỳ chọn",
+    "ROLE_LABEL": "Vai trò",
+    "STATUS_ACTIVE": "Hoạt động",
+    "STATUS_DISABLED": "Đã khóa"
   },
   "ACTIVITY_MENU": {
     "HOME": "Trang chủ",
@@ -398,6 +414,9 @@
     "MY_EMPTY_SUBTITLE": "Các hành động liên quan đến bạn sẽ hiện ở đây.",
     "MARK_ALL_SEEN": "Đánh dấu đã xem tất cả",
     "MARK_SEEN": "Đánh dấu đã xem",
+    "FILTER_BUTTON": "Bộ lọc",
+    "FILTER_CLEAR": "Xoá lọc",
+    "FILTER_APPLY": "Áp dụng",
     "FILTER_LABEL": "Lọc theo màn hình",
     "FILTER_ALL": "Tất cả màn hình",
     "FILTER_MANAGER_LABEL": "Lọc theo quản lý",
@@ -422,6 +441,7 @@
     "NEW_TITLE": "Giải đấu mới",
     "BANNER_PREVIEW": "Xem trước banner",
     "BANNER_IMAGE": "Ảnh banner",
+    "BANNER_IMAGE_HINT": "Kích thước khuyến nghị: 1920 × 480px (tỉ lệ 4:1) để hiển thị nét, không bị cắt.",
     "NAME": "Tên giải đấu",
     "DESCRIPTION": "Mô tả",
     "DESCRIPTION_PLACEHOLDER": "Mô tả ngắn",

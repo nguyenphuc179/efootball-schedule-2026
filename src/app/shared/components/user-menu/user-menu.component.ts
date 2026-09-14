@@ -26,7 +26,15 @@ import { APP_VERSION } from '../../../core/app-version';
   imports: [RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (!auth.isSignedIn()) {
+    @if (!auth.isAuthResolved()) {
+      <!-- Firebase Auth hasn't confirmed signed-in/out yet (e.g. right after a page refresh, before
+           the persisted session rehydrates) — a neutral skeleton here avoids flashing the "Sign In"
+           button at someone who's actually already logged in. -->
+      <div class="flex items-center gap-1">
+        <div class="w-9 h-9 rounded-full bg-surface-muted animate-pulse"></div>
+        <div class="w-24 h-8 rounded-full bg-surface-muted animate-pulse"></div>
+      </div>
+    } @else if (!auth.isSignedIn()) {
       <div class="flex items-center gap-1">
         <button
           type="button"

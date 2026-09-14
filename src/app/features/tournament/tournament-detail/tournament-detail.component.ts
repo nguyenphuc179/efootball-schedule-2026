@@ -19,8 +19,9 @@ import { FinalStageComponent } from '../final-stage/final-stage.component';
 import { StandingsViewComponent } from '../../standings/standings-view/standings-view.component';
 import { StandingsService } from '../../standings/standings.service';
 import { StatisticsComponent } from '../../statistics/statistics.component';
+import { TournamentPermissionsComponent } from '../tournament-permissions/tournament-permissions.component';
 import { SwipeDirective } from '../../../shared/directives/swipe.directive';
-import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_TYPE_LABELS } from '../../../models/tournament.model';
+import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_TYPE_LABELS, TournamentStatus } from '../../../models/tournament.model';
 import { Match } from '../../../models/match.model';
 
 type TabKey =
@@ -32,7 +33,8 @@ type TabKey =
   | 'groupStage'
   | 'finalStage'
   | 'standings'
-  | 'statistics';
+  | 'statistics'
+  | 'permissions';
 
 @Component({
   selector: 'app-tournament-detail',
@@ -48,6 +50,7 @@ type TabKey =
     FinalStageComponent,
     StandingsViewComponent,
     StatisticsComponent,
+    TournamentPermissionsComponent,
     SwipeDirective,
     TranslatePipe,
   ],
@@ -80,9 +83,13 @@ type TabKey =
 
         <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
           <span class="badge bg-primary-50 text-primary-700">{{ typeLabels[tournament()!.type] | translate }}</span>
-          <button class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1 ml-auto" (click)="share()">
-            <span class="material-icons text-[16px]">{{ shareCopied() ? 'check' : 'share' }}</span>
-            {{ (shareCopied() ? 'COMMON.LINK_COPIED' : 'COMMON.SHARE') | translate }}
+          <button
+            class="w-8 h-8 flex items-center justify-center text-gray-400 ml-auto"
+            (click)="share()"
+            [attr.aria-label]="(shareCopied() ? 'COMMON.LINK_COPIED' : 'COMMON.SHARE') | translate"
+            [title]="(shareCopied() ? 'COMMON.LINK_COPIED' : 'COMMON.SHARE') | translate"
+          >
+            <span class="material-icons text-[18px]">{{ shareCopied() ? 'check' : 'share' }}</span>
           </button>
           @if (auth.isAdmin()) {
             @if (tournament()!.status === 'completed') {
@@ -104,11 +111,13 @@ type TabKey =
             }
             @if (matches().length > 0) {
               <button
-                class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1"
+                class="w-8 h-8 flex items-center justify-center text-gray-400 disabled:opacity-40"
                 [disabled]="isResetting()"
                 (click)="resetMatches()"
+                [attr.aria-label]="'TOURNAMENT_DETAIL.RESET' | translate"
+                [title]="'TOURNAMENT_DETAIL.RESET' | translate"
               >
-                <span class="material-icons text-[16px]">restart_alt</span> {{ isResetting() ? '…' : ('TOURNAMENT_DETAIL.RESET' | translate) }}
+                <span class="material-icons text-[18px]">{{ isResetting() ? 'hourglass_top' : 'restart_alt' }}</span>
               </button>
             }
             <a [routerLink]="['/tournaments', tournament()!.id, 'edit']" class="w-8 h-8 flex items-center justify-center text-gray-400">
@@ -171,14 +180,8 @@ type TabKey =
                 <p class="text-sm text-gray-600 whitespace-pre-line">{{ tournament()!.description || ('TOURNAMENT_DETAIL.NO_DESCRIPTION' | translate) }}</p>
                 <div class="grid grid-cols-2 gap-3 mt-4 text-sm">
                   <div><span class="text-gray-400">{{ 'ADMIN_OVERVIEW.TEAMS' | translate }}</span><div class="font-semibold">{{ tournament()!.numberOfTeams }}</div></div>
-                  <div><span class="text-gray-400">{{ 'TOURNAMENT_DETAIL.STATUS' | translate }}</span><div class="font-semibold">{{ statusLabels[tournament()!.status] | translate }}</div></div>
+                  <div><span class="text-gray-400">{{ 'TOURNAMENT_DETAIL.STATUS' | translate }}</span><div class="mt-0.5"><span class="badge" [class]="statusClasses(tournament()!.status)">{{ statusLabels[tournament()!.status] | translate }}</span></div></div>
                 </div>
-
-                @if (auth.isAdmin() && tournament()!.status !== 'completed' && !canEndTournament()) {
-                  <p class="text-xs text-gray-400 mt-4 pt-4 border-t border-gray-100">
-                    {{ 'TOURNAMENT_DETAIL.END_HINT' | translate }}
-                  </p>
-                }
               </div>
             }
             @case ('teams') {
@@ -188,19 +191,24 @@ type TabKey =
               <app-lineup-view [tournamentId]="tournament()!.id" />
             }
             @case ('fixtures') {
-              <app-fixtures-list [tournamentId]="tournament()!.id" filter="upcoming" />
+              <app-fixtures-list [tournamentId]="tournament()!.id" filter="upcoming" [canGenerate]="canGenerateFixtures()" />
             }
             @case ('results') {
-              <app-fixtures-list [tournamentId]="tournament()!.id" filter="completed" />
+              <app-fixtures-list [tournamentId]="tournament()!.id" filter="completed" [canGenerate]="canGenerateFixtures()" />
             }
             @case ('groupStage') {
-              <app-group-stage [tournamentId]="tournament()!.id" [locked]="tournament()!.status === 'completed'" />
+              <app-group-stage
+                [tournamentId]="tournament()!.id"
+                [locked]="tournament()!.status === 'completed'"
+                [canGenerate]="canGenerateFixtures()"
+              />
             }
             @case ('finalStage') {
               <app-final-stage
                 [tournamentId]="tournament()!.id"
                 [tournamentType]="tournament()!.type"
                 [locked]="tournament()!.status === 'completed'"
+                [canGenerate]="canGenerateFixtures()"
               />
             }
             @case ('standings') {
@@ -208,6 +216,9 @@ type TabKey =
             }
             @case ('statistics') {
               <app-statistics [tournamentId]="tournament()!.id" />
+            }
+            @case ('permissions') {
+              <app-tournament-permissions [tournamentId]="tournament()!.id" />
             }
           }
         </div>
@@ -228,6 +239,21 @@ export class TournamentDetailComponent {
   auth = inject(AuthService);
   typeLabels = TOURNAMENT_TYPE_LABELS;
   statusLabels = TOURNAMENT_STATUS_LABELS;
+
+  /** Same orange/gray badge classes as the tournament list, for consistency. */
+  statusClasses(status: TournamentStatus): string {
+    return status === 'completed' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-accent-amber';
+  }
+
+  /** True for admin OR the one manager an admin designated (see "Phân quyền" tab) to click every
+   *  Generate button themselves — for visible transparency around the fixture/bracket draw. Passed
+   *  down to the Fixtures/Results, Group Stage and Final Stage tabs alike; admin can always
+   *  generate too, this only ever adds permission. */
+  canGenerateFixtures = computed(() => {
+    if (this.auth.isAdmin()) return true;
+    const uid = this.auth.firebaseUser()?.uid;
+    return !!uid && !!this.tournament()?.fixtureGeneratorUid && this.tournament()!.fixtureGeneratorUid === uid;
+  });
 
   private id = this.route.snapshot.paramMap.get('id')!;
   tournament = toSignal(this.tournamentService.streamOne(this.id));
@@ -286,6 +312,9 @@ export class TournamentDetailComponent {
       ...middle,
       { key: 'standings', label: 'TOURNAMENT_DETAIL.TAB_STANDINGS', short: 'TOURNAMENT_DETAIL.TAB_STANDINGS' },
       { key: 'statistics', label: 'TOURNAMENT_DETAIL.TAB_STATISTICS', short: 'TOURNAMENT_DETAIL.TAB_STATS_SHORT' },
+      ...(this.auth.isAdmin()
+        ? [{ key: 'permissions' as const, label: 'TOURNAMENT_DETAIL.TAB_PERMISSIONS', short: 'TOURNAMENT_DETAIL.TAB_PERMISSIONS_SHORT' }]
+        : []),
     ];
   });
 

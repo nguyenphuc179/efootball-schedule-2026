@@ -246,7 +246,7 @@ export class RankingComponent {
     this.dialog.open(ManagerDetailComponent, {
       data: { manager: r },
       width: isMobile ? "100vw" : "480px",
-      height: isMobile ? "100dvh" : "auto",
+      height: isMobile ? "100dvh" : "85vh",
       maxWidth: "100vw",
       maxHeight: isMobile ? "100dvh" : "85vh",
     });

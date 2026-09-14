@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
@@ -10,6 +10,7 @@ import { FirestoreBaseService } from '../../core/services/firestore-base.service
 import { TeamService } from '../teams/team.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { AppSelectComponent, AppSelectOption } from '../../shared/components/app-select/app-select.component';
 import { ACTIVITY_MENUS, menuInfoForPath } from '../../shared/utils/activity-menu.util';
 import { liveUserProfiles, uidsKey } from '../../shared/utils/live-user-profiles.util';
 import { AppUser, userDisplayName } from '../../models/user.model';
@@ -82,7 +83,7 @@ const ICONS: Record<ActivityAction, string> = {
 @Component({
   selector: 'app-activity-log',
   standalone: true,
-  imports: [EmptyStateComponent, TranslatePipe],
+  imports: [EmptyStateComponent, AppSelectComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-4 max-w-2xl mx-auto">
@@ -110,48 +111,62 @@ const ICONS: Record<ActivityAction, string> = {
         </div>
       </div>
 
-      <label class="flex flex-col gap-1 mb-3">
-        <span class="text-sm font-medium text-gray-600">{{ 'ACTIVITY_LOG.SEARCH_LABEL' | translate }}</span>
-        <div class="relative">
+      <div class="flex items-center gap-2 mb-1">
+        <div class="relative flex-1">
           <span class="material-icons absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-gray-400">search</span>
           <input
             type="search"
-            class="input-field !pl-9"
+            class="input-field !pl-9 h-12"
             [placeholder]="'ACTIVITY_LOG.SEARCH_PLACEHOLDER' | translate"
             [value]="searchQuery()"
             (input)="searchQuery.set($any($event.target).value)"
           />
         </div>
-        @if (searchWindowTruncated()) {
-          <span class="text-xs text-gray-400">{{ 'ACTIVITY_LOG.SEARCH_TRUNCATED_NOTE' | translate: { count: searchWindow } }}</span>
-        }
-      </label>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">{{ 'ACTIVITY_LOG.FILTER_LABEL' | translate }}</span>
-          <select class="input-field" [value]="selectedMenuKey() ?? ''" (change)="selectedMenuKey.set($any($event.target).value || null)">
-            <option value="">{{ 'ACTIVITY_LOG.FILTER_ALL' | translate }}</option>
-            @for (m of menus; track m.key) {
-              <option [value]="m.key">{{ m.labelKey | translate }}</option>
+        <div class="relative shrink-0">
+          <button
+            type="button"
+            class="relative flex items-center gap-2 h-12 px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 active:bg-gray-50"
+            (click)="toggleFilterPanel()"
+          >
+            <span class="material-icons text-[18px]">filter_list</span>
+            {{ 'ACTIVITY_LOG.FILTER_BUTTON' | translate }}
+            @if (hasActiveFilter()) {
+              <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary-600"></span>
             }
-          </select>
-        </label>
+          </button>
 
-        @if (auth.isAdmin()) {
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-gray-600">{{ 'ACTIVITY_LOG.FILTER_MANAGER_LABEL' | translate }}</span>
-            <select class="input-field" [value]="selectedManagerUid() ?? ''" (change)="selectedManagerUid.set($any($event.target).value || null)">
-              <option value="">{{ 'ACTIVITY_LOG.FILTER_MANAGER_ALL' | translate }}</option>
-              @for (m of activeManagersWithActivity(); track m.uid) {
-                <option [value]="m.uid">{{ m.name }}</option>
-              }
-            </select>
-          </label>
-        }
+          @if (filterPanelOpen()) {
+            <div class="absolute right-0 z-30 mt-2 w-72 max-w-[90vw] bg-white rounded-xl shadow-lg border border-gray-100 p-4 flex flex-col gap-3">
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium text-gray-600">{{ 'ACTIVITY_LOG.FILTER_LABEL' | translate }}</span>
+              <app-select [options]="menuOptionsList()" [value]="draftMenuKey() ?? ''" (valueChange)="draftMenuKey.set($event || null)" />
+            </label>
+
+            @if (auth.isAdmin()) {
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium text-gray-600">{{ 'ACTIVITY_LOG.FILTER_MANAGER_LABEL' | translate }}</span>
+                <app-select [options]="managerOptionsList()" [value]="draftManagerUid() ?? ''" (valueChange)="draftManagerUid.set($event || null)" />
+              </label>
+            }
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <button type="button" class="text-xs font-semibold text-gray-500" (click)="clearDraftFilters()">
+                {{ 'ACTIVITY_LOG.FILTER_CLEAR' | translate }}
+              </button>
+              <button type="button" class="btn-primary !py-2 !px-4 text-sm" (click)="applyFilters()">
+                {{ 'ACTIVITY_LOG.FILTER_APPLY' | translate }}
+              </button>
+            </div>
+          </div>
+          }
+        </div>
       </div>
+      @if (searchWindowTruncated()) {
+        <span class="block text-xs text-gray-400 mb-3">{{ 'ACTIVITY_LOG.SEARCH_TRUNCATED_NOTE' | translate: { count: searchWindow } }}</span>
+      }
 
-      <p class="text-sm text-gray-500 mb-3">
+      <p class="text-sm text-gray-500 mt-10 mb-3">
         {{ (isSearching() ? 'ACTIVITY_LOG.SEARCH_RESULTS_LABEL' : 'ACTIVITY_LOG.TOTAL_LABEL') | translate }}:
         <span class="font-semibold text-gray-700">{{ isSearching() ? logs().length : (totalCount() ?? '…') }}</span>
       </p>
@@ -235,6 +250,7 @@ export class ActivityLogComponent {
   private translate = inject(TranslateService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
   auth = inject(AuthService);
   icons = ICONS;
   searchWindow = SEARCH_WINDOW;
@@ -252,6 +268,56 @@ export class ActivityLogComponent {
 
   selectedMenuKey = signal<string | null>(null);
   selectedManagerUid = signal<string | null>(null);
+
+  /** The two filter `<app-select>`s live inside a popup (opened from the filter icon) rather than
+   *  applying live — `draft*` holds the in-progress picks until "Áp dụng" commits them to
+   *  `selectedMenuKey`/`selectedManagerUid` above, which is what the list/query actually reacts to. */
+  filterPanelOpen = signal(false);
+  draftMenuKey = signal<string | null>(null);
+  draftManagerUid = signal<string | null>(null);
+
+  toggleFilterPanel(): void {
+    if (!this.filterPanelOpen()) {
+      this.draftMenuKey.set(this.selectedMenuKey());
+      this.draftManagerUid.set(this.selectedManagerUid());
+    }
+    this.filterPanelOpen.set(!this.filterPanelOpen());
+  }
+
+  clearDraftFilters(): void {
+    this.draftMenuKey.set(null);
+    this.draftManagerUid.set(null);
+  }
+
+  applyFilters(): void {
+    this.selectedMenuKey.set(this.draftMenuKey());
+    this.selectedManagerUid.set(this.draftManagerUid());
+    this.filterPanelOpen.set(false);
+  }
+
+  /** Plain methods (not `computed`s) so `translate.instant()` re-runs on every check — this
+   *  template already uses the `translate` pipe elsewhere, which marks this OnPush component dirty
+   *  on a language switch, so these still stay in sync without needing their own reactive wiring. */
+  menuOptionsList(): AppSelectOption[] {
+    return [
+      { value: '', label: this.translate.instant('ACTIVITY_LOG.FILTER_ALL') },
+      ...this.menus.map((m) => ({ value: m.key, label: this.translate.instant(m.labelKey) })),
+    ];
+  }
+
+  managerOptionsList(): AppSelectOption[] {
+    return [
+      { value: '', label: this.translate.instant('ACTIVITY_LOG.FILTER_MANAGER_ALL') },
+      ...this.activeManagersWithActivity().map((m) => ({ value: m.uid, label: m.name })),
+    ];
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeFilterPanelOnOutsideClick(event: MouseEvent): void {
+    if (this.filterPanelOpen() && !this.host.nativeElement.contains(event.target as Node)) {
+      this.filterPanelOpen.set(false);
+    }
+  }
   searchQuery = signal('');
   private normalizedSearch = computed(() => this.searchQuery().trim().toLowerCase());
   isSearching = computed(() => this.normalizedSearch().length > 0);

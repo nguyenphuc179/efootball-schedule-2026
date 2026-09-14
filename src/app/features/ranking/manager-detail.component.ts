@@ -24,7 +24,7 @@ export interface ManagerDetailDialogData {
   imports: [CommonModule, MatDialogModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-dvh w-full flex flex-col bg-white">
+    <div class="h-full w-full flex flex-col bg-white">
       <div class="flex items-center justify-between h-14 px-4 border-b border-gray-100">
         <button class="w-9 h-9 flex items-center justify-center" (click)="dialogRef.close()">
           <span class="material-icons">close</span>

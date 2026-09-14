@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
@@ -6,8 +6,10 @@ import { MemberService } from './member.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivityLogService } from '../../core/services/activity-log.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { AppSelectComponent, AppSelectOption } from '../../shared/components/app-select/app-select.component';
 import { initialsAvatar } from '../../shared/utils/avatar.util';
 import { downscaleToDataUri } from '../../shared/utils/image-downscale.util';
+import { downloadImageAsPng } from '../../shared/utils/download-image.util';
 import { AppUser, UserRole, userDisplayName } from '../../models/user.model';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -26,7 +28,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-members',
   standalone: true,
-  imports: [CommonModule, TranslatePipe],
+  imports: [CommonModule, AppSelectComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (auth.isAdmin()) {
@@ -46,15 +48,15 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
             } @else {
               <div class="flex flex-col divide-y divide-gray-100">
             @for (m of members(); track m.uid) {
-              <div class="flex items-center gap-3 py-2.5" [class.opacity-50]="m.disabled">
+              <div class="flex items-center gap-3 py-2.5">
+                <div class="flex items-center gap-3 flex-1 min-w-0" [class.opacity-50]="m.disabled">
                 <div class="relative w-9 h-9 shrink-0">
                   <button
                     type="button"
-                    class="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden disabled:opacity-50"
+                    class="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden"
                     [style.background-color]="avatar(m).bg"
-                    [disabled]="uploadingPhotoUid() === m.uid"
-                    (click)="photoInput.click()"
-                    [attr.aria-label]="'MEMBERS.UPLOAD_PHOTO' | translate"
+                    (click)="viewAvatar(m)"
+                    [attr.aria-label]="'MEMBERS.VIEW_PHOTO' | translate"
                   >
                     @if (uploadingPhotoUid() === m.uid) {
                       <span class="material-icons text-white text-[16px]">hourglass_top</span>
@@ -121,27 +123,69 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
                     </div>
                   </div>
                 }
+                </div>
 
-                <select
-                  class="input-field !py-1.5 !px-2 !w-auto text-sm"
-                  [value]="m.role"
-                  [disabled]="m.uid === myUid() || savingUid() === m.uid || !!m.disabled"
-                  (change)="changeRole(m, $any($event.target).value)"
-                >
-                  <option value="viewer">{{ 'MEMBERS.ROLE_VIEWER' | translate }}</option>
-                  <option value="admin">{{ 'MEMBERS.ROLE_ADMIN' | translate }}</option>
-                </select>
-
-                @if (m.uid !== myUid()) {
+                <div class="relative shrink-0">
                   <button
-                    class="text-xs font-semibold shrink-0 disabled:opacity-40"
-                    [class]="m.disabled ? 'text-primary-600' : 'text-accent-red'"
-                    [disabled]="savingUid() === m.uid"
-                    (click)="toggleDisabled(m)"
+                    type="button"
+                    class="w-8 h-8 flex items-center justify-center text-gray-400"
+                    (click)="toggleActionsFor(m.uid, $event)"
+                    [attr.aria-label]="'MEMBERS.ACTIONS' | translate"
+                    [attr.aria-expanded]="actionsOpenUid() === m.uid"
                   >
-                    {{ (m.disabled ? 'MEMBERS.ENABLE' : 'MEMBERS.DISABLE') | translate }}
+                    <span class="material-icons text-[20px]">more_vert</span>
                   </button>
-                }
+
+                  @if (actionsOpenUid() === m.uid) {
+                    <div
+                      class="absolute right-0 z-30 mt-1 w-60 max-w-[85vw] bg-white rounded-xl shadow-lg border border-gray-100 p-3 flex flex-col gap-3"
+                      (click)="$event.stopPropagation()"
+                    >
+                      <label class="flex flex-col gap-1">
+                        <span class="text-xs font-medium text-gray-500">{{ 'MEMBERS.ROLE_LABEL' | translate }}</span>
+                        <app-select
+                          [options]="roleOptions()"
+                          [value]="m.role"
+                          [disabled]="m.uid === myUid() || savingUid() === m.uid || !!m.disabled"
+                          (valueChange)="changeRole(m, $any($event))"
+                        />
+                      </label>
+
+                      @if (m.uid !== myUid()) {
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-xs font-medium text-gray-500">
+                            {{ (m.disabled ? 'MEMBERS.STATUS_DISABLED' : 'MEMBERS.STATUS_ACTIVE') | translate }}
+                          </span>
+                          <button
+                            type="button"
+                            role="switch"
+                            [attr.aria-checked]="!m.disabled"
+                            [attr.aria-label]="(m.disabled ? 'MEMBERS.ENABLE' : 'MEMBERS.DISABLE') | translate"
+                            class="relative w-11 !h-6 !min-h-0 rounded-full transition-colors shrink-0 disabled:opacity-40"
+                            [class]="!m.disabled ? 'bg-primary-600' : 'bg-gray-300'"
+                            [disabled]="savingUid() === m.uid"
+                            (click)="toggleDisabled(m)"
+                          >
+                            <span
+                              class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"
+                              [class.translate-x-5]="!m.disabled"
+                            ></span>
+                          </button>
+                        </div>
+                      }
+
+                      <button
+                        type="button"
+                        class="flex items-center gap-2 text-xs font-semibold text-primary-600 disabled:opacity-40"
+                        [disabled]="uploadingPhotoUid() === m.uid"
+                        (click)="photoInput.click()"
+                      >
+                        <span class="material-icons text-[16px]">{{ uploadingPhotoUid() === m.uid ? 'hourglass_top' : 'upload' }}</span>
+                        {{ 'MEMBERS.UPLOAD_PHOTO' | translate }}
+                      </button>
+                    </div>
+                  }
+                </div>
               </div>
             }
               </div>
@@ -154,6 +198,30 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
         }
       </div>
     }
+
+    @if (avatarPreview(); as p) {
+      <div class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4" (click)="avatarPreview.set(null)">
+        <img [src]="p.url" [alt]="p.name" class="max-w-full max-h-full object-contain rounded-2xl" (click)="$event.stopPropagation()" />
+        <div class="absolute top-3 right-3 flex items-center gap-2">
+          <button
+            type="button"
+            class="w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center"
+            (click)="$event.stopPropagation(); downloadImageAsPng(p.url, p.name + '-avatar')"
+            [attr.aria-label]="'COMMON.DOWNLOAD' | translate"
+          >
+            <span class="material-icons">download</span>
+          </button>
+          <button
+            type="button"
+            class="w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center"
+            (click)="avatarPreview.set(null)"
+            [attr.aria-label]="'COMMON.CLOSE' | translate"
+          >
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      </div>
+    }
   `,
 })
 export class MembersComponent {
@@ -162,6 +230,7 @@ export class MembersComponent {
   private translate = inject(TranslateService);
   auth = inject(AuthService);
   private activityLog = inject(ActivityLogService);
+  downloadImageAsPng = downloadImageAsPng;
 
   members = toSignal(this.memberService.streamMembers(), { initialValue: [] as AppUser[] });
   myUid = computed(() => this.auth.firebaseUser()?.uid);
@@ -169,6 +238,37 @@ export class MembersComponent {
   errorMsg = signal('');
   failedPhotos = signal<Set<string>>(new Set());
   uploadingPhotoUid = signal<string | null>(null);
+
+  /** Per-row "..." actions popup (role/status/upload) — only one open at a time. The popup's own
+   *  click handler stops propagation, so this document listener only ever fires for a genuine
+   *  outside click, regardless of which row's popup is open. */
+  actionsOpenUid = signal<string | null>(null);
+
+  toggleActionsFor(uid: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.actionsOpenUid.set(this.actionsOpenUid() === uid ? null : uid);
+  }
+
+  @HostListener('document:click')
+  closeActionsMenu(): void {
+    this.actionsOpenUid.set(null);
+  }
+
+  /** Fullscreen avatar preview — clicking a member's avatar now views it instead of opening the
+   *  upload picker (that moved into the "..." actions popup's own upload button). */
+  avatarPreview = signal<{ url: string; name: string } | null>(null);
+
+  viewAvatar(member: AppUser): void {
+    if (member.photoURL && !this.failedPhotos().has(member.uid)) {
+      this.avatarPreview.set({ url: member.photoURL, name: this.nameOf(member) });
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  closeOverlays(): void {
+    this.avatarPreview.set(null);
+    this.actionsOpenUid.set(null);
+  }
 
   /** Which member's name is being edited inline, plus the seeded draft value. */
   editingUid = signal<string | null>(null);
@@ -267,6 +367,16 @@ export class MembersComponent {
     } finally {
       this.savingUid.set(null);
     }
+  }
+
+  /** A plain method (not `computed`) so `translate.instant()` re-runs on every check and stays in
+   *  the current language — this template also uses the `translate` pipe elsewhere, which marks
+   *  this OnPush component dirty on a language switch. */
+  roleOptions(): AppSelectOption[] {
+    return [
+      { value: 'viewer', label: this.translate.instant('MEMBERS.ROLE_VIEWER') },
+      { value: 'admin', label: this.translate.instant('MEMBERS.ROLE_ADMIN') },
+    ];
   }
 
   async changeRole(member: AppUser, role: UserRole): Promise<void> {

@@ -14,6 +14,7 @@ import {
 } from "../../fixtures/final-stage.service";
 import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 
+import { AppSelectComponent, AppSelectOption } from "../../../shared/components/app-select/app-select.component";
 import { AuthService } from "../../../core/services/auth.service";
 import { BreakpointObserver } from "@angular/cdk/layout";
 import { CommonModule } from "@angular/common";
@@ -51,6 +52,7 @@ const roundBase = (round: string) => round.replace(/ \d+$/, "");
     FinalBracketComponent,
     EmptyStateComponent,
     LoadingSpinnerComponent,
+    AppSelectComponent,
     TranslatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,7 +62,7 @@ const roundBase = (round: string) => round.replace(/ \d+$/, "");
         <app-loading-spinner [label]="'FINAL_STAGE.BUILDING' | translate" />
       } @else if (!hasFinalStage()) {
         @if (isPureKnockout()) {
-          @if (auth.isAdmin() && !locked()) {
+          @if ((auth.isAdmin() || canGenerate()) && !locked()) {
             @if (readyToSeed()) {
               <p class="text-sm text-gray-500">
                 {{ 'FINAL_STAGE.TEAMS_ENTERED' | translate: { count: teamCount() } }}
@@ -93,7 +95,7 @@ const roundBase = (round: string) => round.replace(/ \d+$/, "");
             [title]="'FINAL_STAGE.LOCKED_TITLE' | translate"
             [subtitle]="'FINAL_STAGE.LOCKED_SUBTITLE' | translate: { played: progress().played, total: progress().total }"
           />
-        } @else if (auth.isAdmin() && !locked()) {
+        } @else if ((auth.isAdmin() || canGenerate()) && !locked()) {
           <p class="text-sm text-gray-500">
             {{ 'FINAL_STAGE.GROUP_COMPLETE_HINT' | translate }}
           </p>
@@ -101,15 +103,12 @@ const roundBase = (round: string) => round.replace(/ \d+$/, "");
             <span class="text-gray-600 font-medium"
               >{{ 'FINAL_STAGE.QUALIFIERS_PER_GROUP' | translate }}</span
             >
-            <select
-              class="input-field !py-1.5 !px-2.5 !w-auto"
-              [value]="qualifiers()"
-              (change)="qualifiers.set(+$any($event.target).value)"
-            >
-              @for (n of qualifierOptions(); track n) {
-                <option [value]="n">{{ n }}</option>
-              }
-            </select>
+            <app-select
+              compact
+              [options]="qualifierSelectOptions()"
+              [value]="qualifiers().toString()"
+              (valueChange)="qualifiers.set(+$event)"
+            />
           </label>
           <p class="text-xs text-gray-400">
             {{ 'FINAL_STAGE.KNOCKOUT_SIZE' | translate: { count: qualifiers() * 2, shape: bracketShape() | translate } }}
@@ -219,6 +218,9 @@ export class FinalStageComponent {
   readonly tournamentId = input.required<string>();
   /** When the tournament is completed, hide the seed / update-bracket controls. */
   readonly locked = input(false);
+  /** True for admin OR the manager an admin designated (see "Phân quyền" tab) to click Generate
+   *  themselves, for visible transparency around the draw — admin can always generate too. */
+  readonly canGenerate = input(false);
   /** Distinguishes a plain knockout (no group stage) from `group_knockout`. */
   readonly tournamentType = input<TournamentType>("group_knockout");
 
@@ -290,6 +292,10 @@ export class FinalStageComponent {
     );
     return Array.from({ length: Math.max(0, max) }, (_, i) => i + 1);
   });
+
+  qualifierSelectOptions = computed<AppSelectOption[]>(() =>
+    this.qualifierOptions().map((n) => ({ value: n.toString(), label: n.toString() })),
+  );
 
   /** Returns a translation KEY (piped through `| translate` in the template). */
   bracketShape = computed(() => {

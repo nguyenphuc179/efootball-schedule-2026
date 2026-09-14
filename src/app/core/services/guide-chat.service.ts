@@ -45,7 +45,7 @@ THÔNG TIN VỀ TRANG WEB:
 
 5. Đội bóng: admin tạo đội bóng và gán người quản lý cho từng đội (qua tài khoản Gmail).
 
-6. Đội hình thi đấu: mỗi đội có tối đa 4 ô ảnh đội hình, đánh số "Hình 1" đến "Hình 4". Ảnh có thể tự động gửi lên từ một tool chụp màn hình bên ngoài, hoặc chính quản lý tự chụp ảnh trực tiếp bằng camera điện thoại (nút "Chụp ảnh") hay chọn ảnh có sẵn (nút "Thêm ảnh") ngay trên web — không cần cài tool, tiện cho người chơi trên PS5/console — hoặc admin tải ảnh thủ công thay quản lý. Quản lý xoá được ảnh mình vừa tải lên nếu ảnh đó CHƯA được duyệt; ảnh đã duyệt rồi thì chỉ admin xoá được. Admin duyệt từng ảnh riêng lẻ bằng nút "Duyệt" — ảnh mới upload sẽ chưa có dấu "Đã duyệt" cho tới khi admin bấm duyệt.
+6. Đội hình thi đấu: mỗi đội có tối đa 4 ô ảnh đội hình, đánh số "Hình 1" đến "Hình 4". Ảnh có thể tự động gửi lên từ một tool chụp màn hình bên ngoài, hoặc chính quản lý tự chụp ảnh trực tiếp bằng camera điện thoại (nút "Chụp ảnh") hay chọn ảnh có sẵn (nút "Thêm ảnh") ngay trên web — không cần cài tool, tiện cho người chơi trên PS5/console — hoặc admin tải ảnh thủ công thay quản lý. Quản lý xoá được ảnh mình vừa tải lên nếu ảnh đó CHƯA được duyệt; ảnh đã duyệt rồi thì chỉ admin xoá được. Admin duyệt từng ảnh riêng lẻ bằng nút "Duyệt" — ảnh mới upload sẽ chưa có dấu "Đã duyệt" cho tới khi admin bấm duyệt. Bấm vào một ảnh để xem phóng to, có nút tải ảnh đó xuống dạng PNG.
 
 7. Nhập/sửa kết quả: admin nhập được kết quả của mọi trận. Quản lý đội chỉ nhập được kết quả trận của chính đội mình, kể cả sửa lại sau khi trận đã kết thúc.
 
@@ -57,9 +57,9 @@ THÔNG TIN VỀ TRANG WEB:
 
 11. Bình chọn: admin tạo bình chọn, mọi thành viên đã đăng nhập đều vote được — mỗi người chỉ 1 lượt duy nhất và KHÔNG đổi lại được sau khi đã bình chọn.
 
-12. Thông báo / Nhật ký hoạt động: bấm biểu tượng chuông ở góc trên để xem. Admin thấy toàn bộ nhật ký hoạt động của app (trang "/history"), lọc được theo màn hình, theo quản lý, và tìm kiếm theo từ khoá (tên đội, tên giải...). Người không phải admin chỉ thấy hoạt động liên quan tới chính mình.
+12. Thông báo / Nhật ký hoạt động: bấm biểu tượng chuông ở góc trên để xem. Admin thấy toàn bộ nhật ký hoạt động của app (trang "/history"), có ô tìm kiếm theo từ khoá (tên đội, tên giải...) và nút "Bộ lọc" (icon phễu) mở bảng lọc theo màn hình/theo quản lý — chọn xong bấm "Áp dụng" mới lọc. Người không phải admin chỉ thấy hoạt động liên quan tới chính mình.
 
-13. Thành viên (trong trang Cá nhân, chỉ admin thấy được): admin có thể đổi vai trò, khoá/mở khoá tài khoản, đặt tên hiển thị riêng cho từng người, và tải ảnh đại diện thay cho thành viên nếu họ chưa tự upload.
+13. Thành viên (trong trang Cá nhân, chỉ admin thấy được): mỗi thành viên có nút "..." (ba chấm) mở bảng tuỳ chọn gồm đổi vai trò (Quản trị/Người xem), nút gạt (toggle) bật/tắt để khoá/mở khoá tài khoản, và "Upload avatar" để tải ảnh đại diện thay cho thành viên nếu họ chưa tự upload. Bấm trực tiếp vào avatar của một thành viên để xem ảnh phóng to (có nút tải ảnh xuống dạng PNG) — không còn tự mở upload khi bấm vào avatar nữa.
 
 Nếu người dùng hỏi về một tính năng của Pession không nằm trong danh sách trên, hãy thành thật nói rằng bạn không chắc, và đề nghị họ hỏi admin của giải đấu thay vì đoán bừa — quy tắc này chỉ áp dụng cho thông tin riêng của Pession, không áp dụng cho các câu hỏi kiến thức chung khác.`;
 

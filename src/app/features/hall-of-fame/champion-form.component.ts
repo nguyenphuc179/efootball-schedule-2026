@@ -7,10 +7,11 @@ import { ChampionService } from './champion.service';
 import { TournamentService } from '../tournament/tournament.service';
 import { MemberService } from '../members/member.service';
 import { ImageUrlFieldComponent } from '../../shared/components/image-url-field/image-url-field.component';
+import { AppSelectComponent, AppSelectOption } from '../../shared/components/app-select/app-select.component';
 import { IMAGE_SRC_PATTERN, isImageSrc } from '../../shared/utils/image-url.util';
 import { Champion } from '../../models/champion.model';
 import { AppUser, userDisplayName } from '../../models/user.model';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 export interface ChampionFormDialogData {
   champion?: Champion;
@@ -21,7 +22,7 @@ export interface ChampionFormDialogData {
 @Component({
   selector: 'app-champion-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent, TranslatePipe],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, ImageUrlFieldComponent, AppSelectComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-dvh w-full flex flex-col bg-white">
@@ -69,12 +70,7 @@ export interface ChampionFormDialogData {
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.MANAGER' | translate }} <span class="text-gray-400">({{ 'TEAM_FORM.OPTIONAL' | translate }})</span></span>
-          <select class="input-field" formControlName="managerUid" (change)="onManagerChange($any($event.target).value)">
-            <option value="">{{ 'CHAMPION_FORM.NO_MANAGER_OPTION' | translate }}</option>
-            @for (m of activeMembers(); track m.uid) {
-              <option [value]="m.uid">{{ m.name }}</option>
-            }
-          </select>
+          <app-select [control]="form.controls.managerUid" [options]="managerSelectOptions()" (valueChange)="onManagerChange($event)" />
           <span class="text-xs text-gray-400">{{ 'CHAMPION_FORM.MANAGER_HINT' | translate }}</span>
         </label>
 
@@ -85,12 +81,7 @@ export interface ChampionFormDialogData {
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.TOURNAMENT' | translate }} <span class="text-gray-400">({{ 'TEAM_FORM.OPTIONAL' | translate }})</span></span>
-          <select class="input-field" formControlName="tournamentId">
-            <option value="">{{ 'CHAMPION_FORM.NONE_OPTION' | translate }}</option>
-            @for (t of tournaments(); track t.id) {
-              <option [value]="t.id">{{ t.name }}</option>
-            }
-          </select>
+          <app-select [control]="form.controls.tournamentId" [options]="tournamentSelectOptions()" />
         </label>
       </form>
     </div>
@@ -101,6 +92,7 @@ export class ChampionFormComponent {
   private championService = inject(ChampionService);
   private tournamentService = inject(TournamentService);
   private memberService = inject(MemberService);
+  private translate = inject(TranslateService);
 
   isSaving = signal(false);
   imgError = signal(false);
@@ -123,6 +115,23 @@ export class ChampionFormComponent {
     imageUrl: [this.data.champion?.imageUrl ?? '', [Validators.required, Validators.pattern(IMAGE_SRC_PATTERN)]],
     tournamentId: [this.data.champion?.tournamentId ?? ''],
   });
+
+  /** Plain methods (not `computed`s) so `translate.instant()` re-runs on every check and stays in
+   *  the current language — this template also uses the `translate` pipe elsewhere, which marks
+   *  this OnPush component dirty on a language switch. */
+  managerSelectOptions(): AppSelectOption[] {
+    return [
+      { value: '', label: this.translate.instant('CHAMPION_FORM.NO_MANAGER_OPTION') },
+      ...this.activeMembers().map((m) => ({ value: m.uid, label: m.name })),
+    ];
+  }
+
+  tournamentSelectOptions(): AppSelectOption[] {
+    return [
+      { value: '', label: this.translate.instant('CHAMPION_FORM.NONE_OPTION') },
+      ...this.tournaments().map((t) => ({ value: t.id, label: t.name })),
+    ];
+  }
 
   /** Picking a manager pre-fills the player name as a convenience — only when it's still empty,
    *  so it never clobbers a name the admin already typed/customised. */

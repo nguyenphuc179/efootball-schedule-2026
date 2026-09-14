@@ -30,7 +30,7 @@ import { Team } from '../../../models/team.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-3">
-      @if (auth.isAdmin() && tournamentId()) {
+      @if (tournamentId() && (auth.isAdmin() || (canGenerate() && !hasMatches()))) {
         <button
           class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm"
           [disabled]="isGenerating()"
@@ -72,6 +72,9 @@ export class FixturesListComponent {
   readonly tournamentId = input<string>();
   /** 'all' | 'upcoming' | 'completed' — used by the Fixtures vs Results tabs. */
   readonly filter = input<'all' | 'upcoming' | 'completed'>('all');
+  /** True for admin OR the manager an admin designated (see "Phân quyền" tab) to click Generate
+   *  themselves, for visible transparency around the draw — admin can always generate too. */
+  readonly canGenerate = input(false);
 
   private matchService = inject(MatchService);
   private fixtureGenerator = inject(FixtureGeneratorService);
@@ -91,6 +94,11 @@ export class FixturesListComponent {
     ),
     { initialValue: [] as Match[] }
   );
+
+  /** Regenerating (wiping + redoing an existing schedule) stays admin-only — a designated
+   *  non-admin manager (see "Phân quyền" tab) may only create the very first schedule, not redo
+   *  one that already exists. */
+  hasMatches = computed(() => this.matches().length > 0);
 
   private teams = toSignal(
     toObservable(this.tournamentId).pipe(

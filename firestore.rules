@@ -51,6 +51,15 @@ service cloud.firestore {
         get(/databases/$(database)/documents/teams/$(teamId)).data.managerUid == currentUid();
     }
 
+    // The one non-admin manager (if any) an admin designated on `tournaments/{tournamentId}` to
+    // click the fixture/bracket "Generate" buttons themselves (transparency for the draw) — only
+    // ever ADDS permission alongside isAdmin(), never replaces the admin-only default elsewhere.
+    function isFixtureGenerator(tournamentId) {
+      return isSignedIn() && !isDisabled() &&
+        exists(/databases/$(database)/documents/tournaments/$(tournamentId)) &&
+        get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.get('fixtureGeneratorUid', null) == currentUid();
+    }
+
     // The signed-in manager a `lineups/{parentId}` doc belongs to — parentId is
     // `{tournamentId}__{email}` (see LineupService.parentId), so ownership is proven by matching
     // the caller's own verified email (from their Google-signed ID token, not client-supplied data)
@@ -115,13 +124,13 @@ service cloud.firestore {
     // -------------------------------------------------------------------
     match /matches/{matchId} {
       allow read: if true;
-      allow create: if isAdmin();
+      allow create: if isAdmin() || isFixtureGenerator(request.resource.data.tournamentId);
       allow update: if isAdmin() ||
         (isSignedIn() && !isDisabled() &&
           (isTeamManager(resource.data.homeTeamId) || isTeamManager(resource.data.awayTeamId)) &&
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['homeScore', 'awayScore', 'penaltyHome', 'penaltyAway', 'status']));
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || isFixtureGenerator(resource.data.tournamentId);
     }
 
     // -------------------------------------------------------------------

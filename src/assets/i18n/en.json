@@ -39,6 +39,7 @@
     "BACK": "Back",
     "LOADING": "Loading…",
     "SHARE": "Share",
+    "DOWNLOAD": "Download image",
     "YES": "Yes",
     "NO": "No",
     "LINK_COPIED": "Link copied!",
@@ -178,10 +179,20 @@
     "TAB_STATISTICS": "Statistics",
     "TAB_STATS_SHORT": "Stats",
     "TAB_LINEUP": "Squad Lineup",
+    "TAB_PERMISSIONS": "Permissions",
+    "TAB_PERMISSIONS_SHORT": "Permissions",
     "RESET_CONFIRM_TITLE": "Reset all matches?",
     "RESET_CONFIRM_MESSAGE": "Every match and result in this tournament will be permanently deleted so you can regenerate fixtures and re-enter results from scratch. Teams aren't affected. This can't be undone.",
     "DELETE_CONFIRM_TITLE": "Delete tournament?",
     "DELETE_CONFIRM_MESSAGE": "\"{{name}}\" and all of its teams, fixtures, results and standings will be permanently deleted. This can't be undone."
+  },
+  "TOURNAMENT_PERMISSIONS": {
+    "DESCRIPTION": "Designate one manager who can click the \"Generate\" buttons (fixtures, group stage, final stage bracket) themselves — so they can generate it live, visibly, for everyone. Admin always keeps this permission too, alongside them.",
+    "NO_MANAGERS": "This tournament has no teams with a manager yet.",
+    "SELECT_LABEL": "Designated manager",
+    "NONE_OPTION": "None (admin only)",
+    "ACTIVE_HINT": "{{name}} can now click the \"Generate\" buttons for this tournament themselves.",
+    "SAVE_FAILED": "Couldn't save that change — check your connection and permissions."
   },
   "TEAM_LIST": {
     "ADD_TEAM": "Add Team",
@@ -369,8 +380,13 @@
     "DISABLE_CONFIRM_TITLE": "Disable member?",
     "DISABLE_CONFIRM_MESSAGE": "{{name}} will be signed out and blocked from doing anything in the app. Their login isn't deleted — re-enable them here any time, or delete the account in Firebase Console to free the email.",
     "THIS_MEMBER": "This member",
-    "UPLOAD_PHOTO": "Upload a photo for this member",
-    "UPLOAD_PHOTO_FAILED": "Could not upload that photo — check your connection and permissions."
+    "UPLOAD_PHOTO": "Upload avatar",
+    "UPLOAD_PHOTO_FAILED": "Could not upload that photo — check your connection and permissions.",
+    "VIEW_PHOTO": "View photo",
+    "ACTIONS": "Actions",
+    "ROLE_LABEL": "Role",
+    "STATUS_ACTIVE": "Active",
+    "STATUS_DISABLED": "Disabled"
   },
   "ACTIVITY_MENU": {
     "HOME": "Home",
@@ -398,6 +414,9 @@
     "MY_EMPTY_SUBTITLE": "Actions related to you will show up here.",
     "MARK_ALL_SEEN": "Mark all as seen",
     "MARK_SEEN": "Mark as seen",
+    "FILTER_BUTTON": "Filters",
+    "FILTER_CLEAR": "Clear",
+    "FILTER_APPLY": "Apply",
     "FILTER_LABEL": "Filter by screen",
     "FILTER_ALL": "All screens",
     "FILTER_MANAGER_LABEL": "Filter by manager",
@@ -422,6 +441,7 @@
     "NEW_TITLE": "New Tournament",
     "BANNER_PREVIEW": "Banner preview",
     "BANNER_IMAGE": "Banner Image",
+    "BANNER_IMAGE_HINT": "Recommended size: 1920 × 480px (4:1 ratio) for a sharp, uncropped banner.",
     "NAME": "Tournament Name",
     "DESCRIPTION": "Description",
     "DESCRIPTION_PLACEHOLDER": "Short description",

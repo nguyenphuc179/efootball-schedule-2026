@@ -10,8 +10,10 @@ import { AuthService } from '../../core/services/auth.service';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { AppSelectComponent, AppSelectOption } from '../../shared/components/app-select/app-select.component';
 import { liveUserProfiles, uidsKey } from '../../shared/utils/live-user-profiles.util';
 import { downscaleToDataUri } from '../../shared/utils/image-downscale.util';
+import { downloadImageAsPng } from '../../shared/utils/download-image.util';
 import { AppUser, userDisplayName } from '../../models/user.model';
 import { LineupImage } from '../../models/lineup.model';
 import { Team } from '../../models/team.model';
@@ -43,7 +45,7 @@ interface ManagerLineupStatus {
 @Component({
   selector: 'app-lineup-view',
   standalone: true,
-  imports: [CommonModule, EmptyStateComponent, TranslatePipe],
+  imports: [CommonModule, EmptyStateComponent, AppSelectComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (managers().length === 0) {
@@ -56,17 +58,10 @@ interface ManagerLineupStatus {
         </div>
       }
 
-      <label class="flex flex-col gap-1 mb-4">
+      <div class="flex flex-col gap-1 mb-4">
         <span class="text-sm font-medium text-gray-600">{{ 'LINEUP.SELECT_MANAGER_LABEL' | translate }}</span>
-        <select class="input-field" [value]="selectedKey()" (change)="selectedKey.set($any($event.target).value)">
-          @for (m of managers(); track m.key) {
-            @let status = managerLineupStatus().get(m.key);
-            <option [value]="m.key">
-              {{ m.name }}{{ status && status.total > 0 ? (' - ' + ('LINEUP.APPROVAL_PROGRESS_SUFFIX' | translate: { approved: status.approved, total: status.total })) : '' }}
-            </option>
-          }
-        </select>
-      </label>
+        <app-select [options]="managerOptionsList()" [value]="selectedKey()" (valueChange)="selectedKey.set($event)" />
+      </div>
 
       @if (selectedManager(); as manager) {
         @if (!manager.email) {
@@ -175,6 +170,14 @@ interface ManagerLineupStatus {
         <img [src]="src" class="max-w-full max-h-full object-contain" alt="" (click)="$event.stopPropagation()" />
         <button
           type="button"
+          class="absolute top-3 right-14 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center"
+          (click)="$event.stopPropagation(); downloadImageAsPng(src, 'doi-hinh')"
+          [attr.aria-label]="'COMMON.DOWNLOAD' | translate"
+        >
+          <span class="material-icons">download</span>
+        </button>
+        <button
+          type="button"
           class="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center"
           (click)="preview.set(null)"
           [attr.aria-label]="'COMMON.CLOSE' | translate"
@@ -192,6 +195,7 @@ export class LineupViewComponent {
   private dialog = inject(MatDialog);
   private translate = inject(TranslateService);
   auth = inject(AuthService);
+  downloadImageAsPng = downloadImageAsPng;
 
   tournamentId = input.required<string>();
 
@@ -285,14 +289,29 @@ export class LineupViewComponent {
   selectedKey = signal<string>('');
   preview = signal<string | null>(null);
 
-  /** A signed-in non-admin manager should land straight on their own team's slot instead of
-   *  whichever manager sorts first alphabetically — that's the one they can actually upload to. */
-  private autoSelectOwnManager = effect(() => {
-    if (this.auth.isAdmin() || this.selectedKey()) return;
-    const uid = this.auth.firebaseUser()?.uid;
-    if (!uid) return;
-    const mine = this.managers().find((m) => m.uid === uid);
-    if (mine) this.selectedKey.set(mine.key);
+  /** Keeps `selectedKey` pointing at a real manager at all times. A signed-in non-admin manager
+   *  lands straight on their own team's slot instead of whichever manager sorts first
+   *  alphabetically — that's the one they can actually upload to. Otherwise falls back to the
+   *  first manager in the list, same as what a native `<select>` does implicitly when its bound
+   *  value matches no `<option>` — `<app-select>` has no such fallback, so without this the
+   *  dropdown trigger showed blank while the page below still displayed that first manager's data
+   *  (`selectedManager` below has its own `?? list[0]` fallback, only for read purposes). Leaves an
+   *  already-valid manual selection alone. */
+  private ensureManagerSelected = effect(() => {
+    const list = this.managers();
+    if (!list.length) return;
+    if (list.some((m) => m.key === this.selectedKey())) return;
+
+    if (!this.auth.isAdmin()) {
+      const uid = this.auth.firebaseUser()?.uid;
+      const mine = uid ? list.find((m) => m.uid === uid) : undefined;
+      if (mine) {
+        this.selectedKey.set(mine.key);
+        return;
+      }
+    }
+
+    this.selectedKey.set(list[0].key);
   });
 
   @HostListener('document:keydown.escape')
@@ -305,6 +324,22 @@ export class LineupViewComponent {
     if (!list.length) return null;
     return list.find((m) => m.key === this.selectedKey()) ?? list[0];
   });
+
+  /** `<app-select>`'s options, each labeled with the manager's "N/M đã duyệt" progress — a plain
+   *  method (not a `computed`) so it re-evaluates on every check and stays in the current language:
+   *  `translate.instant()` doesn't participate in signal reactivity, but this template also uses the
+   *  `translate` pipe elsewhere, which marks this OnPush component dirty on a language switch. */
+  managerOptionsList(): AppSelectOption[] {
+    const status = this.managerLineupStatus();
+    return this.managers().map((m) => {
+      const s = status.get(m.key);
+      const suffix =
+        s && s.total > 0
+          ? ' - ' + this.translate.instant('LINEUP.APPROVAL_PROGRESS_SUFFIX', { approved: s.approved, total: s.total })
+          : '';
+      return { value: m.key, label: m.name + suffix };
+    });
+  }
 
   private imageQueryKey = computed(() => {
     const m = this.selectedManager();

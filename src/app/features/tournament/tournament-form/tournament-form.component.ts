@@ -49,7 +49,13 @@ import { TranslatePipe } from '@ngx-translate/core';
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-gray-600">{{ 'TOURNAMENT_FORM.BANNER_IMAGE' | translate }} <span class="text-gray-400">({{ 'TEAM_FORM.OPTIONAL' | translate }})</span></span>
-          <app-image-url-field [control]="form.controls.image" (changed)="imgError.set(false)" />
+          <app-image-url-field
+            [control]="form.controls.image"
+            [maxEdge]="1920"
+            [maxBytes]="950000"
+            (changed)="imgError.set(false)"
+          />
+          <span class="text-xs text-gray-400">{{ 'TOURNAMENT_FORM.BANNER_IMAGE_HINT' | translate }}</span>
           @if (form.controls.image.invalid && form.controls.image.value) {
             <span class="text-xs text-red-500">{{ 'TEAM_FORM.LOGO_INVALID' | translate }}</span>
           } @else if (imgError() && form.controls.image.value) {

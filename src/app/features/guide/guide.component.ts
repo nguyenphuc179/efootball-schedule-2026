@@ -334,7 +334,8 @@ const SECTIONS: GuideSection[] = [
               ảnh thủ công thay quản lý. Quản lý xóa được ảnh mình vừa tải lên
               nếu ảnh đó <b>chưa được admin duyệt</b>; ảnh đã duyệt thì chỉ
               admin mới xóa được. Admin duyệt từng ảnh một — ảnh mới chưa
-              duyệt sẽ không có dấu <b>Đã duyệt</b>.
+              duyệt sẽ không có dấu <b>Đã duyệt</b>. Bấm vào một ảnh để xem
+              phóng to, có nút tải ảnh đó xuống dạng PNG.
             </p>
             <div
               class="rounded-2xl border border-gray-100 shadow-card overflow-hidden"

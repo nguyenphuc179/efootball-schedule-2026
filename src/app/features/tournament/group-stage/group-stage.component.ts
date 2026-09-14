@@ -8,6 +8,7 @@ import {
 } from "@angular/core";
 import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 
+import { AppSelectComponent, AppSelectOption } from "../../../shared/components/app-select/app-select.component";
 import { AuthService } from "../../../core/services/auth.service";
 import { CommonModule } from "@angular/common";
 import { EmptyStateComponent } from "../../../shared/components/empty-state/empty-state.component";
@@ -21,7 +22,7 @@ import { TeamAvatarService } from "../../teams/team-avatar.service";
 import { TeamService } from "../../teams/team.service";
 import { TournamentService } from "../tournament.service";
 import { switchMap } from "rxjs";
-import { TranslatePipe } from "@ngx-translate/core";
+import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 
 /** "Group A - Round 3" -> 3 (0 if the round number can't be read). */
 function roundNumber(m: Match): number {
@@ -40,6 +41,7 @@ function roundNumber(m: Match): number {
     MatchRowComponent,
     EmptyStateComponent,
     LoadingSpinnerComponent,
+    AppSelectComponent,
     TranslatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,7 +50,7 @@ function roundNumber(m: Match): number {
       @if (isGenerating()) {
         <app-loading-spinner [label]="'GROUP_STAGE.GENERATING_LABEL' | translate" />
       } @else if (!groupBlocks().length) {
-        @if (auth.isAdmin() && !locked()) {
+        @if ((auth.isAdmin() || canGenerate()) && !locked()) {
           <button
             class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm"
             (click)="generateFixtures()"
@@ -67,7 +69,7 @@ function roundNumber(m: Match): number {
           <div class="flex rounded-lg bg-gray-100 p-1 text-sm font-semibold shrink-0">
             @for (m of modes; track m) {
               <button
-                class="px-3 sm:px-4 py-1.5 rounded-md capitalize"
+                class="px-3 sm:px-4 !h-7 !min-h-0 rounded-md capitalize flex items-center justify-center"
                 [class]="
                   mode() === m
                     ? 'bg-white shadow-sm text-primary-700'
@@ -81,17 +83,14 @@ function roundNumber(m: Match): number {
           </div>
 
           @if (managerOptions().length) {
-            <select
-              class="input-field !py-1.5 !px-2.5 !w-auto max-w-[10rem] text-sm shrink-0"
+            <app-select
+              compact
+              class="shrink-0 max-w-[10rem]"
+              [options]="managerSelectOptions()"
               [value]="managerFilter()"
-              (change)="managerFilter.set($any($event.target).value)"
-              [attr.aria-label]="'GROUP_STAGE.FILTER_BY_MANAGER' | translate"
-            >
-              <option value="">{{ 'GROUP_STAGE.ALL_MANAGERS' | translate }}</option>
-              @for (mgr of managerOptions(); track mgr) {
-                <option [value]="mgr">{{ mgr }}</option>
-              }
-            </select>
+              (valueChange)="managerFilter.set($event)"
+              [ariaLabel]="'GROUP_STAGE.FILTER_BY_MANAGER' | translate"
+            />
           }
 
           @if (auth.isAdmin() && !locked()) {
@@ -105,6 +104,39 @@ function roundNumber(m: Match): number {
             </button>
           }
         </div>
+
+        @if (mode() === "group" && groupRosters().length) {
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            @for (roster of groupRosters(); track roster.name) {
+              <div class="card !p-0 overflow-hidden">
+                <div class="flex items-center gap-1.5 px-3.5 py-2.5 border-b border-gray-100 bg-primary-50">
+                  <span class="material-icons text-[15px] text-primary-600">groups</span>
+                  <h4 class="text-xs font-extrabold uppercase tracking-wide text-primary-700">{{ roster.name }}</h4>
+                </div>
+                <div class="flex flex-col divide-y divide-gray-100">
+                  @for (t of roster.teams; track t.id) {
+                    <div class="flex items-center gap-2.5 px-3.5 py-2.5">
+                      @if (avatarsByTeam()[t.id]?.src; as src) {
+                        <img [src]="src" alt="" class="w-7 h-7 rounded-full object-cover shrink-0" referrerpolicy="no-referrer" />
+                      } @else {
+                        <span
+                          class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                          [style.background-color]="avatarsByTeam()[t.id]?.bg"
+                          [style.color]="avatarsByTeam()[t.id]?.fg"
+                        >{{ avatarsByTeam()[t.id]?.initials }}</span>
+                      }
+                      <span class="text-sm font-semibold truncate">{{ t.name }}</span>
+                      <span class="ml-auto flex items-center gap-1 text-xs text-gray-400 shrink-0 max-w-[45%]">
+                        <span class="material-icons text-[13px]">person</span>
+                        <span class="truncate">{{ t.manager || ('TEAM_LIST.NO_MANAGER' | translate) }}</span>
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
 
         @if (mode() === "group") {
           @for (block of visibleGroupBlocks(); track block.name) {
@@ -223,12 +255,16 @@ export class GroupStageComponent {
   readonly tournamentId = input.required<string>();
   /** When the tournament is completed, hide the (re)generate control. */
   readonly locked = input(false);
+  /** True for admin OR the manager an admin designated (see "Phân quyền" tab) to click Generate
+   *  themselves, for visible transparency around the draw — admin can always generate too. */
+  readonly canGenerate = input(false);
 
   private matchService = inject(MatchService);
   private fixtureGenerator = inject(FixtureGeneratorService);
   private teamService = inject(TeamService);
   private teamAvatars = inject(TeamAvatarService);
   private tournamentService = inject(TournamentService);
+  private translate = inject(TranslateService);
   auth = inject(AuthService);
 
   readonly modes = ["group", "round"] as const;
@@ -286,6 +322,16 @@ export class GroupStageComponent {
     ),
   );
 
+  /** A plain method (not `computed`) so `translate.instant()` re-runs on every check and stays in
+   *  the current language — this template also uses the `translate` pipe elsewhere, which marks
+   *  this OnPush component dirty on a language switch. */
+  managerSelectOptions(): AppSelectOption[] {
+    return [
+      { value: "", label: this.translate.instant("GROUP_STAGE.ALL_MANAGERS") },
+      ...this.managerOptions().map((mgr) => ({ value: mgr, label: mgr })),
+    ];
+  }
+
   /** True when a match involves the currently-filtered manager (or no filter is set). */
   private matchHasManager(m: Match): boolean {
     const mgr = this.managerFilter();
@@ -314,6 +360,25 @@ export class GroupStageComponent {
           .filter((n) => n > 0)
           .sort((a, b) => a - b),
       }));
+  });
+
+  /** Team roster (name + manager) per group, for the "who's in which group" summary shown above
+   *  the match listing — easier to scan than inferring membership from the fixtures themselves. */
+  groupRosters = computed(() => {
+    const teamById = new Map(this.teams().map((t) => [t.id, t]));
+    return this.groupBlocks().map((block) => {
+      const teamIds = new Set<string>();
+      for (const m of block.matches) {
+        teamIds.add(m.homeTeamId);
+        teamIds.add(m.awayTeamId);
+      }
+      const rosterTeams = [...teamIds]
+        .map((id) => teamById.get(id))
+        .filter((t): t is Team => !!t)
+        .map((t) => ({ id: t.id, name: t.teamName, manager: t.manager?.trim() || null }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return { name: block.name, teams: rosterTeams };
+    });
   });
 
   roundBlocks = computed(() => {
