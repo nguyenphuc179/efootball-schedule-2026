@@ -7,6 +7,7 @@ import {
   inject,
   signal,
 } from "@angular/core";
+import { RouterLink } from "@angular/router";
 
 interface GuideSection {
   id: string;
@@ -47,6 +48,7 @@ const SECTIONS: GuideSection[] = [
 @Component({
   selector: "app-guide",
   standalone: true,
+  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area scroll-smooth">
@@ -57,6 +59,13 @@ const SECTIONS: GuideSection[] = [
         <img src="assets/images/logo-mark.png" alt="" class="w-14 h-14" />
         <h1 class="text-2xl font-extrabold">Hướng dẫn sử dụng Pession</h1>
         <p class="text-sm text-gray-500 max-w-sm"></p>
+        <a
+          routerLink="/skills"
+          class="badge bg-primary-500 text-white !py-1.5 !px-3 flex items-center gap-1"
+        >
+          <span class="material-icons text-[14px]">auto_awesome</span>
+          Tra cứu bộ kỹ năng eFootball
+        </a>
       </div>
 
       <!-- Quick jump — mobile: horizontal chip row -->

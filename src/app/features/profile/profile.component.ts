@@ -54,6 +54,10 @@ import { downscaleToDataUri } from '../../shared/utils/image-downscale.util';
         <span class="material-icons text-[18px]">menu_book</span> {{ 'NAV.GUIDE' | translate }}
       </a>
 
+      <a routerLink="/skills" class="btn-secondary w-full flex items-center justify-center gap-2 mb-3">
+        <span class="material-icons text-[18px]">auto_awesome</span> {{ 'NAV.SKILLS' | translate }}
+      </a>
+
       <button class="btn-primary !bg-accent-red w-full flex items-center justify-center gap-2" (click)="logout()">
         <span class="material-icons text-[18px]">logout</span> {{ 'PROFILE.SIGN_OUT' | translate }}
       </button>

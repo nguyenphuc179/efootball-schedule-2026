@@ -22,6 +22,12 @@ export const routes: Routes = [
     // No guard — a prospective user should be able to read this before ever signing in.
   },
   {
+    path: 'skills',
+    loadComponent: () =>
+      import('./features/skills-guide/skills-guide.component').then((m) => m.SkillsGuideComponent),
+    title: 'Pession — Bộ kỹ năng eFootball',
+  },
+  {
     path: 'tournaments',
     children: [
       {
