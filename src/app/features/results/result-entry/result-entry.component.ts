@@ -14,7 +14,7 @@ import { EmptyStateComponent } from "../../../shared/components/empty-state/empt
 import { LoadingSpinnerComponent } from "../../../shared/components/loading-spinner/loading-spinner.component";
 import { Match } from "../../../models/match.model";
 import { MatchService } from "../../fixtures/match.service";
-import { ResultService } from "../result.service";
+import { ResultConflictError, ResultService } from "../result.service";
 import { Team, teamGroup } from "../../../models/team.model";
 import { ClubBlockReason, clubBlockReasons } from "../../tournament/team-match/club-rules.util";
 import { TeamAvatarService } from "../../teams/team-avatar.service";
@@ -26,6 +26,10 @@ import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 import { AppSelectComponent, AppSelectOption } from "../../../shared/components/app-select/app-select.component";
 import { roundLabel } from "../../../shared/utils/round-label.util";
 import { ToastService } from "../../../core/services/toast.service";
+import { MatDialog } from "@angular/material/dialog";
+import { firstValueFrom } from "rxjs";
+import { ConfirmDialogComponent } from "../../../shared/components/confirm-dialog/confirm-dialog.component";
+import { timeAgoKey } from "../../../shared/utils/time-ago.util";
 import { ResultCardSide, renderResultCard } from "../match-result-image.util";
 import { downloadBlob, shareImage } from "../../tournament/team-match/team-match-export.util";
 
@@ -411,13 +415,7 @@ export class ResultEntryComponent {
       return;
     }
 
-    this.match.set(found);
-    this.homeScore.set(found.homeScore ?? 0);
-    this.awayScore.set(found.awayScore ?? 0);
-    this.penHome.set(found.penaltyHome ?? 0);
-    this.penAway.set(found.penaltyAway ?? 0);
-    this.homeClub.set(found.homeClub ?? "");
-    this.awayClub.set(found.awayClub ?? "");
+    this.applyMatch(found);
     this.homeTeam.set(homeTeam);
     this.awayTeam.set(awayTeam);
     this.tournamentType.set(tournament?.type);
@@ -427,6 +425,21 @@ export class ResultEntryComponent {
     if (tournament?.type === "team_match") {
       this.tournamentMatches.set(await this.matchService.getByTournamentOnce(found.tournamentId));
     }
+  }
+
+  /** The `version` of the copy on screen — a save only goes through if the stored match still has it. */
+  private loadedVersion = 0;
+
+  /** Puts a match (freshly loaded, or the newer copy after a conflict) on screen. */
+  private applyMatch(m: Match): void {
+    this.match.set(m);
+    this.loadedVersion = m.version ?? 0;
+    this.homeScore.set(m.homeScore ?? 0);
+    this.awayScore.set(m.awayScore ?? 0);
+    this.penHome.set(m.penaltyHome ?? 0);
+    this.penAway.set(m.penaltyAway ?? 0);
+    this.homeClub.set(m.homeClub ?? "");
+    this.awayClub.set(m.awayClub ?? "");
   }
 
   /** Clubs this side may NOT pick in this match, with the reason (see club-rules.util). */
@@ -493,15 +506,32 @@ export class ResultEntryComponent {
       const penalties = this.showPenalties()
         ? { home: this.penHome(), away: this.penAway() }
         : null;
-      await this.resultService.saveResult(
-        m,
-        this.homeScore(),
-        this.awayScore(),
-        penalties,
-        this.isTeamMatch()
-          ? { home: this.homeClub() || null, away: this.awayClub() || null }
-          : null,
-      );
+      const clubs = this.isTeamMatch()
+        ? { home: this.homeClub() || null, away: this.awayClub() || null }
+        : null;
+
+      // Someone else may have saved this match since it was opened: then ask, and either take
+      // their result or overwrite it (asking again if yet another save lands meanwhile).
+      for (;;) {
+        try {
+          await this.resultService.saveResult(m, this.loadedVersion, this.homeScore(), this.awayScore(), penalties, clubs);
+          break;
+        } catch (err) {
+          if (!(err instanceof ResultConflictError)) throw err;
+          const current = err.current;
+          if (this.sameResultAs(current)) {
+            this.match.set(current);
+            this.loadedVersion = current.version ?? 0;
+            break;
+          }
+          if (!(await this.confirmOverwrite(current))) {
+            this.applyMatch(current);
+            this.toast.show(this.translate.instant("RESULT_ENTRY.CONFLICT_RELOADED"), "info");
+            return;
+          }
+          this.loadedVersion = current.version ?? 0;
+        }
+      }
       // Stay here with a share-ready result card instead of leaving straight away; "Done" goes back.
       this.imageCache = null;
       this.saved.set(true);
@@ -509,6 +539,56 @@ export class ResultEntryComponent {
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  // ---- Save conflicts ----------------------------------------------------------------------
+
+  private dialog = inject(MatDialog);
+
+  /** The newer stored result is exactly what's on screen (both people entered the same thing). */
+  private sameResultAs(current: Match): boolean {
+    const pens = this.showPenalties();
+    return (
+      current.status === "completed" &&
+      current.homeScore === this.homeScore() &&
+      current.awayScore === this.awayScore() &&
+      (current.penaltyHome ?? null) === (pens ? this.penHome() : null) &&
+      (current.penaltyAway ?? null) === (pens ? this.penAway() : null) &&
+      (!this.isTeamMatch() ||
+        ((current.homeClub ?? "") === this.homeClub() && (current.awayClub ?? "") === this.awayClub()))
+    );
+  }
+
+  private scoreText(home: number | null | undefined, away: number | null | undefined, penHome?: number | null, penAway?: number | null): string {
+    const base = `${home ?? 0} - ${away ?? 0}`;
+    return penHome != null && penAway != null ? `${base} (${penHome}-${penAway} pen)` : base;
+  }
+
+  /** true = overwrite with what's on screen, false = take the newer stored result. */
+  private async confirmOverwrite(current: Match): Promise<boolean> {
+    this.translate.currentLang();
+    const when = current.resultAt ? timeAgoKey(current.resultAt) : null;
+    const pens = this.showPenalties();
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: this.translate.instant("RESULT_ENTRY.CONFLICT_TITLE"),
+        message: this.translate.instant("RESULT_ENTRY.CONFLICT_MESSAGE", {
+          name: current.resultByName || this.translate.instant("RESULT_ENTRY.CONFLICT_SOMEONE"),
+          when: when ? ` (${this.translate.instant(when.key, when.params)})` : "",
+          theirs: current.status === "completed"
+            ? this.scoreText(current.homeScore, current.awayScore, current.penaltyHome, current.penaltyAway)
+            : this.translate.instant("RESULT_ENTRY.CONFLICT_CLEARED"),
+          mine: this.scoreText(this.homeScore(), this.awayScore(), pens ? this.penHome() : null, pens ? this.penAway() : null),
+        }),
+        confirmLabel: this.translate.instant("RESULT_ENTRY.CONFLICT_OVERWRITE"),
+        cancelLabel: this.translate.instant("RESULT_ENTRY.CONFLICT_RELOAD"),
+        destructive: true,
+      },
+      width: "90vw",
+      maxWidth: "420px",
+      disableClose: true,
+    });
+    return !!(await firstValueFrom(ref.afterClosed()));
   }
 
   // ---- Result card image -------------------------------------------------------------------

@@ -93,7 +93,7 @@ const normalize = (s: string) =>
     <div class="app-content-area">
       <!-- Hero -->
       <div
-        class="px-4 pt-8 pb-6 flex flex-col items-center text-center gap-2 bg-gradient-to-b from-primary-50 to-transparent"
+        class="px-4 pt-8 pb-6 flex flex-col items-center text-center gap-2 bg-gradient-to-b from-primary-500/15 to-transparent"
       >
         <span
           class="w-14 h-14 rounded-2xl bg-primary-500 text-white flex items-center justify-center shadow-card"

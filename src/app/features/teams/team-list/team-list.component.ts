@@ -10,6 +10,7 @@ import { TeamAvatarService } from '../team-avatar.service';
 import { StandingsService } from '../../standings/standings.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
+import { OverflowMenuComponent } from '../../../shared/components/overflow-menu/overflow-menu.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { TeamFormComponent } from '../team-form/team-form.component';
 import { BulkClubsDialogComponent } from '../bulk-clubs-dialog/bulk-clubs-dialog.component';
@@ -19,7 +20,7 @@ import { Team, teamGroup } from '../../../models/team.model';
 @Component({
   selector: 'app-team-list',
   standalone: true,
-  imports: [CommonModule, EmptyStateComponent, RosterExportComponent, TranslatePipe],
+  imports: [CommonModule, EmptyStateComponent, RosterExportComponent, OverflowMenuComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-3">
@@ -91,7 +92,7 @@ import { Team, teamGroup } from '../../../models/team.model';
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-sm truncate flex items-center gap-2">
                   {{ team.teamName }}
-                  @if (tournamentType() === 'team_match' && teamGroup(team)) {
+                  @if (tournamentType() === 'team_match' && teamGroup(team) && section.key === 'all') {
                     <span class="badge !text-[11px] !px-2 text-white font-bold shrink-0" [style.background-color]="sectionColor(teamGroup(team)!)">{{ sectionLabel(teamGroup(team)!) | translate }}</span>
                   }
                 </div>
@@ -113,20 +114,14 @@ import { Team, teamGroup } from '../../../models/team.model';
               </div>
 
               @if (auth.isAdmin()) {
-                <button
-                  class="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0"
-                  (click)="openForm(team)"
-                  [attr.aria-label]="'TEAM_LIST.EDIT_TEAM' | translate"
-                >
-                  <span class="material-icons text-[18px]">edit</span>
-                </button>
-                <button
-                  class="w-8 h-8 flex items-center justify-center text-accent-red shrink-0"
-                  (click)="deleteTeam(team)"
-                  [attr.aria-label]="'TEAM_LIST.REMOVE_TEAM' | translate"
-                >
-                  <span class="material-icons text-[18px]">delete_outline</span>
-                </button>
+                <app-overflow-menu class="shrink-0 self-start" [label]="'COMMON.MORE_ACTIONS' | translate">
+                  <button type="button" class="overflow-menu-item hover:bg-gray-50" (click)="openForm(team)">
+                    <span class="material-icons text-[18px] text-gray-500">edit</span>{{ 'TEAM_LIST.EDIT_TEAM' | translate }}
+                  </button>
+                  <button type="button" class="overflow-menu-item hover:bg-gray-50 text-accent-red font-semibold" (click)="deleteTeam(team)">
+                    <span class="material-icons text-[18px]">delete_outline</span>{{ 'TEAM_LIST.REMOVE_TEAM' | translate }}
+                  </button>
+                </app-overflow-menu>
               }
             </div>
           }

@@ -92,6 +92,9 @@ button, a, .tap-target {
   top: 0;
   z-index: 20;
   @include scroll-shadows;
+  /* The edge shadows already say "more tabs this way"; a scrollbar under the labels is just noise. */
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
 /* Swipeable tab-panel container */

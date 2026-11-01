@@ -21,7 +21,9 @@ import { Team } from "../../../models/team.model";
 import { TeamAvatarService } from "../../teams/team-avatar.service";
 import { TeamService } from "../../teams/team.service";
 import { TournamentService } from "../tournament.service";
-import { switchMap } from "rxjs";
+import { firstValueFrom, switchMap } from "rxjs";
+import { MatDialog } from "@angular/material/dialog";
+import { ConfirmDialogComponent } from "../../../shared/components/confirm-dialog/confirm-dialog.component";
 import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 
 /** "Group A - Round 3" -> 3 (0 if the round number can't be read). */
@@ -265,6 +267,7 @@ export class GroupStageComponent {
   private teamAvatars = inject(TeamAvatarService);
   private tournamentService = inject(TournamentService);
   private translate = inject(TranslateService);
+  private dialog = inject(MatDialog);
   auth = inject(AuthService);
 
   readonly modes = ["group", "round"] as const;
@@ -447,6 +450,22 @@ export class GroupStageComponent {
 
   async generateFixtures(): Promise<void> {
     const id = this.tournamentId();
+    // Regenerating wipes every match of the tournament (knockout included) with its result.
+    if (this.matches().length > 0) {
+      const ref = this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: this.translate.instant("GROUP_STAGE.REGENERATE_CONFIRM_TITLE"),
+          message: this.translate.instant("GROUP_STAGE.REGENERATE_CONFIRM_MESSAGE", {
+            played: this.matches().filter((m) => m.status === "completed").length,
+          }),
+          destructive: true,
+          confirmLabel: this.translate.instant("GROUP_STAGE.REGENERATE"),
+        },
+        width: "90vw",
+        maxWidth: "400px",
+      });
+      if (!(await firstValueFrom(ref.afterClosed()))) return;
+    }
     this.isGenerating.set(true);
     try {
       const [tournament, teams] = await Promise.all([

@@ -74,7 +74,10 @@ import { TeamAvatar } from '../../utils/team-avatar.util';
 
       <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
         <div class="min-w-0 text-right leading-tight">
-          <div class="text-sm truncate" [class]="nameClass('home')">{{ sideLabel('home') }}</div>
+          <div class="text-sm truncate" [class]="nameClass('home')">{{ sideName('home') }}</div>
+          @if (sideManager('home'); as mgr) {
+            <div class="text-[11px] text-gray-400 truncate">{{ mgr }}</div>
+          }
           @if (match().homeClub; as c) {
             <div><span class="inline-flex max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 mt-0.5 text-xs font-bold bg-primary-50 text-primary-700"><span class="material-icons text-[12px]">shield</span><span class="truncate">{{ c }}</span></span></div>
           }
@@ -103,7 +106,10 @@ import { TeamAvatar } from '../../utils/team-avatar.util';
           >{{ awayAvatar().initials }}</span>
         }
         <div class="min-w-0 leading-tight">
-          <div class="text-sm truncate" [class]="nameClass('away')">{{ sideLabel('away') }}</div>
+          <div class="text-sm truncate" [class]="nameClass('away')">{{ sideName('away') }}</div>
+          @if (sideManager('away'); as mgr) {
+            <div class="text-[11px] text-gray-400 truncate">{{ mgr }}</div>
+          }
           @if (match().awayClub; as c) {
             <div><span class="inline-flex max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 mt-0.5 text-xs font-bold bg-primary-50 text-primary-700"><span class="material-icons text-[12px]">shield</span><span class="truncate">{{ c }}</span></span></div>
           }
@@ -182,6 +188,22 @@ export class MatchRowComponent {
 
   markBad(side: 'home' | 'away'): void {
     (side === 'home' ? this.homeBad : this.awayBad).set(true);
+  }
+
+  /** Team name alone (placeholder slots stay "W/L …"); the manager goes on its own line below so
+   *  neither gets cut off on a phone. */
+  sideName(side: 'home' | 'away'): string {
+    const m = this.match();
+    const name = side === 'home' ? m.homeTeamName : m.awayTeamName;
+    if (!name || /^(?:Winner|Loser) /.test(name)) return this.sideLabel(side);
+    return name;
+  }
+
+  sideManager(side: 'home' | 'away'): string | null {
+    const m = this.match();
+    const name = side === 'home' ? m.homeTeamName : m.awayTeamName;
+    if (!name || /^(?:Winner|Loser) /.test(name)) return null;
+    return this.managers()[side === 'home' ? m.homeTeamId : m.awayTeamId] || null;
   }
 
   /** "Club" or "Club_Manager" for the given side (placeholder slots stay "W/L …"). */

@@ -11,7 +11,6 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 import { StandingRow } from '../../../models/standing.model';
 import { Team, teamGroup } from '../../../models/team.model';
 import { initialsAvatar } from '../../../shared/utils/avatar.util';
-import { playerLabel } from '../../../shared/utils/player-label.util';
 
 /**
  * Standings as one table per group (GiveTour-style): rank, team, played, W-D-L, goals +/-, points
@@ -84,7 +83,12 @@ import { playerLabel } from '../../../shared/utils/player-label.util';
                               [style.color]="avatar(row).fg"
                             >{{ avatar(row).initials }}</span>
                           }
-                          <span class="font-medium truncate">{{ teamLabel(row) }}</span>
+                          <span class="min-w-0 leading-tight">
+                            <span class="block font-medium truncate">{{ row.teamName }}</span>
+                            @if (managerOf(row); as mgr) {
+                              <span class="block text-[11px] text-gray-400 truncate">{{ mgr }}</span>
+                            }
+                          </span>
                         </div>
                       </td>
                       <td class="py-2 px-1 sm:px-2 text-center text-gray-600">{{ row.played }}</td>
@@ -169,9 +173,8 @@ export class StandingsViewComponent {
     return { ...initialsAvatar(row.teamName), src: row.teamLogo };
   }
 
-  teamLabel(row: StandingRow): string {
-    const manager = this.managerByTeam()[row.teamId];
-    return playerLabel(row.teamName, manager);
+  managerOf(row: StandingRow): string | null {
+    return this.managerByTeam()[row.teamId] || null;
   }
 
   /** One block per group (a single unnamed block for non-group tournaments). */

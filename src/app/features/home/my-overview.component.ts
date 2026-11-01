@@ -173,7 +173,7 @@ import { userDisplayName } from '../../models/user.model';
                 <span class="text-right leading-tight">
                   <span class="block text-[11px] text-gray-400">
                     @if (r.groupName) {
-                      {{ 'MY_OVERVIEW.GROUP_LABEL' | translate: { name: r.groupName } }}
+                      {{ 'MY_OVERVIEW.GROUP_LABEL' | translate: { name: groupShort(r.groupName) } }}
                     } @else {
                       {{ r.points }} {{ 'STANDINGS.PTS_ABBR' | translate }}
                     }
@@ -369,6 +369,11 @@ export class MyOverviewComponent {
 
   avatar(team: Team) {
     return this.teamAvatars.resolve(team);
+  }
+
+  /** Stored group names are "Group B"; the label already says "Bảng/Group", so just "B". */
+  groupShort(name: string): string {
+    return name.replace(/^group\s+/i, '').trim() || name;
   }
 
   tournamentName(id: string): string {

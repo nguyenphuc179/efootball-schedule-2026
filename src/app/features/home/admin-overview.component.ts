@@ -126,11 +126,25 @@ export class AdminOverviewComponent {
     },
   };
 
+  /** Horizontal bars: tournament names are long, and on a phone they only fit as row labels. */
   barOptions: ChartConfiguration<"bar">["options"] = {
+    indexAxis: "y",
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
-    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+    scales: {
+      x: { beginAtZero: true, ticks: { precision: 0, color: "#94a3b8" } },
+      y: {
+        ticks: {
+          color: "#94a3b8",
+          // Ellipsis in the middle: names like "Pession Cup Mini SS1/SS2" differ only at the end.
+          callback(value) {
+            const label = String(this.getLabelForValue(Number(value)));
+            return label.length > 22 ? label.slice(0, 11).trimEnd() + "…" + label.slice(-9).trimStart() : label;
+          },
+        },
+      },
+    },
   };
 
   resultsChartData(): ChartConfiguration<"pie">["data"] {
@@ -160,15 +174,16 @@ export class AdminOverviewComponent {
           (m.awayScore ?? 0),
       );
     }
-    const labels = [...goalsByTournament.keys()].map(
-      (id) =>
+    const rows = [...goalsByTournament.entries()].sort((a, b) => b[1] - a[1]);
+    const labels = rows.map(
+      ([id]) =>
         this.tournaments().find((t) => t.id === id)?.name ?? id.slice(0, 6),
     );
     return {
       labels,
       datasets: [
         {
-          data: [...goalsByTournament.values()],
+          data: rows.map(([, goals]) => goals),
           backgroundColor: "#3b82f6",
           borderRadius: 6,
         },

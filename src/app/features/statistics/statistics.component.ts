@@ -116,9 +116,15 @@ export class StatisticsComponent implements OnChanges {
 
   barData(): ChartConfiguration<'bar'>['data'] {
     const s = this.stats()!;
+    // "Group A - Round 1" and "Group B - Round 1" are both "Round 1" on the chart — one bar each.
+    const byLabel = new Map<string, number>();
+    for (const r of s.goalDistributionByRound) {
+      const label = roundLabel(r.round, this.translate);
+      byLabel.set(label, (byLabel.get(label) ?? 0) + r.goals);
+    }
     return {
-      labels: s.goalDistributionByRound.map((r) => roundLabel(r.round, this.translate)),
-      datasets: [{ data: s.goalDistributionByRound.map((r) => r.goals), backgroundColor: '#0fa863', borderRadius: 6 }],
+      labels: [...byLabel.keys()],
+      datasets: [{ data: [...byLabel.values()], backgroundColor: '#0fa863', borderRadius: 6 }],
     };
   }
 }

@@ -24,13 +24,30 @@ export interface Match {
   awayTeamName?: string;
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
+  // Result concurrency: every result save bumps `version` (firestore.rules enforces +1), so a save
+  // started from a stale copy is refused instead of silently overwriting someone else's result.
+  version?: number;
+  resultByUid?: string | null;
+  resultByName?: string | null;
+  resultAt?: number | null;
 }
 
 // Keeps the optional denormalized name/logo fields so the generator can populate them
 // for known teams (knockout placeholder slots simply leave them undefined → card shows "TBD").
 export type MatchDraft = Omit<
   Match,
-  'id' | 'homeScore' | 'awayScore' | 'status' | 'penaltyHome' | 'penaltyAway' | 'homeClub' | 'awayClub'
+  | 'id'
+  | 'homeScore'
+  | 'awayScore'
+  | 'status'
+  | 'penaltyHome'
+  | 'penaltyAway'
+  | 'homeClub'
+  | 'awayClub'
+  | 'version'
+  | 'resultByUid'
+  | 'resultByName'
+  | 'resultAt'
 >;
 
 /** Winner of a finished match, deciding a level score on penalties. Null while undecided. */

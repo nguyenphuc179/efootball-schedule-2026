@@ -71,17 +71,17 @@ import { TranslatePipe } from '@ngx-translate/core';
 
         <div class="flex flex-col gap-2">
           <span class="text-sm font-medium text-gray-600">{{ 'TOURNAMENT_FORM.BANNER_TEMPLATES' | translate }}</span>
-          <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5">
+          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-1.5">
             @for (b of bannerTemplates; track b.src) {
               <button
                 type="button"
-                class="relative aspect-[4/1] rounded-lg overflow-hidden border-2 transition-colors"
+                class="relative aspect-[4/1] !min-h-0 rounded-lg overflow-hidden border-2 transition-colors"
                 [class]="form.controls.image.value === b.src ? 'border-primary-500' : 'border-transparent hover:border-gray-300'"
                 [attr.aria-pressed]="form.controls.image.value === b.src"
                 (click)="pickBanner(b.src)"
               >
                 <img [src]="b.src" alt="" class="w-full h-full object-cover" />
-                <span class="absolute left-1 bottom-0.5 text-[9px] leading-tight font-bold text-white drop-shadow truncate max-w-[90%]">{{ b.label | translate }}</span>
+                <span class="absolute left-1.5 bottom-0.5 text-[10px] leading-tight font-bold text-white drop-shadow truncate max-w-[90%]">{{ b.label | translate }}</span>
                 @if (form.controls.image.value === b.src) {
                   <span class="absolute right-1 top-1 w-5 h-5 rounded-full bg-primary-500 text-white flex items-center justify-center">
                     <span class="material-icons text-[14px]">check</span>
@@ -199,6 +199,12 @@ import { TranslatePipe } from '@ngx-translate/core';
           </label>
         }
       </form>
+
+      <div class="sticky bottom-0 p-4 border-t border-gray-100 bg-white/95 backdrop-blur">
+        <button class="btn-primary w-full max-w-xl mx-auto block" [disabled]="form.invalid || isSaving()" (click)="submit()">
+          {{ (isSaving() ? 'COMMON.SAVING' : isEdit() ? 'TOURNAMENT_FORM.SAVE_CHANGES' : 'TOURNAMENT_FORM.CREATE') | translate }}
+        </button>
+      </div>
     </div>
   `,
 })

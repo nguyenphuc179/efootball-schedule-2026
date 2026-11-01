@@ -6,6 +6,7 @@ export interface ConfirmDialogData {
   title: string;
   message: string;
   confirmLabel?: string;
+  cancelLabel?: string;
   destructive?: boolean;
 }
 
@@ -18,7 +19,7 @@ export interface ConfirmDialogData {
     <h2 mat-dialog-title class="font-bold">{{ data.title }}</h2>
     <mat-dialog-content class="text-gray-600">{{ data.message }}</mat-dialog-content>
     <mat-dialog-actions align="end" class="!px-4 !pb-4">
-      <button class="btn-secondary mr-2" (click)="dialogRef.close(false)">{{ 'COMMON.CANCEL' | translate }}</button>
+      <button class="btn-secondary mr-2" (click)="dialogRef.close(false)">{{ data.cancelLabel ?? ('COMMON.CANCEL' | translate) }}</button>
       <button
         class="btn-primary"
         [class.!bg-accent-red]="data.destructive"

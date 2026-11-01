@@ -44,7 +44,7 @@ import { downscaleToDataUri } from '../../utils/image-downscale.util';
           [maxBytes]="maxBytes"
           [formControl]="control"
           inputmode="url"
-          [placeholder]="placeholder"
+          [placeholder]="placeholder || ('IMAGE_FIELD.PLACEHOLDER' | translate)"
           (input)="changed.emit()"
         />
         <button
@@ -82,7 +82,8 @@ export class ImageUrlFieldComponent {
     return this._control;
   }
 
-  @Input() placeholder = 'Paste a link — or paste a copied image';
+  /** Falls back to the translated "paste a link or an image" hint when not given. */
+  @Input() placeholder = '';
   /** Raise these for a field displaying its image much larger than a small logo/avatar (e.g. a
    *  full-width banner) — the defaults look visibly blurry stretched across something that wide. */
   @Input() maxEdge?: number;

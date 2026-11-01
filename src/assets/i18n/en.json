@@ -63,7 +63,8 @@
   "IMAGE_FIELD": {
     "ATTACHED_IMAGE": "Image attached · {{size}}",
     "UPLOAD": "Upload image",
-    "UPLOAD_FAILED": "Couldn't process that image — try another one or paste a link."
+    "UPLOAD_FAILED": "Couldn't process that image — try another one or paste a link.",
+    "PLACEHOLDER": "Paste a link — or paste a copied image"
   },
   "MATCH": {
     "TBD": "TBD",
@@ -189,7 +190,8 @@
     "RESET_CONFIRM_TITLE": "Reset all matches?",
     "RESET_CONFIRM_MESSAGE": "Every match and result in this tournament will be permanently deleted so you can regenerate fixtures and re-enter results from scratch. Teams aren't affected. This can't be undone.",
     "DELETE_CONFIRM_TITLE": "Delete tournament?",
-    "DELETE_CONFIRM_MESSAGE": "\"{{name}}\" and all of its teams, fixtures, results and standings will be permanently deleted. This can't be undone."
+    "DELETE_CONFIRM_MESSAGE": "\"{{name}}\" and all of its teams, fixtures, results and standings will be permanently deleted. This can't be undone.",
+    "REOPEN_FULL": "Reopen tournament"
   },
   "TOURNAMENT_PERMISSIONS": {
     "DESCRIPTION": "Designate one manager who can click the \"Generate\" buttons (fixtures, group stage, final stage bracket) themselves — so they can generate it live, visibly, for everyone. Admin always keeps this permission too, alongside them.",
@@ -294,7 +296,11 @@
     "GENERATE_FIXTURES": "Generate Fixtures",
     "GENERATING_LABEL": "Generating fixtures…",
     "EMPTY_TITLE": "No matches scheduled",
-    "EMPTY_SUBTITLE": "Fixtures will appear here once generated."
+    "EMPTY_SUBTITLE": "Fixtures will appear here once generated.",
+    "ALL_PLAYED_TITLE": "All matches have been played",
+    "ALL_PLAYED_SUBTITLE": "See the scores in the Results tab.",
+    "NO_RESULTS_TITLE": "No results yet",
+    "NO_RESULTS_SUBTITLE": "Results show up here once the first match is entered."
   },
   "GROUP_STAGE": {
     "GENERATING_LABEL": "Generating fixtures…",
@@ -307,9 +313,11 @@
     "REGENERATE_ARIA": "Regenerate group stage",
     "REGENERATE": "Regenerate",
     "ROUND_LABEL": "Round",
-    "ALL_SHORT": "ALL",
+    "ALL_SHORT": "All",
     "NO_MATCH_FILTER": "No matches match this filter.",
-    "NO_MATCH_MANAGER": "No matches for \"{{manager}}\"."
+    "NO_MATCH_MANAGER": "No matches for \"{{manager}}\".",
+    "REGENERATE_CONFIRM_TITLE": "Regenerate the group stage?",
+    "REGENERATE_CONFIRM_MESSAGE": "Every match in this tournament (knockout included) will be deleted and rebuilt from scratch — {{played}} entered result(s) will be lost. This can't be undone."
   },
   "FINAL_STAGE": {
     "BUILDING": "Building the bracket…",
@@ -532,7 +540,14 @@
     "SAVED_TITLE": "Result saved",
     "SHARE_IMAGE": "Share result image",
     "DOWNLOAD_IMAGE": "Download image",
-    "BACK_TO_LIST": "Back to match list"
+    "BACK_TO_LIST": "Back to match list",
+    "CONFLICT_TITLE": "The result was just updated",
+    "CONFLICT_MESSAGE": "{{name}} just updated this match to {{theirs}}{{when}}. Load the latest result, or overwrite it with yours ({{mine}})?",
+    "CONFLICT_SOMEONE": "Someone else",
+    "CONFLICT_CLEARED": "no result",
+    "CONFLICT_OVERWRITE": "Overwrite",
+    "CONFLICT_RELOAD": "Load latest",
+    "CONFLICT_RELOADED": "Loaded the latest result — check it before saving."
   },
   "TOURNAMENT_FORM": {
     "EDIT_TITLE": "Edit Tournament",
@@ -575,7 +590,9 @@
     "BANNER_ANIME_VICTORY": "Anime: Victory",
     "FACEBOOK_GROUP": "Facebook group link",
     "FACEBOOK_GROUP_HINT": "The \"Share\" button on the Matches tab copies the results image, then opens this group so you can paste it.",
-    "FACEBOOK_GROUP_INVALID": "Paste a link starting with http:// or https://."
+    "FACEBOOK_GROUP_INVALID": "Paste a link starting with http:// or https://.",
+    "CREATE": "Create tournament",
+    "SAVE_CHANGES": "Save changes"
   },
   "TIME_AGO": {
     "JUST_NOW": "Just now",

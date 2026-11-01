@@ -4,8 +4,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { of, switchMap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration } from 'chart.js';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { PollService } from '../poll.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -17,14 +15,12 @@ import { AppUser, userDisplayName } from '../../../models/user.model';
 import { timeAgoKey } from '../../../shared/utils/time-ago.util';
 import { liveUserProfiles, uidsKey } from '../../../shared/utils/live-user-profiles.util';
 
-const CHART_COLORS = ['#0fa863', '#3b82f6', '#f5a623', '#e5484d', '#8b5cf6', '#14b8a6', '#f472b6', '#64748b'];
-
 /** Vote / results for one poll — a single vote per account, enforced by firestore.rules
  *  (the vote doc's id is the voter's own uid and can never be updated once created). */
 @Component({
   selector: 'app-poll-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, LoadingSpinnerComponent, BaseChartDirective, TranslatePipe],
+  imports: [CommonModule, RouterLink, LoadingSpinnerComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-4 max-w-2xl mx-auto">
@@ -111,11 +107,6 @@ const CHART_COLORS = ['#0fa863', '#3b82f6', '#f5a623', '#e5484d', '#8b5cf6', '#1
 
             <p class="text-xs text-gray-400 mt-3">{{ 'POLLS.TOTAL_VOTES' | translate: { count: totalVoters() } }}</p>
 
-            @if (totalVoters() > 0) {
-              <div class="h-52 mt-4">
-                <canvas baseChart [data]="doughnutData()" type="doughnut" [options]="doughnutOptions"></canvas>
-              </div>
-            }
 
             @if (!hasVoted()) {
               <button
@@ -312,25 +303,5 @@ export class PollDetailComponent {
     this.translate.currentLang();
     const { key, params } = timeAgoKey(ms);
     return this.translate.instant(key, params);
-  }
-
-  doughnutOptions: ChartConfiguration<'doughnut'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
-  };
-
-  doughnutData(): ChartConfiguration<'doughnut'>['data'] {
-    const r = this.results();
-    return {
-      labels: r.map((x) => x.label),
-      datasets: [
-        {
-          data: r.map((x) => x.count),
-          backgroundColor: r.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
-          borderWidth: 0,
-        },
-      ],
-    };
   }
 }

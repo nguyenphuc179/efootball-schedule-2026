@@ -63,7 +63,8 @@
   "IMAGE_FIELD": {
     "ATTACHED_IMAGE": "Ảnh đã chọn · {{size}}",
     "UPLOAD": "Tải ảnh lên",
-    "UPLOAD_FAILED": "Không thể xử lý ảnh này — thử ảnh khác hoặc dán link."
+    "UPLOAD_FAILED": "Không thể xử lý ảnh này — thử ảnh khác hoặc dán link.",
+    "PLACEHOLDER": "Dán link ảnh — hoặc dán ảnh đã copy"
   },
   "MATCH": {
     "TBD": "Chưa xác định",
@@ -189,7 +190,8 @@
     "RESET_CONFIRM_TITLE": "Đặt lại toàn bộ trận đấu?",
     "RESET_CONFIRM_MESSAGE": "Toàn bộ trận đấu và kết quả của giải này sẽ bị xóa vĩnh viễn để bạn tạo lại lịch thi đấu và nhập kết quả từ đầu. Đội bóng không bị ảnh hưởng. Không thể hoàn tác.",
     "DELETE_CONFIRM_TITLE": "Xóa giải đấu?",
-    "DELETE_CONFIRM_MESSAGE": "\"{{name}}\" cùng toàn bộ đội bóng, lịch thi đấu, kết quả và bảng xếp hạng sẽ bị xóa vĩnh viễn. Không thể hoàn tác."
+    "DELETE_CONFIRM_MESSAGE": "\"{{name}}\" cùng toàn bộ đội bóng, lịch thi đấu, kết quả và bảng xếp hạng sẽ bị xóa vĩnh viễn. Không thể hoàn tác.",
+    "REOPEN_FULL": "Mở lại giải đấu"
   },
   "TOURNAMENT_PERMISSIONS": {
     "DESCRIPTION": "Chỉ định 1 quản lý được quyền bấm các nút \"Tạo\" (lịch thi đấu, vòng bảng, vòng loại trực tiếp) — để họ tự tạo trực tiếp, minh bạch với mọi người. Admin luôn giữ quyền này song song, không bị mất quyền.",
@@ -294,7 +296,11 @@
     "GENERATE_FIXTURES": "Tạo lịch thi đấu",
     "GENERATING_LABEL": "Đang tạo lịch thi đấu…",
     "EMPTY_TITLE": "Chưa có lịch thi đấu",
-    "EMPTY_SUBTITLE": "Lịch thi đấu sẽ hiện ở đây sau khi được tạo."
+    "EMPTY_SUBTITLE": "Lịch thi đấu sẽ hiện ở đây sau khi được tạo.",
+    "ALL_PLAYED_TITLE": "Đã đá xong tất cả các trận",
+    "ALL_PLAYED_SUBTITLE": "Xem tỉ số ở tab Kết quả.",
+    "NO_RESULTS_TITLE": "Chưa có kết quả nào",
+    "NO_RESULTS_SUBTITLE": "Kết quả sẽ hiện ở đây khi trận đầu tiên được nhập."
   },
   "GROUP_STAGE": {
     "GENERATING_LABEL": "Đang tạo lịch thi đấu…",
@@ -307,9 +313,11 @@
     "REGENERATE_ARIA": "Tạo lại vòng bảng",
     "REGENERATE": "Tạo lại",
     "ROUND_LABEL": "Vòng",
-    "ALL_SHORT": "All",
+    "ALL_SHORT": "Tất cả",
     "NO_MATCH_FILTER": "Không có trận nào khớp bộ lọc.",
-    "NO_MATCH_MANAGER": "Không có trận nào của \"{{manager}}\"."
+    "NO_MATCH_MANAGER": "Không có trận nào của \"{{manager}}\".",
+    "REGENERATE_CONFIRM_TITLE": "Tạo lại vòng bảng?",
+    "REGENERATE_CONFIRM_MESSAGE": "Toàn bộ trận đấu của giải (kể cả vòng loại trực tiếp) sẽ bị xoá và tạo lại từ đầu — {{played}} kết quả đã nhập sẽ mất. Không thể hoàn tác."
   },
   "FINAL_STAGE": {
     "BUILDING": "Đang tạo sơ đồ…",
@@ -532,7 +540,14 @@
     "SAVED_TITLE": "Đã lưu kết quả",
     "SHARE_IMAGE": "Chia sẻ ảnh kết quả",
     "DOWNLOAD_IMAGE": "Tải ảnh",
-    "BACK_TO_LIST": "Trở về danh sách trận"
+    "BACK_TO_LIST": "Trở về danh sách trận",
+    "CONFLICT_TITLE": "Kết quả vừa được cập nhật",
+    "CONFLICT_MESSAGE": "Trận này vừa được {{name}} cập nhật thành {{theirs}}{{when}}. Bạn muốn tải lại kết quả mới nhất, hay vẫn ghi đè bằng tỉ số của bạn ({{mine}})?",
+    "CONFLICT_SOMEONE": "người khác",
+    "CONFLICT_CLEARED": "chưa có kết quả",
+    "CONFLICT_OVERWRITE": "Vẫn ghi đè",
+    "CONFLICT_RELOAD": "Tải lại",
+    "CONFLICT_RELOADED": "Đã tải kết quả mới nhất — kiểm tra lại trước khi lưu."
   },
   "TOURNAMENT_FORM": {
     "EDIT_TITLE": "Sửa giải đấu",
@@ -575,7 +590,9 @@
     "BANNER_ANIME_VICTORY": "Anime: Ăn mừng vô địch",
     "FACEBOOK_GROUP": "Link group Facebook",
     "FACEBOOK_GROUP_HINT": "Nút \"Chia sẻ\" ở tab Các trận đấu sẽ sao chép ảnh kết quả rồi mở group này để bạn dán vào.",
-    "FACEBOOK_GROUP_INVALID": "Dán link bắt đầu bằng http:// hoặc https://."
+    "FACEBOOK_GROUP_INVALID": "Dán link bắt đầu bằng http:// hoặc https://.",
+    "CREATE": "Tạo giải đấu",
+    "SAVE_CHANGES": "Lưu thay đổi"
   },
   "TIME_AGO": {
     "JUST_NOW": "Vừa xong",

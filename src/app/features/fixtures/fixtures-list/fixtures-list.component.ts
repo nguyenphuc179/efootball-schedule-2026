@@ -30,7 +30,9 @@ import { Team } from '../../../models/team.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-3">
-      @if (tournamentId() && (auth.isAdmin() || (canGenerate() && !hasMatches()))) {
+      <!-- Only for the first schedule: generating wipes every existing match (and its result)
+           without asking. Redoing a schedule goes through "Reset" in the ⋮ menu, which confirms. -->
+      @if (tournamentId() && canGenerate() && !hasMatches()) {
         <button
           class="btn-primary self-start flex items-center gap-1 !py-2 !px-4 text-sm"
           [disabled]="isGenerating()"
@@ -46,7 +48,13 @@ import { Team } from '../../../models/team.model';
       }
 
       @if (grouped().length === 0 && !isGenerating()) {
-        <app-empty-state icon="event" [title]="'FIXTURES_LIST.EMPTY_TITLE' | translate" [subtitle]="'FIXTURES_LIST.EMPTY_SUBTITLE' | translate" />
+        @if (hasMatches() && filter() === 'upcoming') {
+          <app-empty-state icon="task_alt" [title]="'FIXTURES_LIST.ALL_PLAYED_TITLE' | translate" [subtitle]="'FIXTURES_LIST.ALL_PLAYED_SUBTITLE' | translate" />
+        } @else if (hasMatches() && filter() === 'completed') {
+          <app-empty-state icon="sports_score" [title]="'FIXTURES_LIST.NO_RESULTS_TITLE' | translate" [subtitle]="'FIXTURES_LIST.NO_RESULTS_SUBTITLE' | translate" />
+        } @else {
+          <app-empty-state icon="event" [title]="'FIXTURES_LIST.EMPTY_TITLE' | translate" [subtitle]="'FIXTURES_LIST.EMPTY_SUBTITLE' | translate" />
+        }
       } @else {
         @for (group of grouped(); track group.round) {
           <div>

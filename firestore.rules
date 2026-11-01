@@ -122,14 +122,32 @@ service cloud.firestore {
     // check below rejects a manager touching anything else (schedule,
     // teams, round, tournamentId, ...), which stays admin-only.
     // -------------------------------------------------------------------
+    //
+    // Any change to the result fields must also bump `version` by exactly 1
+    // (ResultService saves inside a transaction that checks it), so a save
+    // made from a stale copy — two people on the result screen at once, or
+    // an old app build still open somewhere — is refused instead of silently
+    // overwriting the newer result. Admin is held to this too.
+    // -------------------------------------------------------------------
     match /matches/{matchId} {
+      function resultFieldsChanged() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['homeScore', 'awayScore', 'penaltyHome', 'penaltyAway', 'status', 'homeClub', 'awayClub']);
+      }
+      function versionBumped() {
+        return request.resource.data.get('version', 0) == resource.data.get('version', 0) + 1;
+      }
+
       allow read: if true;
       allow create: if isAdmin() || isFixtureGenerator(request.resource.data.tournamentId);
-      allow update: if isAdmin() ||
+      allow update: if (!resultFieldsChanged() || versionBumped()) && (
+        isAdmin() ||
         (isSignedIn() && !isDisabled() &&
           (isTeamManager(resource.data.homeTeamId) || isTeamManager(resource.data.awayTeamId)) &&
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['homeScore', 'awayScore', 'penaltyHome', 'penaltyAway', 'status', 'homeClub', 'awayClub']));
+            .hasOnly(['homeScore', 'awayScore', 'penaltyHome', 'penaltyAway', 'status', 'homeClub', 'awayClub',
+                      'version', 'resultByUid', 'resultByName', 'resultAt']) &&
+          request.resource.data.resultByUid == request.auth.uid));
       allow delete: if isAdmin() || isFixtureGenerator(resource.data.tournamentId);
     }
 

@@ -126,7 +126,7 @@ interface PodiumSlot {
                   {{ s.p.manager }}
                 </div>
                 @if (auth.isAdmin() && s.p.email) {
-                  <div class="text-[10px] text-white/70 truncate">{{ s.p.email }}</div>
+                  <div class="hidden sm:block text-[10px] text-white/70 truncate">{{ s.p.email }}</div>
                 }
                 <div class="text-[11px] text-white/85">
                   {{ s.p.wins }}-{{ s.p.draws }}-{{ s.p.losses
@@ -170,7 +170,7 @@ interface PodiumSlot {
                     {{ p.manager }}
                   </div>
                   @if (auth.isAdmin() && p.email) {
-                    <div class="text-xs text-gray-400 truncate">{{ p.email }}</div>
+                    <div class="hidden sm:block text-xs text-gray-400 truncate">{{ p.email }}</div>
                   }
                   <div class="text-xs text-gray-400">
                     {{ p.wins }}-{{ p.draws }}-{{ p.losses }} ·

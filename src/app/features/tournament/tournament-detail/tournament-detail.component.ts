@@ -98,9 +98,9 @@ type TabKey =
         </div>
 
         <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
-          <span class="badge bg-primary-50 text-primary-700">{{ typeLabels[tournament()!.type] | translate }}</span>
+          <span class="badge bg-primary-50 text-primary-700 min-w-0 truncate">{{ typeLabels[tournament()!.type] | translate }}</span>
           <button
-            class="w-8 h-8 flex items-center justify-center text-gray-400 ml-auto"
+            class="w-8 h-8 flex items-center justify-center text-gray-400 ml-auto shrink-0"
             (click)="share()"
             [attr.aria-label]="(shareCopied() ? 'COMMON.LINK_COPIED' : 'COMMON.SHARE') | translate"
             [title]="(shareCopied() ? 'COMMON.LINK_COPIED' : 'COMMON.SHARE') | translate"
@@ -108,17 +108,9 @@ type TabKey =
             <span class="material-icons text-[18px]">{{ shareCopied() ? 'check' : 'share' }}</span>
           </button>
           @if (auth.isAdmin()) {
-            @if (tournament()!.status === 'completed') {
+            @if (tournament()!.status !== 'completed' && canEndTournament()) {
               <button
-                class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1"
-                [disabled]="isSavingStatus()"
-                (click)="reopenTournament()"
-              >
-                <span class="material-icons text-[16px]">lock_open</span> {{ isSavingStatus() ? '…' : ('TOURNAMENT_DETAIL.REOPEN' | translate) }}
-              </button>
-            } @else if (canEndTournament()) {
-              <button
-                class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1 !text-accent-red"
+                class="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1 !text-accent-red whitespace-nowrap shrink-0"
                 [disabled]="isSavingStatus()"
                 (click)="endTournament()"
               >
@@ -127,13 +119,19 @@ type TabKey =
             }
             <a
               [routerLink]="['/tournaments', tournament()!.id, 'edit']"
-              class="w-8 h-8 flex items-center justify-center text-gray-400"
+              class="w-8 h-8 flex items-center justify-center text-gray-400 shrink-0"
               [attr.aria-label]="'COMMON.EDIT' | translate"
               [title]="'COMMON.EDIT' | translate"
             >
               <span class="material-icons text-[18px]">edit</span>
             </a>
-            <app-overflow-menu [label]="'COMMON.MORE_ACTIONS' | translate">
+            <app-overflow-menu class="shrink-0" [label]="'COMMON.MORE_ACTIONS' | translate">
+              @if (tournament()!.status === 'completed') {
+                <button type="button" class="overflow-menu-item hover:bg-gray-50" [disabled]="isSavingStatus()" (click)="reopenTournament()">
+                  <span class="material-icons text-[18px] text-gray-500">lock_open</span>
+                  {{ 'TOURNAMENT_DETAIL.REOPEN_FULL' | translate }}
+                </button>
+              }
               @if (matches().length > 0) {
                 <button type="button" class="overflow-menu-item hover:bg-gray-50" [disabled]="isResetting()" (click)="resetMatches()">
                   <span class="material-icons text-[18px] text-gray-500">{{ isResetting() ? 'hourglass_top' : 'restart_alt' }}</span>
