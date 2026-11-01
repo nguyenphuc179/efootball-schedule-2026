@@ -2,6 +2,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   inject,
   signal,
@@ -19,11 +20,14 @@ import { ClubBlockReason, clubBlockReasons } from "../../tournament/team-match/c
 import { TeamAvatarService } from "../../teams/team-avatar.service";
 import { TeamService } from "../../teams/team.service";
 import { TournamentService } from "../../tournament/tournament.service";
-import { DEFAULT_TEAM_MATCH_RULES, TeamMatchRules, TournamentType, resolveTeamMatchRules } from "../../../models/tournament.model";
+import { DEFAULT_TEAM_MATCH_RULES, TeamMatchRules, Tournament, TournamentType, resolveTeamMatchRules } from "../../../models/tournament.model";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 import { AppSelectComponent, AppSelectOption } from "../../../shared/components/app-select/app-select.component";
 import { roundLabel } from "../../../shared/utils/round-label.util";
+import { ToastService } from "../../../core/services/toast.service";
+import { ResultCardSide, renderResultCard } from "../match-result-image.util";
+import { downloadBlob, shareImage } from "../../tournament/team-match/team-match-export.util";
 
 /**
  * One-handed result entry: large +/- steppers (no keyboard), thumb-reachable Save button.
@@ -41,6 +45,18 @@ import { roundLabel } from "../../../shared/utils/round-label.util";
           <span class="material-icons">arrow_back</span>
         </button>
         <h1 class="font-bold ml-1">{{ 'RESULT_ENTRY.TITLE' | translate }}</h1>
+        @if (!saved() && match()?.status === 'completed') {
+          <button
+            type="button"
+            class="ml-auto w-9 h-9 flex items-center justify-center text-gray-500 disabled:opacity-40"
+            [disabled]="sharing()"
+            (click)="shareResult()"
+            [attr.aria-label]="'RESULT_ENTRY.SHARE_IMAGE' | translate"
+            [title]="'RESULT_ENTRY.SHARE_IMAGE' | translate"
+          >
+            <span class="material-icons text-[20px]">{{ sharing() ? 'hourglass_top' : 'ios_share' }}</span>
+          </button>
+        }
       </div>
 
       @if (accessDenied()) {
@@ -51,6 +67,29 @@ import { roundLabel } from "../../../shared/utils/round-label.util";
         />
       } @else if (!match()) {
         <app-loading-spinner [label]="'RESULT_ENTRY.LOADING' | translate" />
+      } @else if (saved()) {
+        <div class="flex-1 flex flex-col items-center px-4 py-8 gap-5 text-center max-w-xl mx-auto w-full">
+          <span class="w-14 h-14 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-lg">
+            <span class="material-icons text-[32px]">check</span>
+          </span>
+          <h2 class="text-xl font-extrabold">{{ 'RESULT_ENTRY.SAVED_TITLE' | translate }}</h2>
+          @if (previewUrl(); as url) {
+            <img [src]="url" alt="" class="w-full rounded-xl shadow-xl border border-gray-100" />
+          } @else {
+            <div class="w-full aspect-video rounded-xl bg-surface-muted animate-pulse"></div>
+          }
+          <div class="w-full flex flex-col gap-2.5">
+            <button type="button" class="btn-primary w-full flex items-center justify-center gap-2" [disabled]="sharing()" (click)="shareResult()">
+              <span class="material-icons text-[20px]">{{ sharing() ? 'hourglass_top' : 'ios_share' }}</span>{{ 'RESULT_ENTRY.SHARE_IMAGE' | translate }}
+            </button>
+            <button type="button" class="btn-secondary w-full flex items-center justify-center gap-2" (click)="downloadResult()">
+              <span class="material-icons text-[20px]">download</span>{{ 'RESULT_ENTRY.DOWNLOAD_IMAGE' | translate }}
+            </button>
+            <button type="button" class="btn-primary !bg-accent-red w-full flex items-center justify-center gap-2" (click)="goBack()">
+              <span class="material-icons text-[20px]">format_list_bulleted</span>{{ 'RESULT_ENTRY.BACK_TO_LIST' | translate }}
+            </button>
+          </div>
+        </div>
       } @else {
         <div class="flex-1 px-3 sm:px-4 py-6 sm:py-10 flex flex-col items-center gap-6">
           @if (roundText()) {
@@ -382,6 +421,7 @@ export class ResultEntryComponent {
     this.homeTeam.set(homeTeam);
     this.awayTeam.set(awayTeam);
     this.tournamentType.set(tournament?.type);
+    this.tournament.set(tournament ?? undefined);
     this.rules.set(resolveTeamMatchRules(tournament));
     this.allTeams.set(teams);
     if (tournament?.type === "team_match") {
@@ -462,11 +502,93 @@ export class ResultEntryComponent {
           ? { home: this.homeClub() || null, away: this.awayClub() || null }
           : null,
       );
-      this.router.navigate(["/tournaments", m.tournamentId], {
-        queryParams: { tab: this.originTab(m) },
-      });
+      // Stay here with a share-ready result card instead of leaving straight away; "Done" goes back.
+      this.imageCache = null;
+      this.saved.set(true);
+      void this.resultImage().then((b) => this.previewUrl.set(URL.createObjectURL(b))).catch(() => undefined);
     } finally {
       this.isSaving.set(false);
     }
   }
+
+  // ---- Result card image -------------------------------------------------------------------
+
+  saved = signal(false);
+  sharing = signal(false);
+  previewUrl = signal<string | null>(null);
+  private tournament = signal<Tournament | undefined>(undefined);
+  private toast = inject(ToastService);
+  /** Rendered once per saved state; reset whenever the score changes before another save. */
+  private imageCache: Promise<Blob> | null = null;
+
+  private winnerSide(): "home" | "away" | null {
+    const h = this.homeScore();
+    const a = this.awayScore();
+    if (h !== a) return h > a ? "home" : "away";
+    if (this.showPenalties() && this.penHome() !== this.penAway()) return this.penHome() > this.penAway() ? "home" : "away";
+    return null;
+  }
+
+  private cardSide(side: "home" | "away"): ResultCardSide {
+    const m = this.match()!;
+    const team = side === "home" ? this.homeTeam() : this.awayTeam();
+    const avatar = side === "home" ? this.homeAvatar() : this.awayAvatar();
+    return {
+      name: (side === "home" ? m.homeTeamName : m.awayTeamName) ?? team?.teamName ?? "?",
+      sub: team?.manager ?? null,
+      club: this.isTeamMatch() ? (side === "home" ? this.homeClub() : this.awayClub()) || null : null,
+      avatar,
+      color: this.sideColor(side),
+      won: this.winnerSide() === side,
+    };
+  }
+
+  private resultImage(): Promise<Blob> {
+    if (!this.imageCache) {
+      const pens = this.showPenalties() ? `(${this.penHome()}-${this.penAway()} pen)` : null;
+      this.imageCache = renderResultCard({
+        tournament: this.tournament()?.name ?? "",
+        round: this.roundText(),
+        home: this.cardSide("home"),
+        away: this.cardSide("away"),
+        score: `${this.homeScore()} - ${this.awayScore()}`,
+        penalties: pens,
+        footer: location.host,
+      }).then((b) => {
+        if (!b) throw new Error("no image");
+        return b;
+      });
+    }
+    return this.imageCache;
+  }
+
+  private imageTitle(): string {
+    const m = this.match();
+    return `${m?.homeTeamName ?? ""} ${this.homeScore()}-${this.awayScore()} ${m?.awayTeamName ?? ""}`.trim();
+  }
+
+  async shareResult(): Promise<void> {
+    if (this.sharing()) return;
+    this.sharing.set(true);
+    try {
+      const result = await shareImage(this.resultImage(), this.imageTitle(), this.tournament()?.facebookGroupUrl);
+      const key = {
+        copied: "TEAM_MATCH.SHARE_COPIED",
+        "copied-no-group": "TEAM_MATCH.SHARE_NO_GROUP",
+        failed: "TEAM_MATCH.SHARE_FAILED",
+      }[result as string];
+      if (key) this.toast.show(this.translate.instant(key), result === "failed" ? "info" : "success");
+    } finally {
+      this.sharing.set(false);
+    }
+  }
+
+  async downloadResult(): Promise<void> {
+    downloadBlob(await this.resultImage(), this.imageTitle() + ".png");
+  }
+
+  private revokePreview = inject(DestroyRef).onDestroy(() => {
+    const url = this.previewUrl();
+    if (url) URL.revokeObjectURL(url);
+  });
 }

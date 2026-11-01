@@ -98,12 +98,6 @@ import { APP_VERSION } from '../../../core/app-version';
             <a routerLink="/profile" class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50" (click)="open.set(false)">
               <span class="material-icons text-[18px] text-gray-500">person</span> {{ 'USER_MENU.PROFILE' | translate }}
             </a>
-            @if (auth.isAdmin()) {
-              <a routerLink="/members" class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50" (click)="open.set(false)">
-                <span class="material-icons text-[18px] text-gray-500">group</span> {{ 'MEMBERS.TITLE' | translate }}
-              </a>
-            }
-
             <div class="px-3 py-2 border-t border-gray-100">
               <div class="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
                 @for (o of themeOptions; track o.value) {

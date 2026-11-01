@@ -154,11 +154,11 @@
     "COMPLETED": "Completed"
   },
   "TOURNAMENT_LIST": {
-    "NEW": "New",
     "TAB_ALL": "All",
     "EMPTY_TITLE": "No tournaments",
     "EMPTY_SUBTITLE": "Check back soon or create one.",
-    "FORMAT_LABEL": "Format"
+    "FORMAT_LABEL": "Format",
+    "CREATE_TOURNAMENT": "New tournament"
   },
   "TOURNAMENT_DETAIL": {
     "LOADING": "Loading tournament…",
@@ -444,7 +444,6 @@
     "SIGN_OUT": "Sign Out",
     "UPLOAD_AVATAR": "Upload avatar",
     "AVATAR_UPLOAD_FAILED": "Couldn't process that image — try another one.",
-    "MATCH_HISTORY": "Match history",
     "NO_HISTORY": "You haven't played any matches yet.",
     "SHOW_MORE": "Show more"
   },
@@ -529,7 +528,11 @@
     "CLUB_TAKEN": "Already picked",
     "CLUB_TAKEN_SELF": "You used it",
     "CLUB_TAKEN_OPPONENT": "Opponent picked it",
-    "CLUB_TAKEN_TEAMMATE": "Teammate picked it"
+    "CLUB_TAKEN_TEAMMATE": "Teammate picked it",
+    "SAVED_TITLE": "Result saved",
+    "SHARE_IMAGE": "Share result image",
+    "DOWNLOAD_IMAGE": "Download image",
+    "BACK_TO_LIST": "Back to match list"
   },
   "TOURNAMENT_FORM": {
     "EDIT_TITLE": "Edit Tournament",
@@ -597,7 +600,8 @@
     "DELETE_CONFIRM_MESSAGE": "\"{{title}}\" and all of its votes will be permanently deleted. This cannot be undone.",
     "VOTED": "Voted",
     "NOT_VOTED": "Not voted yet",
-    "VOTE_COUNT": "{{count}} vote(s)"
+    "VOTE_COUNT": "{{count}} vote(s)",
+    "CREATE_POLL": "New poll"
   },
   "POLL_FORM": {
     "CREATE_TITLE": "Create poll",
@@ -659,5 +663,28 @@
     "SEE_STANDINGS": "Standings",
     "NEXT_MATCHES": "Next matches",
     "SEE_ALL": "See all"
+  },
+  "PLAYER": {
+    "NOT_FOUND": "Player not found",
+    "RANK": "Rank {{rank}}/{{total}}",
+    "COMPARE": "Head-to-head",
+    "FAVORITE_CLUBS": "Favourite clubs",
+    "TIMES": "{{count}} matches",
+    "VS_OPPONENTS": "Record against each opponent",
+    "RECENT_MATCHES": "Recent matches",
+    "VS": "vs"
+  },
+  "H2H": {
+    "TITLE": "Head-to-head",
+    "SHORT": "H2H",
+    "PICK_PLAYER": "Pick a player",
+    "PICK_TWO_TITLE": "Pick two players",
+    "PICK_TWO_SUBTITLE": "See their record against each other across every season.",
+    "GOALS": "Goals",
+    "MEETINGS": "Meetings",
+    "SCORE_HINT": "Scores and results are from {{name}}'s side.",
+    "NEVER_MET": "These two have never played each other",
+    "WINS": "Wins",
+    "DRAWS": "{{count}} draw(s)"
   }
 }

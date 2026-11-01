@@ -46,7 +46,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
           </div>
           <nav class="flex flex-col gap-1 p-3">
             @for (item of desktopNavItems; track item.route) {
-              @if ((!item.requiresAuth || auth.isSignedIn()) && (!item.requiresAdmin || auth.isAdmin())) {
+              @if (!item.requiresAuth || auth.isSignedIn()) {
                 <a
                   [routerLink]="item.route"
                   routerLinkActive
@@ -141,7 +141,7 @@ export class AppComponent {
 
   /** `requiresAuth` items (currently just Polls, which redirects to /login for a guest anyway)
    *  are hidden from the sidebar until signed in, rather than shown as a dead end. */
-  desktopNavItems: { label: string; icon: string; route: string; requiresAuth?: boolean; requiresAdmin?: boolean }[] = [
+  desktopNavItems: { label: string; icon: string; route: string; requiresAuth?: boolean }[] = [
     { label: 'NAV.HOME', icon: 'home', route: '/' },
     { label: 'NAV.TOURNAMENTS', icon: 'emoji_events', route: '/tournaments' },
     { label: 'NAV.RANKING', icon: 'leaderboard', route: '/ranking' },
@@ -149,6 +149,5 @@ export class AppComponent {
     { label: 'POLLS.NAV_LABEL', icon: 'how_to_vote', route: '/polls', requiresAuth: true },
     { label: 'NAV.SKILLS', icon: 'auto_awesome', route: '/skills' },
     { label: 'NAV.GUIDE', icon: 'menu_book', route: '/guide' },
-    { label: 'MEMBERS.TITLE', icon: 'group', route: '/members', requiresAdmin: true },
   ];
 }

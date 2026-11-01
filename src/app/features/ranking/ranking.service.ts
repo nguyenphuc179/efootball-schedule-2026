@@ -44,6 +44,61 @@ export interface ManagerTournamentEntry {
   points: number;
 }
 
+/** Stable id for a player across tournaments and renames — the same grouping key the leaderboard
+ *  uses (account uid, else `name:<manager>` for a legacy team with no linked account). Used in
+ *  `/players/:key` and `/head-to-head?a=&b=` URLs. */
+export function playerKeyOf(p: { uid?: string; manager: string }): string {
+  return p.uid ?? `name:${p.manager}`;
+}
+
+/** One completed match seen from one player's side. */
+export interface PlayerMatch {
+  match: Match;
+  teamName: string;
+  opponentKey: string | null;
+  opponentName: string;
+  goalsFor: number;
+  goalsAgainst: number;
+  penaltiesFor: number | null;
+  penaltiesAgainst: number | null;
+  result: 'W' | 'D' | 'L';
+  club: string | null;
+  opponentClub: string | null;
+}
+
+export interface HeadToHeadSummary {
+  played: number;
+  aWins: number;
+  draws: number;
+  bWins: number;
+  aGoals: number;
+  bGoals: number;
+  /** Newest first, from A's side. */
+  matches: PlayerMatch[];
+}
+
+/** "2 - 1" / "1 - 1 (4-3 pen)" from this player's side (own goals first). */
+export function playerScoreText(pm: PlayerMatch): string {
+  const base = `${pm.goalsFor} - ${pm.goalsAgainst}`;
+  return pm.goalsFor === pm.goalsAgainst && pm.penaltiesFor != null && pm.penaltiesAgainst != null
+    ? `${base} (${pm.penaltiesFor}-${pm.penaltiesAgainst} pen)`
+    : base;
+}
+
+/** A's record against B, built from A's own match list. */
+export function headToHead(matchesOfA: PlayerMatch[], keyB: string): HeadToHeadSummary {
+  const matches = matchesOfA.filter((pm) => pm.opponentKey === keyB);
+  const s: HeadToHeadSummary = { played: matches.length, aWins: 0, draws: 0, bWins: 0, aGoals: 0, bGoals: 0, matches };
+  for (const pm of matches) {
+    s.aGoals += pm.goalsFor;
+    s.bGoals += pm.goalsAgainst;
+    if (pm.result === 'W') s.aWins++;
+    else if (pm.result === 'L') s.bWins++;
+    else s.draws++;
+  }
+  return s;
+}
+
 /**
  * All-time manager leaderboard. A manager's score is the sum of points across every completed
  * match played by any team they hold, in any tournament (group stage through knockout). Once all
@@ -157,6 +212,48 @@ export class RankingService {
         b.goalDifference - a.goalDifference ||
         a.manager.localeCompare(b.manager)
     );
+  });
+
+  /** The leaderboard row for a `playerKeyOf` key (undefined while loading / unknown key). */
+  byKey(key: string): ManagerRank | undefined {
+    return this.ranking().find((r) => playerKeyOf(r) === key);
+  }
+
+  /** player key -> every completed match they played, from their own side, newest first. Drives
+   *  the player profile and head-to-head pages. */
+  readonly matchesByPlayer = computed(() => {
+    const identityOf = this.identityByTeamId();
+    const teamById = new Map(this.teams().map((t) => [t.id, t] as const));
+    const byPlayer = new Map<string, PlayerMatch[]>();
+
+    for (const m of this.matches()) {
+      if (m.homeScore == null || m.awayScore == null) continue;
+      const winner = matchWinner(m);
+      for (const side of ['home', 'away'] as const) {
+        const own = identityOf.get(side === 'home' ? m.homeTeamId : m.awayTeamId);
+        if (!own) continue;
+        const oppTeamId = side === 'home' ? m.awayTeamId : m.homeTeamId;
+        const opp = identityOf.get(oppTeamId);
+        const pm: PlayerMatch = {
+          match: m,
+          teamName: teamById.get(side === 'home' ? m.homeTeamId : m.awayTeamId)?.teamName ?? (side === 'home' ? m.homeTeamName : m.awayTeamName) ?? '',
+          opponentKey: opp?.key ?? null,
+          opponentName: opp?.name ?? (side === 'home' ? m.awayTeamName : m.homeTeamName) ?? '?',
+          goalsFor: side === 'home' ? m.homeScore : m.awayScore,
+          goalsAgainst: side === 'home' ? m.awayScore : m.homeScore,
+          penaltiesFor: (side === 'home' ? m.penaltyHome : m.penaltyAway) ?? null,
+          penaltiesAgainst: (side === 'home' ? m.penaltyAway : m.penaltyHome) ?? null,
+          result: !winner ? 'D' : winner === side ? 'W' : 'L',
+          club: (side === 'home' ? m.homeClub : m.awayClub) ?? null,
+          opponentClub: (side === 'home' ? m.awayClub : m.homeClub) ?? null,
+        };
+        const list = byPlayer.get(own.key) ?? [];
+        list.push(pm);
+        byPlayer.set(own.key, list);
+      }
+    }
+    for (const list of byPlayer.values()) list.sort((a, b) => b.match.matchDate - a.match.matchDate);
+    return byPlayer;
   });
 
   /** One row per team this manager has ever held (= one row per tournament) — the "Xếp hạng" row's

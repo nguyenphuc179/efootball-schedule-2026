@@ -22,8 +22,9 @@ import { timeAgoKey } from '../../../shared/utils/time-ago.util';
       <div class="flex items-center justify-between mb-4">
         <h1 class="text-xl font-extrabold">{{ 'POLLS.TITLE' | translate }}</h1>
         @if (auth.isAdmin()) {
-          <a routerLink="/polls/create" class="btn-primary !py-2 !px-3 text-sm flex items-center gap-1">
-            <span class="material-icons text-[18px]">add</span> {{ 'TOURNAMENT_LIST.NEW' | translate }}
+          <a routerLink="/polls/create" class="btn-create">
+            <span class="btn-create-icon"><span class="material-icons text-[20px]">add</span></span>
+            {{ 'POLLS.CREATE_POLL' | translate }}
           </a>
         }
       </div>

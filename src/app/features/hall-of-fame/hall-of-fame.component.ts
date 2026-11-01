@@ -37,11 +37,9 @@ import { TranslatePipe, TranslateService } from "@ngx-translate/core";
           </div>
         </div>
         @if (auth.isAdmin()) {
-          <button
-            class="btn-primary !py-2.5 !px-5 text-sm flex items-center gap-1.5 shrink-0"
-            (click)="openForm()"
-          >
-            <span class="material-icons text-[18px]">add</span> {{ (tab() === 'team' ? 'HALL_OF_FAME.ADD_TEAM' : 'HALL_OF_FAME.ADD_CHAMPION') | translate }}
+          <button type="button" class="btn-create" (click)="openForm()">
+            <span class="btn-create-icon"><span class="material-icons text-[20px]">add</span></span>
+            {{ (tab() === 'team' ? 'HALL_OF_FAME.ADD_TEAM' : 'HALL_OF_FAME.ADD_CHAMPION') | translate }}
           </button>
         }
       </header>

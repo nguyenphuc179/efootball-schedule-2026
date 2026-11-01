@@ -3,14 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/services/auth.service';
-import { MyRecordComponent } from './my-record.component';
 import { initialsAvatar } from '../../shared/utils/avatar.util';
 import { downscaleToDataUri } from '../../shared/utils/image-downscale.util';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, MyRecordComponent, RouterLink, TranslatePipe],
+  imports: [CommonModule, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-6 max-w-xl mx-auto">
@@ -52,9 +51,7 @@ import { downscaleToDataUri } from '../../shared/utils/image-downscale.util';
         }
       </div>
 
-      <app-my-record />
-
-      <div class="card !p-0 mt-6 flex flex-col divide-y divide-gray-100">
+      <div class="card !p-0 flex flex-col divide-y divide-gray-100">
         @if (auth.isAdmin()) {
           <a routerLink="/members" class="flex items-center gap-3 px-4 py-3 no-underline text-inherit">
             <span class="material-icons text-[20px] text-gray-500">group</span>

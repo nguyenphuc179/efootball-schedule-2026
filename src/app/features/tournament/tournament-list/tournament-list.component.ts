@@ -23,8 +23,9 @@ type FilterTab = 'all' | TournamentStatus;
       <div class="flex items-center justify-between mb-4">
         <h1 class="text-xl font-extrabold">{{ 'NAV.TOURNAMENTS' | translate }}</h1>
         @if (auth.isAdmin()) {
-          <a routerLink="/tournaments/create" class="btn-primary !py-2 !px-3 text-sm flex items-center gap-1">
-            <span class="material-icons text-[18px]">add</span> {{ 'TOURNAMENT_LIST.NEW' | translate }}
+          <a routerLink="/tournaments/create" class="btn-create">
+            <span class="btn-create-icon"><span class="material-icons text-[20px]">add</span></span>
+            {{ 'TOURNAMENT_LIST.CREATE_TOURNAMENT' | translate }}
           </a>
         }
       </div>

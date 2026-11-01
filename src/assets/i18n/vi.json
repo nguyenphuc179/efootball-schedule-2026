@@ -154,11 +154,11 @@
     "COMPLETED": "Đã kết thúc"
   },
   "TOURNAMENT_LIST": {
-    "NEW": "Tạo mới",
     "TAB_ALL": "Tất cả",
     "EMPTY_TITLE": "Chưa có giải đấu",
     "EMPTY_SUBTITLE": "Quay lại sau hoặc tạo một giải đấu mới.",
-    "FORMAT_LABEL": "Thể thức"
+    "FORMAT_LABEL": "Thể thức",
+    "CREATE_TOURNAMENT": "Tạo giải đấu mới"
   },
   "TOURNAMENT_DETAIL": {
     "LOADING": "Đang tải giải đấu…",
@@ -444,7 +444,6 @@
     "SIGN_OUT": "Đăng xuất",
     "UPLOAD_AVATAR": "Tải ảnh đại diện",
     "AVATAR_UPLOAD_FAILED": "Không thể xử lý ảnh này — thử ảnh khác.",
-    "MATCH_HISTORY": "Lịch sử thi đấu",
     "NO_HISTORY": "Bạn chưa đá trận nào.",
     "SHOW_MORE": "Xem thêm"
   },
@@ -529,7 +528,11 @@
     "CLUB_TAKEN": "Đã được chọn",
     "CLUB_TAKEN_SELF": "Bạn đã dùng",
     "CLUB_TAKEN_OPPONENT": "Đối thủ đã chọn",
-    "CLUB_TAKEN_TEAMMATE": "Đồng đội đã chọn"
+    "CLUB_TAKEN_TEAMMATE": "Đồng đội đã chọn",
+    "SAVED_TITLE": "Đã lưu kết quả",
+    "SHARE_IMAGE": "Chia sẻ ảnh kết quả",
+    "DOWNLOAD_IMAGE": "Tải ảnh",
+    "BACK_TO_LIST": "Trở về danh sách trận"
   },
   "TOURNAMENT_FORM": {
     "EDIT_TITLE": "Sửa giải đấu",
@@ -597,7 +600,8 @@
     "DELETE_CONFIRM_MESSAGE": "\"{{title}}\" sẽ bị xóa vĩnh viễn cùng toàn bộ kết quả. Không thể hoàn tác.",
     "VOTED": "Đã bình chọn",
     "NOT_VOTED": "Chưa bình chọn",
-    "VOTE_COUNT": "{{count}} lượt bình chọn"
+    "VOTE_COUNT": "{{count}} lượt bình chọn",
+    "CREATE_POLL": "Tạo bình chọn mới"
   },
   "POLL_FORM": {
     "CREATE_TITLE": "Tạo bình chọn",
@@ -659,5 +663,28 @@
     "SEE_STANDINGS": "Xem BXH",
     "NEXT_MATCHES": "Trận sắp tới",
     "SEE_ALL": "Xem tất cả"
+  },
+  "PLAYER": {
+    "NOT_FOUND": "Không tìm thấy người chơi này",
+    "RANK": "Hạng {{rank}}/{{total}}",
+    "COMPARE": "So sánh đối đầu",
+    "FAVORITE_CLUBS": "CLB hay dùng",
+    "TIMES": "{{count}} trận",
+    "VS_OPPONENTS": "Thành tích với từng đối thủ",
+    "RECENT_MATCHES": "Trận gần đây",
+    "VS": "vs"
+  },
+  "H2H": {
+    "TITLE": "Đối đầu",
+    "SHORT": "Đối đầu",
+    "PICK_PLAYER": "Chọn người chơi",
+    "PICK_TWO_TITLE": "Chọn 2 người chơi",
+    "PICK_TWO_SUBTITLE": "Xem thành tích đối đầu của họ qua tất cả các mùa giải.",
+    "GOALS": "Bàn thắng",
+    "MEETINGS": "Các lần gặp nhau",
+    "SCORE_HINT": "Tỉ số và kết quả tính theo phía {{name}}.",
+    "NEVER_MET": "Hai người chơi này chưa từng gặp nhau",
+    "WINS": "Số trận thắng",
+    "DRAWS": "{{count}} trận hoà"
   }
 }

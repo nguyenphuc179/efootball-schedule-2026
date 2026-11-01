@@ -4,14 +4,14 @@ import {
   computed,
   inject,
 } from "@angular/core";
-import { ManagerRank, RankingService } from "./ranking.service";
+import { ManagerRank, RankingService, playerKeyOf } from "./ranking.service";
+import { Router, RouterLink } from "@angular/router";
 
 import { AuthService } from "../../core/services/auth.service";
 import { BreakpointObserver } from "@angular/cdk/layout";
 import { EmptyStateComponent } from "../../shared/components/empty-state/empty-state.component";
 import { ManagerImageFormComponent } from "./manager-image-form.component";
 import { ManagerImageService } from "./manager-image.service";
-import { ManagerDetailComponent } from "./manager-detail.component";
 import { MatDialog } from "@angular/material/dialog";
 import { initialsAvatar } from "../../shared/utils/avatar.util";
 import { TranslatePipe } from "@ngx-translate/core";
@@ -25,11 +25,11 @@ interface PodiumSlot {
 @Component({
   selector: "app-ranking",
   standalone: true,
-  imports: [EmptyStateComponent, TranslatePipe],
+  imports: [EmptyStateComponent, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-6 max-w-4xl mx-auto">
-      <header class="mb-8">
+      <header class="mb-8 flex items-center justify-between gap-3">
         <div class="flex items-center gap-2.5">
           <span
             class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center shadow-[0_6px_16px_-6px_rgba(15,168,99,0.7)]"
@@ -38,6 +38,9 @@ interface PodiumSlot {
           </span>
           <h1 class="text-3xl font-black tracking-tight">{{ 'NAV.RANKING' | translate }}</h1>
         </div>
+        <a routerLink="/head-to-head" class="btn-secondary !py-2 !px-3 text-sm flex items-center gap-1 no-underline shrink-0">
+          <span class="material-icons text-[18px]">compare_arrows</span>{{ 'H2H.SHORT' | translate }}
+        </a>
       </header>
 
       @if (ranking().length === 0) {
@@ -203,6 +206,7 @@ export class RankingComponent {
   private images = inject(ManagerImageService);
   private dialog = inject(MatDialog);
   private breakpoints = inject(BreakpointObserver);
+  private router = inject(Router);
   auth = inject(AuthService);
 
   ranking = this.rankingService.ranking;
@@ -242,13 +246,6 @@ export class RankingComponent {
   }
 
   openDetail(r: ManagerRank): void {
-    const isMobile = this.breakpoints.isMatched("(max-width: 767px)");
-    this.dialog.open(ManagerDetailComponent, {
-      data: { manager: r },
-      width: isMobile ? "100vw" : "480px",
-      height: isMobile ? "100dvh" : "85vh",
-      maxWidth: "100vw",
-      maxHeight: isMobile ? "100dvh" : "85vh",
-    });
+    this.router.navigate(["/players", playerKeyOf(r)]);
   }
 }

@@ -76,6 +76,16 @@ export const routes: Routes = [
     title: 'Ranking',
   },
   {
+    path: 'players/:key',
+    loadComponent: () =>
+      import('./features/players/player-profile.component').then((m) => m.PlayerProfileComponent),
+  },
+  {
+    path: 'head-to-head',
+    loadComponent: () =>
+      import('./features/players/head-to-head-page.component').then((m) => m.HeadToHeadPageComponent),
+  },
+  {
     path: 'matches/:id/result',
     loadComponent: () =>
       import('./features/results/result-entry/result-entry.component').then((m) => m.ResultEntryComponent),
