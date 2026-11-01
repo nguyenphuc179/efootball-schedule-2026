@@ -280,7 +280,7 @@ export class MyOverviewComponent {
     const names = new Set([...this.myManagerNames()].map((n) => n.toLowerCase()));
     const dn = userDisplayName(this.auth.appUser(), '').toLowerCase();
     if (dn) names.add(dn);
-    return this.championService.all().filter((c) => names.has((c.playerName ?? '').trim().toLowerCase()));
+    return this.championService.all().filter((c) => c.kind !== 'team' && names.has((c.playerName ?? '').trim().toLowerCase()));
   });
 
   stats = computed(() => {

@@ -5,6 +5,9 @@ import { FormControl } from '@angular/forms';
 export interface AppSelectOption {
   value: string;
   label: string;
+  /** Shown greyed-out and unclickable, with `note` beside it (e.g. "already picked"). */
+  disabled?: boolean;
+  note?: string;
 }
 
 /**
@@ -31,7 +34,7 @@ export interface AppSelectOption {
         (click)="toggle()"
       >
         <span class="truncate" [class.text-gray-400]="!selectedLabel()">{{ selectedLabel() || placeholder() }}</span>
-        <span class="material-icons text-[18px] text-gray-400 transition-transform shrink-0" [class.rotate-180]="open()">expand_more</span>
+        <span class="material-icons text-[18px] text-gray-400 transition-transform shrink-0" [class.rotate-180]="open()" [class.absolute]="centered()" [class.right-3]="centered()">expand_more</span>
       </button>
 
       @if (open()) {
@@ -43,9 +46,16 @@ export interface AppSelectOption {
               [class.bg-primary-50]="opt.value === currentValue()"
               [class.text-primary-700]="opt.value === currentValue()"
               [class.font-semibold]="opt.value === currentValue()"
+              [class.opacity-50]="opt.disabled"
+              [class.cursor-not-allowed]="opt.disabled"
+              [class.hover:bg-gray-50]="!opt.disabled"
+              [disabled]="opt.disabled"
               (click)="select(opt.value)"
             >
-              <span class="truncate">{{ opt.label }}</span>
+              <span class="truncate" [class.line-through]="opt.disabled">{{ opt.label }}</span>
+              @if (opt.disabled && opt.note) {
+                <span class="text-[11px] text-gray-400 shrink-0 ml-auto">{{ opt.note }}</span>
+              }
               @if (opt.value === currentValue()) {
                 <span class="material-icons text-[16px] shrink-0 ml-2">check</span>
               }
@@ -65,6 +75,8 @@ export class AppSelectComponent {
   /** Smaller inline variant (filter bars etc.) — sizes to content instead of filling the row. */
   compact = input(false, { transform: booleanAttribute });
   disabled = input(false, { transform: booleanAttribute });
+  /** Centre the selected label in the trigger (chevron stays at the right edge). */
+  centered = input(false, { transform: booleanAttribute });
 
   private _value = signal('');
   currentValue = this._value.asReadonly();
@@ -102,7 +114,9 @@ export class AppSelectComponent {
   triggerClass = computed(() =>
     this.compact()
       ? 'input-field flex items-center gap-2 text-left !h-9 !min-h-0 !py-1.5 !px-2.5 !w-auto text-sm disabled:opacity-50'
-      : 'input-field flex items-center justify-between gap-2 text-left w-full disabled:opacity-50'
+      : this.centered()
+        ? 'input-field relative flex items-center justify-center gap-2 text-center w-full px-8 disabled:opacity-50'
+        : 'input-field flex items-center justify-between gap-2 text-left w-full disabled:opacity-50'
   );
 
   panelClass = computed(() =>

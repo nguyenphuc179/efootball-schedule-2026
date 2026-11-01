@@ -41,7 +41,9 @@ THÔNG TIN VỀ TRANG WEB:
 
 3. Trang chủ: tổng quan riêng cho từng người (đội đang quản lý, trận sắp tới, kết quả gần nhất). Admin thấy thêm số liệu tổng quan toàn hệ thống kèm biểu đồ.
 
-4. Giải đấu: mỗi giải có các tab Tổng quan, Đội bóng, Đội hình thi đấu, Vòng bảng/Vòng loại trực tiếp, Bảng xếp hạng, Thống kê (vuốt ngang thanh tab để xem hết). 3 loại giải: Vòng tròn (round robin), Vòng bảng + Loại trực tiếp, Loại trực tiếp thuần. Admin có thể bấm "Đặt lại" để xoá toàn bộ lịch thi đấu + kết quả của giải và tạo lại từ đầu (đội bóng không bị ảnh hưởng), hoặc kết thúc/mở lại giải.
+4. Giải đấu: mỗi giải có các tab Tổng quan, Đội bóng, Đội hình thi đấu, Vòng bảng/Vòng loại trực tiếp, Bảng xếp hạng, Thống kê (vuốt ngang thanh tab để xem hết). 4 loại giải: Vòng tròn (round robin), Vòng bảng + Loại trực tiếp, Loại trực tiếp thuần, và "Đấu theo team" (xem mục 4b). Admin có thể bấm "Đặt lại" để xoá toàn bộ lịch thi đấu + kết quả của giải và tạo lại từ đầu (đội bóng không bị ảnh hưởng), hoặc kết thúc/mở lại giải.
+
+4b. Giải "Đấu theo team": các thành viên chia thành Team A và Team B; mỗi thành viên Team A đấu 1 trận với từng thành viên Team B. Thắng 3 điểm, hòa 1 điểm; hai team xếp hạng theo điểm, rồi hiệu số bàn thắng, rồi tổng bàn thắng, bằng cả ba thì hòa. Khi tạo/sửa giải, admin tick các "Luật chọn câu lạc bộ": bắt buộc chọn câu lạc bộ, mỗi người không dùng lại câu lạc bộ, hai bên không chọn trùng câu lạc bộ, mỗi câu lạc bộ chỉ dùng một lần trong team. (Ở đây "Team" là Team A/B gồm nhiều thành viên, còn "câu lạc bộ" là CLB bóng đá thật như Real Madrid, Barcelona...) Admin gán Team (A/B) và "Danh sách câu lạc bộ chỉ định" cho từng thành viên (có thể sao chép từ thành viên khác, áp dụng cho cả team, hoặc dùng nút "Nhập nhanh danh sách câu lạc bộ" để dán một danh sách chung). Khi nhập kết quả, mỗi bên chọn câu lạc bộ đã dùng từ danh sách chỉ định; câu lạc bộ vi phạm luật bị mờ kèm lý do (Bạn đã dùng / Đối thủ đã chọn / Đồng đội đã chọn); thành viên đã có danh sách mà chưa chọn thì không lưu được nếu giải bật luật bắt buộc. Tab "Các trận đấu" có bộ lọc theo team/thành viên/câu lạc bộ và nút "Tải xuống" (lưu kết quả thành ảnh) cùng nút "Chia sẻ" (sao chép ảnh rồi mở group Facebook của giải, admin dán link group ở phần Sửa giải đấu; người dùng nhấn Ctrl+V để đăng — web không thể tự đăng vào Facebook; trên điện thoại sẽ mở bảng chia sẻ của máy); tab "Bảng xếp hạng" có thêm bảng từng team cùng nút "Tải xuống" và "Chia sẻ" ảnh bảng xếp hạng; tab "Thống kê" có bảng đối đầu và thống kê theo câu lạc bộ bóng đá.
 
 5. Đội bóng: admin tạo đội bóng và gán người quản lý cho từng đội (qua tài khoản Gmail).
 
@@ -53,7 +55,7 @@ THÔNG TIN VỀ TRANG WEB:
 
 9. Xếp hạng: đây là bảng xếp hạng TỔNG của tất cả quản lý, cộng dồn điểm từ MỌI giải đấu họ từng tham gia — không phải bảng xếp hạng riêng của 1 giải. Thắng = 3 điểm, hoà = 1 điểm. Bấm vào một dòng để xem chi tiết: lịch sử thi đấu theo từng giải/đội, và danh hiệu vô địch đã đạt được (nếu có trong Đại sảnh Vinh danh).
 
-10. Đại sảnh Vinh danh: lưu lại nhà vô địch của từng mùa giải — chỉ admin thêm/sửa/xoá được.
+10. Đại sảnh Vinh danh: lưu lại nhà vô địch của từng mùa giải, chia 2 tab: "Cá nhân" và "Team" (team vô địch có ảnh ngang, tên team, mùa giải, danh sách thành viên) — chỉ admin thêm/sửa/xoá được.
 
 11. Bình chọn: admin tạo bình chọn, mọi thành viên đã đăng nhập đều vote được — mỗi người chỉ 1 lượt duy nhất và KHÔNG đổi lại được sau khi đã bình chọn.
 

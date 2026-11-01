@@ -47,11 +47,17 @@ export class ChampionService {
     })
   );
 
+  /** Individual champions only (entries saved before team champions existed count as individual). */
+  readonly individualsResolved = computed(() => this.allResolved().filter((c) => c.kind !== 'team'));
+
+  /** Team champions only. */
+  readonly teamsResolved = computed(() => this.allResolved().filter((c) => c.kind === 'team'));
+
   /** Every Hall of Fame entry that belongs to this manager — matched by `managerUid` when linked,
    *  otherwise by the resolved display name (same fallback `RankingService` uses for a legacy team
    *  with no linked account). Powers the trophy list on the "Xếp hạng" row detail view. */
   forManager(identity: { uid?: string; manager: string }): ChampionResolved[] {
-    return this.allResolved().filter((c) =>
+    return this.individualsResolved().filter((c) =>
       identity.uid ? c.managerUid === identity.uid : c.playerName.trim().toLowerCase() === identity.manager.trim().toLowerCase()
     );
   }
@@ -60,7 +66,7 @@ export class ChampionService {
     const id = await this.fs.add<ChampionDraft>(PATH, draft);
     await this.activityLog.log(
       'champion_create',
-      `Đã thêm nhà vô địch mùa ${draft.season}: ${draft.playerName}`,
+      `Đã thêm ${draft.kind === 'team' ? 'team' : 'nhà'} vô địch mùa ${draft.season}: ${draft.playerName}`,
       draft.tournamentId ?? null
     );
     return id;

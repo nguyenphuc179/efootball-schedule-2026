@@ -19,6 +19,17 @@ export interface Team {
    *  Auth or backend involved. See LINEUP_TOOL_INTEGRATION.md. */
   managerEmail: string | null;
   createdDate: number;
+  /** Set only for team_match tournaments: which group this player belongs to. */
+  groupLabel?: 'A' | 'B' | null;
+  /** @deprecated Old name of `groupLabel`; still present on teams saved before the rename. */
+  clubLabel?: 'A' | 'B' | null;
+  /** team_match only: football clubs (e.g. "Real Madrid") this player may pick when entering a result. */
+  allowedClubs?: string[];
+}
+
+/** A team_match player's group (A/B), reading the pre-rename `clubLabel` as a fallback. */
+export function teamGroup(t: Pick<Team, 'groupLabel' | 'clubLabel'> | undefined | null): 'A' | 'B' | null {
+  return t?.groupLabel ?? t?.clubLabel ?? null;
 }
 
 export type TeamDraft = Omit<Team, 'id' | 'createdDate'>;

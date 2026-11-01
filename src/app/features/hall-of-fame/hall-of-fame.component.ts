@@ -3,11 +3,13 @@ import {
   Component,
   computed,
   inject,
+  signal,
 } from "@angular/core";
 
 import { AuthService } from "../../core/services/auth.service";
 import { BreakpointObserver } from "@angular/cdk/layout";
 import { ChampionFormComponent } from "./champion-form.component";
+import { ChampionKind } from "../../models/champion.model";
 import { ChampionResolved, ChampionService } from "./champion.service";
 import { CommonModule } from "@angular/common";
 import { ConfirmDialogComponent } from "../../shared/components/confirm-dialog/confirm-dialog.component";
@@ -39,17 +41,95 @@ import { TranslatePipe, TranslateService } from "@ngx-translate/core";
             class="btn-primary !py-2.5 !px-5 text-sm flex items-center gap-1.5 shrink-0"
             (click)="openForm()"
           >
-            <span class="material-icons text-[18px]">add</span> {{ 'HALL_OF_FAME.ADD_CHAMPION' | translate }}
+            <span class="material-icons text-[18px]">add</span> {{ (tab() === 'team' ? 'HALL_OF_FAME.ADD_TEAM' : 'HALL_OF_FAME.ADD_CHAMPION') | translate }}
           </button>
         }
       </header>
 
+      <div class="flex justify-center mb-8">
+        <div class="inline-flex rounded-full bg-surface-muted p-1 text-sm font-semibold">
+          @for (t of tabs; track t.key) {
+            <button
+              class="px-5 py-1.5 rounded-full transition-colors"
+              [class]="tab() === t.key ? 'bg-primary-500 text-white' : 'text-gray-500'"
+              (click)="tab.set(t.key)"
+            >{{ t.label | translate }}</button>
+          }
+        </div>
+      </div>
+
       @if (champions().length === 0) {
         <app-empty-state
           icon="emoji_events"
-          [title]="'HALL_OF_FAME.EMPTY_TITLE' | translate"
-          [subtitle]="'HALL_OF_FAME.EMPTY_SUBTITLE' | translate"
+          [title]="(tab() === 'team' ? 'HALL_OF_FAME.TEAM_EMPTY_TITLE' : 'HALL_OF_FAME.EMPTY_TITLE') | translate"
+          [subtitle]="(tab() === 'team' ? 'HALL_OF_FAME.TEAM_EMPTY_SUBTITLE' : 'HALL_OF_FAME.EMPTY_SUBTITLE') | translate"
         />
+      } @else if (tab() === 'team') {
+        @if (featured(); as f) {
+          <div class="relative -mx-4 px-4 mb-10 py-6 flex flex-col items-center text-center overflow-hidden">
+            <div class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(245,166,35,0.22),transparent_60%)]"></div>
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.2em] text-amber-500 mb-4">
+              <span class="material-icons text-[16px]">emoji_events</span>
+              {{ 'HALL_OF_FAME.REIGNING_CHAMPION' | translate }}
+            </span>
+
+            <div class="relative w-full max-w-3xl rounded-[1.75rem] p-[3px] bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 shadow-[0_0_50px_-10px_rgba(245,166,35,0.55)]">
+              <div class="relative w-full rounded-[1.6rem] overflow-hidden bg-surface-muted">
+                <img [src]="f.imageUrl" [alt]="f.playerName" class="block w-full h-auto" referrerpolicy="no-referrer" />
+                <span class="absolute top-3 left-4 text-3xl font-black text-white/90 drop-shadow">#1</span>
+                @if (auth.isAdmin()) {
+                  <div class="absolute top-2 right-2 flex gap-1">
+                    <button class="w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center" (click)="openForm(f)">
+                      <span class="material-icons text-[16px]">edit</span>
+                    </button>
+                    <button class="w-8 h-8 rounded-full bg-black/40 text-accent-red flex items-center justify-center" (click)="remove(f)">
+                      <span class="material-icons text-[16px]">delete_outline</span>
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="mt-5 text-2xl sm:text-3xl font-black uppercase tracking-tight">{{ f.playerName }}</div>
+            <div class="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm">
+              <span class="inline-flex items-center rounded-full bg-amber-50 text-amber-700 font-bold px-2.5 py-0.5">{{ 'HALL_OF_FAME.SEASON' | translate: { season: f.season } }}</span>
+            </div>
+            @if (f.members?.length) {
+              <div class="mt-3 flex flex-wrap items-center justify-center gap-1.5 max-w-2xl">
+                @for (m of f.members; track m) {
+                  <span class="inline-flex items-center rounded-full bg-primary-50 text-primary-700 font-semibold text-xs px-2.5 py-0.5">{{ m }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 items-start gap-5 sm:gap-6">
+          @for (c of rest(); track c.id) {
+            <div class="flex flex-col text-center">
+              <div class="relative rounded-xl overflow-hidden bg-surface-muted">
+                <img [src]="c.imageUrl" [alt]="c.playerName" class="block w-full h-auto" referrerpolicy="no-referrer" />
+                @if (auth.isAdmin()) {
+                  <div class="absolute top-1.5 right-1.5 flex gap-1">
+                    <button class="w-7 h-7 rounded-full bg-black/40 text-white flex items-center justify-center" (click)="openForm(c)">
+                      <span class="material-icons text-[14px]">edit</span>
+                    </button>
+                    <button class="w-7 h-7 rounded-full bg-black/40 text-accent-red flex items-center justify-center" (click)="remove(c)">
+                      <span class="material-icons text-[14px]">delete_outline</span>
+                    </button>
+                  </div>
+                }
+              </div>
+              <div class="mt-2.5 font-extrabold text-base uppercase leading-tight">{{ c.playerName }}</div>
+              <div class="mt-1.5 flex justify-center">
+                <span class="inline-flex items-center rounded-full bg-amber-50 text-amber-700 font-bold text-[11px] px-2 py-0.5">{{ 'HALL_OF_FAME.SEASON' | translate: { season: c.season } }}</span>
+              </div>
+              @if (c.members?.length) {
+                <div class="mt-1.5 text-xs text-gray-400">{{ c.members!.join(' · ') }}</div>
+              }
+            </div>
+          }
+        </div>
       } @else {
         @if (featured(); as f) {
           <div
@@ -192,7 +272,15 @@ export class HallOfFameComponent {
   private translate = inject(TranslateService);
   auth = inject(AuthService);
 
-  champions = this.championService.allResolved;
+  tab = signal<ChampionKind>("individual");
+  readonly tabs: { key: ChampionKind; label: string }[] = [
+    { key: "individual", label: "HALL_OF_FAME.TAB_INDIVIDUAL" },
+    { key: "team", label: "HALL_OF_FAME.TAB_TEAM" },
+  ];
+
+  champions = computed(() =>
+    this.tab() === "team" ? this.championService.teamsResolved() : this.championService.individualsResolved()
+  );
   featured = computed(() => this.champions()[0] ?? null);
   rest = computed(() => this.champions().slice(1));
 
@@ -206,7 +294,7 @@ export class HallOfFameComponent {
   openForm(champion?: ChampionResolved): void {
     const isMobile = this.breakpoints.isMatched("(max-width: 767px)");
     this.dialog.open(ChampionFormComponent, {
-      data: { champion, nextSeason: this.nextSeason() },
+      data: { champion, nextSeason: this.nextSeason(), kind: this.tab() },
       width: isMobile ? "100vw" : "480px",
       height: isMobile ? "100dvh" : "auto",
       maxWidth: "100vw",

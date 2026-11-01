@@ -224,7 +224,8 @@ const SECTIONS: GuideSection[] = [
             <p class="text-sm text-gray-500">
               Mỗi giải đấu có nhiều tab: Tổng quan, Đội bóng, Đội hình thi đấu,
               Vòng bảng/Loại trực tiếp, Bảng xếp hạng, Thống kê. Vuốt ngang
-              thanh tab để xem hết.
+              thanh tab để xem hết. Có 4 loại giải: Vòng tròn, Loại trực tiếp,
+              Vòng bảng + Loại trực tiếp, và Đấu theo team.
             </p>
             <div
               class="rounded-2xl border border-gray-100 shadow-card overflow-hidden"
@@ -268,6 +269,21 @@ const SECTIONS: GuideSection[] = [
                   >Thống kê</span
                 >
               </div>
+            </div>
+
+            <div
+              class="rounded-xl border border-primary-100 bg-primary-50 p-3 flex flex-col gap-1.5"
+            >
+              <div class="text-xs font-extrabold text-primary-700 flex items-center gap-1">
+                <span class="material-icons text-[14px]">groups</span>Loại giải "Đấu theo team"
+              </div>
+              <ul class="text-xs text-gray-600 flex flex-col gap-1 list-disc pl-4">
+                <li>Các thành viên chia thành <b>Team A</b> và <b>Team B</b>. Mỗi thành viên của Team A đấu 1 trận với từng thành viên của Team B.</li>
+                <li>Mỗi trận thắng được 3 điểm, hòa 1 điểm. Hai team xếp hạng theo điểm, rồi hiệu số bàn thắng, rồi tổng bàn thắng. Bằng cả ba thì hòa.</li>
+                <li>Khi tạo hoặc sửa giải, admin tick <b>Luật chọn câu lạc bộ</b>: bắt buộc chọn CLB, mỗi người không dùng lại CLB, hai bên không chọn trùng CLB, mỗi CLB chỉ dùng một lần trong team.</li>
+                <li>Tab <b>Các trận đấu</b>: lọc theo team, theo thành viên, theo câu lạc bộ; nút <b>Tải xuống</b> lưu kết quả thành ảnh; nút <b>Chia sẻ</b> sao chép ảnh rồi mở group Facebook của giải (admin dán link ở phần Sửa giải đấu) để bạn nhấn Ctrl+V đăng bài — trên điện thoại sẽ mở bảng chia sẻ của máy. Nút <b>Tạo lại</b> xóa toàn bộ trận và kết quả cũ.</li>
+                <li>Tab <b>Bảng xếp hạng</b> có thêm bảng riêng cho Team A và Team B, cùng nút <b>Tải xuống</b> và <b>Chia sẻ</b> ảnh bảng xếp hạng. Tab <b>Thống kê</b> có bảng đối đầu giữa các thành viên và thống kê theo câu lạc bộ bóng đá (thắng nhiều nhất, ghi nhiều bàn nhất).</li>
+              </ul>
             </div>
           </section>
 
@@ -322,6 +338,21 @@ const SECTIONS: GuideSection[] = [
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div
+              class="rounded-xl border border-primary-100 bg-primary-50 p-3 flex flex-col gap-1.5"
+            >
+              <div class="text-xs font-extrabold text-primary-700 flex items-center gap-1">
+                <span class="material-icons text-[14px]">groups</span>Đội bóng trong giải "Đấu theo team"
+              </div>
+              <ul class="text-xs text-gray-600 flex flex-col gap-1 list-disc pl-4">
+                <li>Khi thêm hoặc sửa đội, admin chọn <b>Team</b> (A hoặc B) cho thành viên đó.</li>
+                <li>Ô <b>Danh sách câu lạc bộ chỉ định</b> (mỗi dòng một CLB): khi nhập kết quả, thành viên chỉ được chọn các CLB trong danh sách này.</li>
+                <li>Có thể <b>sao chép danh sách từ thành viên khác</b>, hoặc tick "áp dụng cho tất cả thành viên trong Team". Nút <b>Nhập nhanh danh sách câu lạc bộ</b> cho phép dán một danh sách chung rồi gán cho cả giải, cho một team, hoặc chỉ các thành viên chưa có danh sách.</li>
+                <li>Nút <b>Tải xuống</b> và <b>Chia sẻ</b> ở đầu tab tạo ảnh danh sách thành viên của Team A và Team B (kèm ảnh đại diện) để đăng nhóm.</li>
+                <li>Thành viên nào chưa có danh sách CLB sẽ được nhắc bằng banner vàng để admin bổ sung.</li>
+              </ul>
             </div>
           </section>
 
@@ -432,6 +463,20 @@ const SECTIONS: GuideSection[] = [
                 </div>
               </div>
             </div>
+
+            <div
+              class="rounded-xl border border-primary-100 bg-primary-50 p-3 flex flex-col gap-1.5"
+            >
+              <div class="text-xs font-extrabold text-primary-700 flex items-center gap-1">
+                <span class="material-icons text-[14px]">groups</span>Nhập kết quả trong giải "Đấu theo team"
+              </div>
+              <ul class="text-xs text-gray-600 flex flex-col gap-1 list-disc pl-4">
+                <li>Ngoài tỉ số, mỗi bên chọn <b>câu lạc bộ đã thi đấu</b> trong danh sách admin chỉ định.</li>
+                <li>Nếu team đã có danh sách CLB mà chưa chọn, bấm Lưu sẽ báo đỏ và chưa lưu được (khi giải bật luật "bắt buộc chọn"). Team không có danh sách thì lưu thoải mái.</li>
+                <li>CLB vi phạm luật bị mờ, không bấm được, kèm lý do: <b>Bạn đã dùng</b>, <b>Đối thủ đã chọn</b> hoặc <b>Đồng đội đã chọn</b>.</li>
+                <li>CLB được ghi vào nhật ký hoạt động cùng tỉ số để dễ đối chiếu khi cần.</li>
+              </ul>
+            </div>
           </section>
 
           <!-- 7. Xếp hạng -->
@@ -493,7 +538,7 @@ const SECTIONS: GuideSection[] = [
               <h2 class="font-extrabold">8. Đại sảnh Vinh danh</h2>
             </div>
             <p class="text-sm text-gray-500">
-              Lưu lại nhà vô địch của từng mùa giải — chỉ admin thêm/sửa được.
+              Lưu lại nhà vô địch (cá nhân hoặc team) của từng mùa giải — chỉ admin thêm/sửa được.
             </p>
             <div
               class="rounded-2xl border border-gray-100 shadow-card overflow-hidden"
@@ -517,6 +562,18 @@ const SECTIONS: GuideSection[] = [
                 <div class="text-xs font-extrabold">PHUCNT18</div>
                 <div class="text-[10px] text-gray-400">Mùa 2 · 9 điểm</div>
               </div>
+            </div>
+
+            <div
+              class="rounded-xl border border-primary-100 bg-primary-50 p-3 flex flex-col gap-1.5"
+            >
+              <div class="text-xs font-extrabold text-primary-700 flex items-center gap-1">
+                <span class="material-icons text-[14px]">groups</span>Hai tab: Cá nhân và Team
+              </div>
+              <ul class="text-xs text-gray-600 flex flex-col gap-1 list-disc pl-4">
+                <li>Tab <b>Cá nhân</b>: nhà vô địch từng mùa như trước.</li>
+                <li>Tab <b>Team</b>: lưu team vô địch từng mùa — ảnh team (ảnh ngang, giữ nguyên tỉ lệ), tên team, mùa giải và danh sách thành viên. Admin thêm, sửa, xóa bằng nút trên ảnh.</li>
+              </ul>
             </div>
           </section>
 

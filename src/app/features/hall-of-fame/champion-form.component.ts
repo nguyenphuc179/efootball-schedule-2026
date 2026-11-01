@@ -9,13 +9,15 @@ import { MemberService } from '../members/member.service';
 import { ImageUrlFieldComponent } from '../../shared/components/image-url-field/image-url-field.component';
 import { AppSelectComponent, AppSelectOption } from '../../shared/components/app-select/app-select.component';
 import { IMAGE_SRC_PATTERN, isImageSrc } from '../../shared/utils/image-url.util';
-import { Champion } from '../../models/champion.model';
+import { Champion, ChampionKind } from '../../models/champion.model';
 import { AppUser, userDisplayName } from '../../models/user.model';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 export interface ChampionFormDialogData {
   champion?: Champion;
   nextSeason?: number;
+  /** Which kind a NEW entry is (ignored when editing — the entry's own kind wins). */
+  kind?: ChampionKind;
 }
 
 /** Add / edit a Hall of Fame champion. Poster is an external image URL (Spark plan — no upload). */
@@ -30,7 +32,7 @@ export interface ChampionFormDialogData {
         <button class="w-9 h-9 flex items-center justify-center" (click)="dialogRef.close()">
           <span class="material-icons">close</span>
         </button>
-        <h1 class="font-bold">{{ (data.champion ? 'CHAMPION_FORM.EDIT_TITLE' : 'CHAMPION_FORM.ADD_TITLE') | translate }}</h1>
+        <h1 class="font-bold">{{ (isTeam ? (data.champion ? 'CHAMPION_FORM.EDIT_TEAM_TITLE' : 'CHAMPION_FORM.ADD_TEAM_TITLE') : (data.champion ? 'CHAMPION_FORM.EDIT_TITLE' : 'CHAMPION_FORM.ADD_TITLE')) | translate }}</h1>
         <button class="text-primary-600 font-semibold disabled:text-gray-300" [disabled]="form.invalid || isSaving()" (click)="save()">
           {{ (isSaving() ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
         </button>
@@ -38,9 +40,9 @@ export interface ChampionFormDialogData {
 
       <form [formGroup]="form" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
         <div class="flex flex-col items-center gap-2">
-          <div class="w-40 h-40 rounded-2xl bg-surface-muted flex items-center justify-center overflow-hidden">
+          <div class="rounded-2xl bg-surface-muted flex items-center justify-center overflow-hidden" [class]="isTeam ? 'w-full max-w-sm min-h-24' : 'w-40 h-40'">
             @if (preview()) {
-              <img [src]="preview()" [alt]="'CHAMPION_FORM.POSTER' | translate" class="w-full h-full object-cover" (error)="imgError.set(true)" />
+              <img [src]="preview()" [alt]="'CHAMPION_FORM.POSTER' | translate" [class]="isTeam ? 'block w-full h-auto' : 'w-full h-full object-cover'" (error)="imgError.set(true)" />
             } @else {
               <span class="material-icons text-5xl text-gray-300">emoji_events</span>
             }
@@ -48,7 +50,7 @@ export interface ChampionFormDialogData {
         </div>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.POSTER' | translate }}</span>
+          <span class="text-sm font-medium text-gray-600">{{ (isTeam ? 'CHAMPION_FORM.TEAM_PHOTO' : 'CHAMPION_FORM.POSTER') | translate }}</span>
           <app-image-url-field [control]="form.controls.imageUrl" (changed)="imgError.set(false)" />
           @if (form.controls.imageUrl.invalid && form.controls.imageUrl.value) {
             <span class="text-xs text-red-500">{{ 'TEAM_FORM.LOGO_INVALID' | translate }}</span>
@@ -57,27 +59,39 @@ export interface ChampionFormDialogData {
           }
         </label>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div [class]="isTeam ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-2 gap-3'">
           <label class="flex flex-col gap-1">
             <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.SEASON' | translate }}</span>
             <input class="input-field" type="number" min="1" formControlName="season" />
           </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.CLUB' | translate }}</span>
-            <input class="input-field" formControlName="club" placeholder="Netherland" />
-          </label>
+          @if (!isTeam) {
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.CLUB' | translate }}</span>
+              <input class="input-field" formControlName="club" placeholder="Netherland" />
+            </label>
+          }
         </div>
 
+        @if (!isTeam) {
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.MANAGER' | translate }} <span class="text-gray-400">({{ 'TEAM_FORM.OPTIONAL' | translate }})</span></span>
           <app-select [control]="form.controls.managerUid" [options]="managerSelectOptions()" (valueChange)="onManagerChange($event)" />
           <span class="text-xs text-gray-400">{{ 'CHAMPION_FORM.MANAGER_HINT' | translate }}</span>
         </label>
+        }
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.PLAYER_NAME' | translate }}</span>
-          <input class="input-field" formControlName="playerName" placeholder="LÊ TÙNG DƯƠNG" />
+          <span class="text-sm font-medium text-gray-600">{{ (isTeam ? 'CHAMPION_FORM.TEAM_NAME' : 'CHAMPION_FORM.PLAYER_NAME') | translate }}</span>
+          <input class="input-field" formControlName="playerName" [placeholder]="isTeam ? 'TEAM RỒNG VÀNG' : 'LÊ TÙNG DƯƠNG'" />
         </label>
+
+        @if (isTeam) {
+          <label class="flex flex-col gap-1">
+            <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.MEMBERS' | translate }} <span class="text-gray-400">({{ 'TEAM_FORM.OPTIONAL' | translate }})</span></span>
+            <textarea class="input-field" rows="4" formControlName="members" placeholder="Dương&#10;Phúc&#10;Huy"></textarea>
+            <span class="text-xs text-gray-400">{{ 'CHAMPION_FORM.MEMBERS_HINT' | translate }}</span>
+          </label>
+        }
 
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium text-gray-600">{{ 'CHAMPION_FORM.TOURNAMENT' | translate }} <span class="text-gray-400">({{ 'TEAM_FORM.OPTIONAL' | translate }})</span></span>
@@ -93,6 +107,9 @@ export class ChampionFormComponent {
   private tournamentService = inject(TournamentService);
   private memberService = inject(MemberService);
   private translate = inject(TranslateService);
+
+  /** A team champion (landscape photo, member list) rather than an individual one. */
+  readonly isTeam = (this.data.champion?.kind ?? this.data.kind) === 'team';
 
   isSaving = signal(false);
   imgError = signal(false);
@@ -111,7 +128,8 @@ export class ChampionFormComponent {
     season: [this.data.champion?.season ?? this.data.nextSeason ?? 1, [Validators.required, Validators.min(1)]],
     managerUid: [this.data.champion?.managerUid ?? ''],
     playerName: [this.data.champion?.playerName ?? '', Validators.required],
-    club: [this.data.champion?.club ?? '', Validators.required],
+    club: [this.data.champion?.club ?? '', this.isTeam ? [] : [Validators.required]],
+    members: [(this.data.champion?.members ?? []).join('\n')],
     imageUrl: [this.data.champion?.imageUrl ?? '', [Validators.required, Validators.pattern(IMAGE_SRC_PATTERN)]],
     tournamentId: [this.data.champion?.tournamentId ?? ''],
   });
@@ -162,9 +180,11 @@ export class ChampionFormComponent {
       const raw = this.form.getRawValue();
       const draft = {
         season: Number(raw.season),
-        managerUid: raw.managerUid || null,
+        managerUid: this.isTeam ? null : raw.managerUid || null,
         playerName: raw.playerName.trim(),
-        club: raw.club.trim(),
+        club: this.isTeam ? '' : raw.club.trim(),
+        kind: (this.isTeam ? 'team' : 'individual') as ChampionKind,
+        members: this.isTeam ? [...new Set(raw.members.split(/[\n,]/).map((m) => m.trim()).filter(Boolean))] : null,
         imageUrl: raw.imageUrl.trim(),
         tournamentId: raw.tournamentId || null,
       };

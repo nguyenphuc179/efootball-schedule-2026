@@ -5,8 +5,8 @@
  * ImageUrlInputDirective has downscaled).
  */
 
-/** A web URL or an inline data-image. Used as a form `Validators.pattern`. */
-export const IMAGE_SRC_PATTERN = /^(https?:\/\/|data:image\/).+/i;
+/** A web URL, an inline data-image, or a bundled `assets/...` file (e.g. a banner template). Used as a form `Validators.pattern`. */
+export const IMAGE_SRC_PATTERN = /^(https?:\/\/|data:image\/|assets\/).+/i;
 
 export function isImageSrc(value: string | null | undefined): boolean {
   return IMAGE_SRC_PATTERN.test((value ?? '').trim());

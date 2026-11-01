@@ -145,7 +145,8 @@
   "TOURNAMENT_TYPE": {
     "ROUND_ROBIN": "Vòng tròn",
     "KNOCKOUT": "Loại trực tiếp",
-    "GROUP_KNOCKOUT": "Vòng bảng + Loại trực tiếp"
+    "GROUP_KNOCKOUT": "Vòng bảng + Loại trực tiếp",
+    "TEAM_MATCH": "Đấu theo team"
   },
   "TOURNAMENT_STATUS": {
     "IN_PROGRESS": "Đang diễn ra",
@@ -155,7 +156,8 @@
     "NEW": "Tạo mới",
     "TAB_ALL": "Tất cả",
     "EMPTY_TITLE": "Chưa có giải đấu",
-    "EMPTY_SUBTITLE": "Quay lại sau hoặc tạo một giải đấu mới."
+    "EMPTY_SUBTITLE": "Quay lại sau hoặc tạo một giải đấu mới.",
+    "FORMAT_LABEL": "Thể thức"
   },
   "TOURNAMENT_DETAIL": {
     "LOADING": "Đang tải giải đấu…",
@@ -174,6 +176,7 @@
     "TAB_FINAL_STAGE": "Vòng loại trực tiếp",
     "TAB_FINAL_SHORT": "Chung kết",
     "TAB_BRACKET": "Các trận đấu",
+    "TAB_TEAM_MATCH": "Các trận đấu",
     "TAB_FIXTURES": "Lịch thi đấu",
     "TAB_RESULTS": "Kết quả",
     "TAB_STANDINGS": "Bảng xếp hạng",
@@ -204,7 +207,11 @@
     "EDIT_TEAM": "Sửa đội",
     "REMOVE_TEAM": "Xóa đội",
     "REMOVE_CONFIRM_TITLE": "Xóa đội?",
-    "REMOVE_CONFIRM_MESSAGE": "{{name}} sẽ bị xóa khỏi giải đấu này."
+    "REMOVE_CONFIRM_MESSAGE": "{{name}} sẽ bị xóa khỏi giải đấu này.",
+    "NO_CLUBS_BADGE": "Chưa có danh sách câu lạc bộ chỉ định",
+    "MISSING_CLUBS_BANNER": "{{count}} thành viên chưa có danh sách câu lạc bộ chỉ định — họ chưa chọn được câu lạc bộ khi nhập kết quả.",
+    "BULK_CLUBS": "Nhập nhanh danh sách câu lạc bộ",
+    "NO_GROUP": "Chưa chia team"
   },
   "TEAM_FORM": {
     "EDIT_TITLE": "Sửa đội",
@@ -217,7 +224,69 @@
     "CLUB_NAME": "Tên đội",
     "MANAGER": "Quản lý",
     "NO_MANAGER_OPTION": "— Không có quản lý —",
-    "MANAGER_HINT": "Chọn từ danh sách thành viên đang hoạt động — người này sẽ có thể quản lý đội hình."
+    "MANAGER_HINT": "Chọn từ danh sách thành viên đang hoạt động — người này sẽ có thể quản lý đội hình.",
+    "GROUP": "Team",
+    "NO_GROUP_OPTION": "— Chưa chọn —",
+    "GROUP_HINT": "Chọn Team A hoặc Team B mà thành viên này thuộc về.",
+    "ALLOWED_CLUBS": "Danh sách câu lạc bộ chỉ định",
+    "ALLOWED_CLUBS_HINT": "Mỗi dòng một câu lạc bộ. Khi nhập kết quả, thành viên này chỉ được chọn các câu lạc bộ trong danh sách.",
+    "COPY_CLUBS_FROM": "Sao chép danh sách từ thành viên khác",
+    "COPY_CLUBS_PLACEHOLDER": "— Chọn thành viên để sao chép —",
+    "APPLY_TO_GROUP": "Áp dụng danh sách này cho tất cả thành viên trong Team {{group}}",
+    "CLUBS_NOT_IN_LIST": "Đã dùng ở các trận nhưng không còn trong danh sách: {{clubs}}"
+  },
+  "TEAM_MATCH": {
+    "GROUP_A": "Team A",
+    "GROUP_B": "Team B",
+    "GROUP": "{{label}}",
+    "PTS": "Điểm",
+    "LEADING_A": "Team A đang dẫn điểm",
+    "LEADING_B": "Team B đang dẫn điểm",
+    "TIED": "Đang hòa điểm",
+    "WINNER_A": "Team A chiến thắng!",
+    "WINNER_B": "Team B chiến thắng!",
+    "WINNER_A_GD": "Team A chiến thắng nhờ hiệu số bàn thắng!",
+    "WINNER_B_GD": "Team B chiến thắng nhờ hiệu số bàn thắng!",
+    "WINNER_A_GF": "Team A chiến thắng nhờ số bàn thắng ghi được!",
+    "WINNER_B_GF": "Team B chiến thắng nhờ số bàn thắng ghi được!",
+    "GROUP_STANDINGS": "Xếp hạng team",
+    "FILTER_GROUP": "Lọc theo team",
+    "FILTER_TEAM": "Lọc theo thành viên",
+    "ALL": "Tất cả",
+    "TIEBREAK_HINT": "Bằng điểm thì xét hiệu số bàn thắng, rồi đến tổng số bàn thắng. Bằng cả ba thì hòa.",
+    "DRAW": "Hai team hòa nhau",
+    "NO_SETUP_TITLE": "Chưa thiết lập team",
+    "NO_SETUP_SUBTITLE": "Thêm ít nhất 1 thành viên vào mỗi team để bắt đầu.",
+    "NO_MATCHES_TITLE": "Chưa có trận đấu",
+    "NO_MATCHES_SUBTITLE": "Bấm nút Tạo để tạo lịch thi đấu.",
+    "GENERATE": "Tạo lịch thi đấu",
+    "REGENERATE": "Tạo lại",
+    "GENERATING": "Đang tạo…",
+    "CLUB_STATS_TITLE": "Thống kê theo câu lạc bộ",
+    "CLUB_STATS_EMPTY": "Chưa có trận nào ghi nhận câu lạc bộ.",
+    "MOST_WINS": "Thắng nhiều nhất",
+    "MOST_GOALS": "Ghi nhiều bàn nhất",
+    "WINS_UNIT": "trận thắng",
+    "GOALS_UNIT": "bàn",
+    "FOOTBALL_CLUB": "Câu lạc bộ",
+    "FILTER_CLUB": "Lọc theo câu lạc bộ",
+    "RULE_VIOLATIONS_BANNER": "{{count}} trận đã lưu đang vi phạm luật chọn câu lạc bộ hiện tại của giải.",
+    "H2H_TITLE": "Đối đầu giữa các thành viên",
+    "H2H_HINT": "Tỉ số tính theo thành viên ở hàng. Xanh: thắng, đỏ: thua, xám: hòa.",
+    "DOWNLOAD": "Tải xuống",
+    "SHARE": "Chia sẻ",
+    "SHARE_COPIED": "Đã sao chép ảnh. Trong group vừa mở, bấm vào ô viết bài rồi nhấn Ctrl+V để dán.",
+    "SHARE_NO_GROUP": "Đã sao chép ảnh - hãy vào group chat facebook và dán (ctrl+ V)",
+    "SHARE_FAILED": "Trình duyệt không cho sao chép ảnh — ảnh đã được tải xuống để bạn đăng thủ công.",
+    "STATUS_ALL": "Tất cả",
+    "STATUS_TODO": "Chưa đấu",
+    "STATUS_DONE": "Đã đấu",
+    "MINE": "Của tôi",
+    "EXPAND_ALL": "Mở hết",
+    "COLLAPSE_ALL": "Thu hết",
+    "MEMBER_STANDINGS": "Xếp hạng thành viên",
+    "REGENERATE_CONFIRM_TITLE": "Tạo lại lịch thi đấu?",
+    "REGENERATE_CONFIRM_MESSAGE": "Toàn bộ {{total}} trận hiện có sẽ bị xóa, trong đó {{done}} trận đã có kết quả (kể cả câu lạc bộ đã chọn), rồi tạo lịch mới từ đầu. Không thể hoàn tác."
   },
   "FIXTURES_LIST": {
     "GENERATING": "Đang tạo…",
@@ -340,7 +409,12 @@
     "SEASON": "Mùa giải {{season}}",
     "CLUB": "Đội bóng: {{club}}",
     "REMOVE_CONFIRM_TITLE": "Xóa nhà vô địch?",
-    "REMOVE_CONFIRM_MESSAGE": "Mùa {{season}} — {{name}} sẽ bị xóa khỏi Đại sảnh Vinh danh."
+    "REMOVE_CONFIRM_MESSAGE": "Mùa {{season}} — {{name}} sẽ bị xóa khỏi Đại sảnh Vinh danh.",
+    "TAB_INDIVIDUAL": "Cá nhân",
+    "TAB_TEAM": "Team",
+    "ADD_TEAM": "Thêm team vô địch",
+    "TEAM_EMPTY_TITLE": "Chưa có team vô địch",
+    "TEAM_EMPTY_SUBTITLE": "Team vô địch mỗi mùa sẽ hiện ở đây."
   },
   "CHAMPION_FORM": {
     "EDIT_TITLE": "Sửa nhà vô địch",
@@ -353,7 +427,13 @@
     "MANAGER_HINT": "Chọn từ danh sách thành viên để tự đồng bộ tên + gmail; hoặc để trống và tự nhập tên bên dưới.",
     "PLAYER_NAME": "Tên tuyển thủ",
     "TOURNAMENT": "Giải đấu",
-    "NONE_OPTION": "— Không có —"
+    "NONE_OPTION": "— Không có —",
+    "ADD_TEAM_TITLE": "Thêm team vô địch",
+    "EDIT_TEAM_TITLE": "Sửa team vô địch",
+    "TEAM_NAME": "Tên team",
+    "TEAM_PHOTO": "Ảnh team",
+    "MEMBERS": "Thành viên",
+    "MEMBERS_HINT": "Mỗi dòng một thành viên. Hiện dưới ảnh team."
   },
   "PROFILE": {
     "ROLE_ADMIN": "quản trị",
@@ -434,8 +514,16 @@
     "PENALTY_SHOOTOUT": "Sút luân lưu",
     "PEN": "LL",
     "SAVE_RESULT": "Lưu kết quả",
+    "PLAYED_CLUB": "Câu lạc bộ đã thi đấu",
+    "CLUB_REQUIRED": "Vui lòng chọn câu lạc bộ đã thi đấu",
+    "NO_CLUB_SELECTED": "— Chưa chọn —",
+    "NO_ALLOWED_CLUBS": "Chưa có danh sách câu lạc bộ chỉ định cho đội này.",
     "ACCESS_DENIED_TITLE": "Không có quyền sửa trận này",
-    "ACCESS_DENIED_SUBTITLE": "Chỉ admin hoặc quản lý của 1 trong 2 đội thi đấu mới được nhập/sửa kết quả."
+    "ACCESS_DENIED_SUBTITLE": "Chỉ admin hoặc quản lý của 1 trong 2 đội thi đấu mới được nhập/sửa kết quả.",
+    "CLUB_TAKEN": "Đã được chọn",
+    "CLUB_TAKEN_SELF": "Bạn đã dùng",
+    "CLUB_TAKEN_OPPONENT": "Đối thủ đã chọn",
+    "CLUB_TAKEN_TEAMMATE": "Đồng đội đã chọn"
   },
   "TOURNAMENT_FORM": {
     "EDIT_TITLE": "Sửa giải đấu",
@@ -452,7 +540,33 @@
     "END_DATE": "Ngày kết thúc",
     "SELECT_DATE": "Chọn ngày",
     "NUMBER_OF_TEAMS": "Số đội",
-    "TYPE": "Thể thức giải đấu"
+    "TYPE": "Thể thức giải đấu",
+    "TEAM_MATCH_RULES": "Luật chọn câu lạc bộ",
+    "RULE_REQUIRE_CLUB": "Bắt buộc chọn câu lạc bộ",
+    "RULE_REQUIRE_CLUB_HINT": "Nếu team đã được chỉ định câu lạc bộ thì phải chọn mới lưu được kết quả.",
+    "RULE_UNIQUE_PER_PLAYER": "Mỗi player không dùng lại câu lạc bộ",
+    "RULE_UNIQUE_PER_PLAYER_HINT": "Một player không được chọn cùng một câu lạc bộ ở nhiều trận.",
+    "RULE_NO_MIRROR": "Hai bên không chọn trùng câu lạc bộ",
+    "RULE_NO_MIRROR_HINT": "Hai player trong cùng một trận không được chọn cùng một câu lạc bộ.",
+    "RULE_UNIQUE_PER_GROUP": "Mỗi câu lạc bộ chỉ dùng một lần trong team",
+    "RULE_UNIQUE_PER_GROUP_HINT": "Các thành viên cùng Team A (hoặc Team B) không được chọn trùng câu lạc bộ với nhau.",
+    "RULE_VIOLATIONS_WARNING": "Với luật này, {{count}} trận đã lưu sẽ vi phạm. Các trận đó vẫn giữ nguyên, nhưng nên kiểm tra lại.",
+    "BANNER_TEMPLATES": "Hoặc chọn banner có sẵn",
+    "BANNER_PITCH_NIGHT": "Sân đêm",
+    "BANNER_EMERALD": "Sọc xanh",
+    "BANNER_GOLD_TROPHY": "Cúp vàng",
+    "BANNER_NEON_BLUE": "Neon xanh",
+    "BANNER_RED_FIRE": "Lửa đỏ",
+    "BANNER_STADIUM": "Đèn sân vận động",
+    "BANNER_ANIME_SUNSET": "Anime: Hoàng hôn",
+    "BANNER_ANIME_LIGHTNING": "Anime: Sấm sét đối đầu",
+    "BANNER_ANIME_SAKURA": "Anime: Đêm hoa anh đào",
+    "BANNER_ANIME_FIRE": "Anime: Cú sút lửa",
+    "BANNER_ANIME_ICE": "Anime: Thủ môn băng",
+    "BANNER_ANIME_VICTORY": "Anime: Ăn mừng vô địch",
+    "FACEBOOK_GROUP": "Link group Facebook",
+    "FACEBOOK_GROUP_HINT": "Nút \"Chia sẻ\" ở tab Các trận đấu sẽ sao chép ảnh kết quả rồi mở group này để bạn dán vào.",
+    "FACEBOOK_GROUP_INVALID": "Dán link bắt đầu bằng http:// hoặc https://."
   },
   "TIME_AGO": {
     "JUST_NOW": "Vừa xong",
@@ -505,5 +619,16 @@
     "APPROVE_FAILED": "Không thể cập nhật trạng thái duyệt — kiểm tra kết nối và quyền truy cập.",
     "APPROVAL_PROGRESS_SUFFIX": "{{approved}}/{{total}} đã duyệt",
     "PENDING_APPROVAL_SUMMARY": "Còn {{count}} ảnh đội hình chưa được duyệt trong giải này."
+  },
+  "BULK_CLUBS": {
+    "TITLE": "Nhập nhanh câu lạc bộ",
+    "APPLY": "Áp dụng",
+    "HINT": "Mỗi dòng một câu lạc bộ. Danh sách này sẽ được gán cho các team bạn chọn bên dưới.",
+    "TARGET": "Áp dụng cho",
+    "TARGET_ALL": "Tất cả thành viên",
+    "TARGET_EMPTY": "Chỉ thành viên chưa có danh sách",
+    "AFFECTS": "Ảnh hưởng {{count}} thành viên",
+    "MERGE": "Gộp với danh sách hiện có",
+    "MERGE_HINT": "Không tick thì danh sách cũ của các team này bị thay hoàn toàn."
   }
 }

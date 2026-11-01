@@ -3,6 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Match, matchWinner } from '../../../models/match.model';
 import { roundSortKey } from '../../fixtures/final-stage.service';
+import { playerLabel } from '../../../shared/utils/player-label.util';
 
 const BOX_W = 160;
 const COL_W = 224;
@@ -219,7 +220,7 @@ export class FinalBracketComponent {
         .replace(/^Loser /, this.translate.instant('MATCH.LOSER_ABBR') + ' ');
     }
     const manager = this.managers()[this.teamId(m, side)];
-    return manager ? `${raw}_${manager}` : raw;
+    return playerLabel(raw, manager);
   }
 
   played(m: Match): boolean {

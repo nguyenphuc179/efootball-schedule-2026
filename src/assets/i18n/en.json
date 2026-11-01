@@ -145,7 +145,8 @@
   "TOURNAMENT_TYPE": {
     "ROUND_ROBIN": "Round Robin",
     "KNOCKOUT": "Knockout",
-    "GROUP_KNOCKOUT": "Group Stage + Knockout"
+    "GROUP_KNOCKOUT": "Group Stage + Knockout",
+    "TEAM_MATCH": "Team battle"
   },
   "TOURNAMENT_STATUS": {
     "IN_PROGRESS": "In Progress",
@@ -155,7 +156,8 @@
     "NEW": "New",
     "TAB_ALL": "All",
     "EMPTY_TITLE": "No tournaments",
-    "EMPTY_SUBTITLE": "Check back soon or create one."
+    "EMPTY_SUBTITLE": "Check back soon or create one.",
+    "FORMAT_LABEL": "Format"
   },
   "TOURNAMENT_DETAIL": {
     "LOADING": "Loading tournament…",
@@ -174,6 +176,7 @@
     "TAB_FINAL_STAGE": "Final Stage",
     "TAB_FINAL_SHORT": "Final",
     "TAB_BRACKET": "Bracket",
+    "TAB_TEAM_MATCH": "Matches",
     "TAB_FIXTURES": "Fixtures",
     "TAB_RESULTS": "Results",
     "TAB_STANDINGS": "Standings",
@@ -204,7 +207,11 @@
     "EDIT_TEAM": "Edit team",
     "REMOVE_TEAM": "Remove team",
     "REMOVE_CONFIRM_TITLE": "Remove team?",
-    "REMOVE_CONFIRM_MESSAGE": "{{name}} will be removed from this tournament."
+    "REMOVE_CONFIRM_MESSAGE": "{{name}} will be removed from this tournament.",
+    "NO_CLUBS_BADGE": "No assigned clubs yet",
+    "MISSING_CLUBS_BANNER": "{{count}} member(s) have no assigned clubs yet — they cannot pick a club when entering results.",
+    "BULK_CLUBS": "Bulk-assign clubs",
+    "NO_GROUP": "No team yet"
   },
   "TEAM_FORM": {
     "EDIT_TITLE": "Edit Team",
@@ -217,7 +224,69 @@
     "CLUB_NAME": "Club Name",
     "MANAGER": "Manager",
     "NO_MANAGER_OPTION": "— No manager —",
-    "MANAGER_HINT": "Chosen from active members — they can then manage this team's roster."
+    "MANAGER_HINT": "Chosen from active members — they can then manage this team's roster.",
+    "GROUP": "Team",
+    "NO_GROUP_OPTION": "— Not set —",
+    "GROUP_HINT": "Which team (A or B) this member belongs to.",
+    "ALLOWED_CLUBS": "Assigned clubs",
+    "ALLOWED_CLUBS_HINT": "One club per line. When entering a result, this member can only pick from this list.",
+    "COPY_CLUBS_FROM": "Copy list from another member",
+    "COPY_CLUBS_PLACEHOLDER": "— Pick a member to copy from —",
+    "APPLY_TO_GROUP": "Apply this list to every member of Team {{group}}",
+    "CLUBS_NOT_IN_LIST": "Used in matches but no longer in the list: {{clubs}}"
+  },
+  "TEAM_MATCH": {
+    "GROUP_A": "Team A",
+    "GROUP_B": "Team B",
+    "GROUP": "{{label}}",
+    "PTS": "Pts",
+    "LEADING_A": "Team A is leading",
+    "LEADING_B": "Team B is leading",
+    "TIED": "Level on points",
+    "WINNER_A": "Team A wins!",
+    "WINNER_B": "Team B wins!",
+    "WINNER_A_GD": "Team A wins on goal difference!",
+    "WINNER_B_GD": "Team B wins on goal difference!",
+    "WINNER_A_GF": "Team A wins on goals scored!",
+    "WINNER_B_GF": "Team B wins on goals scored!",
+    "GROUP_STANDINGS": "Team standings",
+    "FILTER_GROUP": "Filter by team",
+    "FILTER_TEAM": "Filter by member",
+    "ALL": "All",
+    "TIEBREAK_HINT": "Level on points: goal difference decides, then goals scored. Level on all three is a draw.",
+    "DRAW": "The teams finished level",
+    "NO_SETUP_TITLE": "Teams not set up",
+    "NO_SETUP_SUBTITLE": "Add at least one member to each team to get started.",
+    "NO_MATCHES_TITLE": "No matches yet",
+    "NO_MATCHES_SUBTITLE": "Click Generate to create the schedule.",
+    "GENERATE": "Generate Matches",
+    "REGENERATE": "Regenerate",
+    "GENERATING": "Generating…",
+    "CLUB_STATS_TITLE": "Football club stats",
+    "CLUB_STATS_EMPTY": "No match has recorded a club yet.",
+    "MOST_WINS": "Most wins",
+    "MOST_GOALS": "Most goals",
+    "WINS_UNIT": "wins",
+    "GOALS_UNIT": "goals",
+    "FOOTBALL_CLUB": "Football club",
+    "FILTER_CLUB": "Filter by football club",
+    "RULE_VIOLATIONS_BANNER": "{{count}} saved match(es) break the tournament's current club rules.",
+    "H2H_TITLE": "Head to head",
+    "H2H_HINT": "Score is from the row player's side. Green: win, red: loss, grey: draw.",
+    "DOWNLOAD": "Download",
+    "SHARE": "Share",
+    "SHARE_COPIED": "Image copied. In the group that just opened, click the post box and press Ctrl+V to paste.",
+    "SHARE_NO_GROUP": "Image copied - open your Facebook group chat and paste (Ctrl+V)",
+    "SHARE_FAILED": "The browser would not copy the image — it was downloaded so you can post it manually.",
+    "STATUS_ALL": "All",
+    "STATUS_TODO": "To play",
+    "STATUS_DONE": "Played",
+    "MINE": "Mine",
+    "EXPAND_ALL": "Expand all",
+    "COLLAPSE_ALL": "Collapse all",
+    "MEMBER_STANDINGS": "Member standings",
+    "REGENERATE_CONFIRM_TITLE": "Regenerate the schedule?",
+    "REGENERATE_CONFIRM_MESSAGE": "All {{total}} existing matches will be deleted — {{done}} of them already have results (including the clubs picked) — and a fresh schedule is created. This can't be undone."
   },
   "FIXTURES_LIST": {
     "GENERATING": "Generating…",
@@ -340,7 +409,12 @@
     "SEASON": "Season {{season}}",
     "CLUB": "Club: {{club}}",
     "REMOVE_CONFIRM_TITLE": "Remove champion?",
-    "REMOVE_CONFIRM_MESSAGE": "Season {{season}} — {{name}} will be removed from the Hall of Fame."
+    "REMOVE_CONFIRM_MESSAGE": "Season {{season}} — {{name}} will be removed from the Hall of Fame.",
+    "TAB_INDIVIDUAL": "Individual",
+    "TAB_TEAM": "Team",
+    "ADD_TEAM": "Add champion team",
+    "TEAM_EMPTY_TITLE": "No champion teams yet",
+    "TEAM_EMPTY_SUBTITLE": "Each season's champion team will show up here."
   },
   "CHAMPION_FORM": {
     "EDIT_TITLE": "Edit Champion",
@@ -353,7 +427,13 @@
     "MANAGER_HINT": "Pick from the member list to auto-sync name + email; or leave blank and type the name below.",
     "PLAYER_NAME": "Player name",
     "TOURNAMENT": "Tournament",
-    "NONE_OPTION": "— None —"
+    "NONE_OPTION": "— None —",
+    "ADD_TEAM_TITLE": "Add champion team",
+    "EDIT_TEAM_TITLE": "Edit champion team",
+    "TEAM_NAME": "Team name",
+    "TEAM_PHOTO": "Team photo",
+    "MEMBERS": "Members",
+    "MEMBERS_HINT": "One member per line. Shown under the team photo."
   },
   "PROFILE": {
     "ROLE_ADMIN": "admin",
@@ -434,8 +514,16 @@
     "PENALTY_SHOOTOUT": "Penalty shootout",
     "PEN": "PEN",
     "SAVE_RESULT": "Save Result",
+    "PLAYED_CLUB": "Club played",
+    "CLUB_REQUIRED": "Please select the club played",
+    "NO_CLUB_SELECTED": "— Not selected —",
+    "NO_ALLOWED_CLUBS": "No assigned clubs for this team yet.",
     "ACCESS_DENIED_TITLE": "You can't edit this match",
-    "ACCESS_DENIED_SUBTITLE": "Only an admin or a manager of one of the two teams can enter/edit this result."
+    "ACCESS_DENIED_SUBTITLE": "Only an admin or a manager of one of the two teams can enter/edit this result.",
+    "CLUB_TAKEN": "Already picked",
+    "CLUB_TAKEN_SELF": "You used it",
+    "CLUB_TAKEN_OPPONENT": "Opponent picked it",
+    "CLUB_TAKEN_TEAMMATE": "Teammate picked it"
   },
   "TOURNAMENT_FORM": {
     "EDIT_TITLE": "Edit Tournament",
@@ -452,7 +540,33 @@
     "END_DATE": "End Date",
     "SELECT_DATE": "Select a date",
     "NUMBER_OF_TEAMS": "Number of Teams",
-    "TYPE": "Tournament Type"
+    "TYPE": "Tournament Type",
+    "TEAM_MATCH_RULES": "Club selection rules",
+    "RULE_REQUIRE_CLUB": "Require selecting a club",
+    "RULE_REQUIRE_CLUB_HINT": "If a team has assigned clubs, one must be picked before saving the result.",
+    "RULE_UNIQUE_PER_PLAYER": "A player cannot reuse a club",
+    "RULE_UNIQUE_PER_PLAYER_HINT": "A player may not pick the same club in more than one match.",
+    "RULE_NO_MIRROR": "No mirror matches",
+    "RULE_NO_MIRROR_HINT": "The two players in a match may not pick the same club.",
+    "RULE_UNIQUE_PER_GROUP": "Each club used once per team",
+    "RULE_UNIQUE_PER_GROUP_HINT": "Members of the same team (A or B) may not share a club.",
+    "RULE_VIOLATIONS_WARNING": "With these rules, {{count}} saved match(es) would break them. They stay as saved, but are worth reviewing.",
+    "BANNER_TEMPLATES": "Or pick a ready-made banner",
+    "BANNER_PITCH_NIGHT": "Night pitch",
+    "BANNER_EMERALD": "Green stripes",
+    "BANNER_GOLD_TROPHY": "Gold trophy",
+    "BANNER_NEON_BLUE": "Neon blue",
+    "BANNER_RED_FIRE": "Red fire",
+    "BANNER_STADIUM": "Stadium lights",
+    "BANNER_ANIME_SUNSET": "Anime: Sunset",
+    "BANNER_ANIME_LIGHTNING": "Anime: Lightning duel",
+    "BANNER_ANIME_SAKURA": "Anime: Sakura night",
+    "BANNER_ANIME_FIRE": "Anime: Fire shot",
+    "BANNER_ANIME_ICE": "Anime: Ice keeper",
+    "BANNER_ANIME_VICTORY": "Anime: Victory",
+    "FACEBOOK_GROUP": "Facebook group link",
+    "FACEBOOK_GROUP_HINT": "The \"Share\" button on the Matches tab copies the results image, then opens this group so you can paste it.",
+    "FACEBOOK_GROUP_INVALID": "Paste a link starting with http:// or https://."
   },
   "TIME_AGO": {
     "JUST_NOW": "Just now",
@@ -505,5 +619,16 @@
     "APPROVE_FAILED": "Could not update the approval status — check your connection and permissions.",
     "APPROVAL_PROGRESS_SUFFIX": "{{approved}}/{{total}} approved",
     "PENDING_APPROVAL_SUMMARY": "{{count}} lineup image(s) still awaiting approval in this tournament."
+  },
+  "BULK_CLUBS": {
+    "TITLE": "Bulk-assign clubs",
+    "APPLY": "Apply",
+    "HINT": "One club per line. The list is assigned to the teams selected below.",
+    "TARGET": "Apply to",
+    "TARGET_ALL": "All members",
+    "TARGET_EMPTY": "Only members without a list",
+    "AFFECTS": "Affects {{count}} member(s)",
+    "MERGE": "Merge with existing list",
+    "MERGE_HINT": "Unticked, these teams' current lists are fully replaced."
   }
 }

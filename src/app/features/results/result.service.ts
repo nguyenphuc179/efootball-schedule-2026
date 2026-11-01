@@ -30,7 +30,8 @@ export class ResultService {
     match: Match,
     homeScore: number,
     awayScore: number,
-    penalties?: { home: number; away: number } | null
+    penalties?: { home: number; away: number } | null,
+    clubs?: { home: string | null; away: string | null } | null
   ): Promise<void> {
     const usePens = homeScore === awayScore && !!penalties;
     await this.offlineSync.trackWrite(
@@ -41,6 +42,7 @@ export class ResultService {
         penaltyHome: usePens ? penalties!.home : null,
         penaltyAway: usePens ? penalties!.away : null,
         status: 'completed',
+        ...(clubs ? { homeClub: clubs.home, awayClub: clubs.away } : {}),
       })
     );
 
@@ -54,9 +56,12 @@ export class ResultService {
     // Team names are often numbered ("Team 2", "Team 9"), so a bare "Team 2 3 - 2 Team 9" reads as
     // one confusing run of digits — "vs" plus a "tỉ số là:" lead-in keeps team names and the score
     // visually separate.
+    const homeClub = clubs ? clubs.home : match.homeClub;
+    const awayClub = clubs ? clubs.away : match.awayClub;
+    const side = (name: string, club?: string | null) => (club ? `${name} (${club})` : name);
     await this.activityLog.log(
       'result_update',
-      `Đã cập nhật kết quả trận ${match.homeTeamName ?? 'Home'} vs ${match.awayTeamName ?? 'Away'}, tỉ số là: ${homeScore} - ${awayScore}`,
+      `Đã cập nhật kết quả trận ${side(match.homeTeamName ?? 'Home', homeClub)} vs ${side(match.awayTeamName ?? 'Away', awayClub)}, tỉ số là: ${homeScore} - ${awayScore}`,
       match.tournamentId
     );
   }

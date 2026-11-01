@@ -47,10 +47,12 @@ across tournaments.
 | startDate | Timestamp | |
 | endDate | Timestamp | |
 | status | `'upcoming' \| 'ongoing' \| 'completed'` | derived at create/update time from dates, editable by admin |
-| type | `'round_robin' \| 'knockout' \| 'group_knockout'` | |
+| type | `'round_robin' \| 'knockout' \| 'group_knockout' \| 'team_match'` | `team_match` = Group A players vs Group B players, one match per pairing |
 | numberOfTeams | number | target team count, used by fixture generator |
 | createdBy | string (uid) | |
 | createdDate | Timestamp | |
+| facebookGroupUrl | string \| null | `team_match` only: link of the Facebook group the "Share" button opens after copying the results image |
+| teamMatchRules | `{ requireClub, uniquePerPlayer, noMirror, uniquePerGroup }` (booleans) \| null | `team_match` only: house rules for picking the football club in a match. Missing keys fall back to `requireClub: true, uniquePerPlayer: true, noMirror: false, uniquePerGroup: false` (`resolveTeamMatchRules`). Enforced in the UI only — not by firestore.rules |
 
 ## `teams/{teamId}`
 
@@ -65,6 +67,8 @@ across tournaments.
 | managerPhotoURL | string \| null | cached from the manager's login profile at save time |
 | managerEmail | string \| null | cached from the manager's login profile at save time (lowercased/trimmed); lets the external lineup capture tool find "which tournaments does this Gmail manage a team in" via a public `where('managerEmail', '==', email)` query — see `LINEUP_TOOL_INTEGRATION.md` |
 | createdDate | Timestamp | |
+| groupLabel | `'A' \| 'B' \| null` | `team_match` only: which group the player belongs to. Teams saved before the rename may still carry the old `clubLabel`; read through `teamGroup()` |
+| allowedClubs | string[] | `team_match` only: football clubs (e.g. "Real Madrid") this player may pick when a result is entered; empty/missing = no restriction |
 
 ## `matches/{matchId}`
 
@@ -83,9 +87,10 @@ across tournaments.
 | location | string | pitch/venue name |
 | status | `'scheduled' \| 'live' \| 'completed' \| 'postponed'` | |
 | penaltyHome, penaltyAway | number \| null | shootout score; only set on a level knockout match |
+| homeClub, awayClub | string \| null | `team_match` only: the football club each side played with; picked from that team's `allowedClubs` |
 
 Public read; create/delete are admin-only. Update is admin-only for every field EXCEPT the result
-fields (`homeScore`, `awayScore`, `penaltyHome`, `penaltyAway`, `status`), which a team manager may
+fields (`homeScore`, `awayScore`, `penaltyHome`, `penaltyAway`, `status`, `homeClub`, `awayClub`), which a team manager may
 also set for a match their own team is playing in (home or away) — enforced by firestore.rules via
 `request.resource.data.diff(resource.data).affectedKeys().hasOnly([...])`, so a manager touching any
 other field (schedule, teams, round, tournamentId, ...) is rejected outright. Re-editing an already

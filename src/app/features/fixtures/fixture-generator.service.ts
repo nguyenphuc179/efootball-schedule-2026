@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Team } from '../../models/team.model';
+import { Team, teamGroup } from '../../models/team.model';
 import { MatchDraft } from '../../models/match.model';
 import { MatchService } from './match.service';
 import { StandingsService } from '../standings/standings.service';
@@ -105,10 +105,42 @@ export class FixtureGeneratorService {
     return drafts;
   }
 
+  // ---------------------------------------------------------------------------------------
+  // Team Match (5 vs 5: each player from club A plays every player from club B)
+  // ---------------------------------------------------------------------------------------
+  generateTeamMatch(
+    tournamentId: string,
+    teamsA: Team[],
+    teamsB: Team[],
+    startDate: number,
+    location: string
+  ): MatchDraft[] {
+    const drafts: MatchDraft[] = [];
+    teamsA.forEach((homeTeam) => {
+      teamsB.forEach((awayTeam) => {
+        drafts.push({
+          tournamentId,
+          round: homeTeam.teamName,
+          groupName: null,
+          homeTeamId: homeTeam.id,
+          awayTeamId: awayTeam.id,
+          homeTeamName: homeTeam.teamName,
+          awayTeamName: awayTeam.teamName,
+          homeTeamLogo: homeTeam.logo ?? null,
+          awayTeamLogo: awayTeam.logo ?? null,
+          matchDate: startDate,
+          matchTime: '15:00',
+          location,
+        });
+      });
+    });
+    return drafts;
+  }
+
   /** Orchestrates generation + persistence for whichever tournament type is passed in. */
   async generateAndSave(
     tournamentId: string,
-    type: 'round_robin' | 'group_knockout',
+    type: 'round_robin' | 'group_knockout' | 'team_match',
     teams: Team[],
     startDate: number,
     location: string
@@ -117,10 +149,19 @@ export class FixtureGeneratorService {
 
     await this.matchService.clearForTournament(tournamentId);
 
-    const drafts: MatchDraft[] =
-      type === 'round_robin'
-        ? this.generateRoundRobin(tournamentId, teams, startDate, location)
-        : this.generateGroupPlusKnockout(tournamentId, teams, startDate, location);
+    let drafts: MatchDraft[];
+    if (type === 'round_robin') {
+      drafts = this.generateRoundRobin(tournamentId, teams, startDate, location);
+    } else if (type === 'group_knockout') {
+      drafts = this.generateGroupPlusKnockout(tournamentId, teams, startDate, location);
+    } else {
+      const teamsA = teams.filter((t) => teamGroup(t) === 'A');
+      const teamsB = teams.filter((t) => teamGroup(t) === 'B');
+      if (teamsA.length === 0 || teamsB.length === 0) {
+        throw new Error('Cần có ít nhất 1 thành viên ở Team A và Team B.');
+      }
+      drafts = this.generateTeamMatch(tournamentId, teamsA, teamsB, startDate, location);
+    }
 
     await this.matchService.bulkCreate(drafts);
     // Fresh fixtures = no results yet, so reset the standings table (clears old points/form).

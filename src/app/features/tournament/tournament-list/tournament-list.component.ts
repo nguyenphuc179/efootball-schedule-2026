@@ -46,7 +46,12 @@ type FilterTab = 'all' | TournamentStatus;
       } @else {
         <div class="flex flex-col gap-3 mt-2">
           @for (t of filtered(); track t.id) {
-            <a [routerLink]="['/tournaments', t.id]" class="card flex gap-3 no-underline text-inherit">
+            <a
+              [routerLink]="['/tournaments', t.id]"
+              class="card flex gap-3 no-underline text-inherit border-l-4"
+              [class]="t.status === 'completed' ? 'border-accent-red ring-1 ring-accent-red/30' : 'border-accent-amber'"
+              [style.background-color]="t.status === 'completed' ? 'rgba(229, 72, 77, 0.12)' : 'rgba(245, 166, 35, 0.12)'"
+            >
               <div class="w-16 h-16 rounded-xl bg-primary-50 flex items-center justify-center overflow-hidden shrink-0">
                 @if (t.image) {
                   <img [src]="t.image" [alt]="t.name" class="w-full h-full object-cover" width="64" height="64" />
@@ -59,9 +64,15 @@ type FilterTab = 'all' | TournamentStatus;
                 <div class="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
                   <span class="material-icons text-[14px]">place</span>{{ t.location }}
                 </div>
-                <div class="flex items-center gap-2 mt-1.5">
-                  <span class="badge" [class]="statusClasses(t.status)">{{ statusLabels[t.status] | translate }}</span>
-                  <span class="text-[11px] text-gray-400">{{ typeLabels[t.type] | translate }}</span>
+                <div class="flex items-center gap-2 mt-1.5 w-full">
+                  <span class="badge inline-flex items-center gap-1" [class]="statusClasses(t.status)">
+                    @if (t.status === 'completed') { <span class="material-icons text-[12px]">flag</span> }
+                    {{ statusLabels[t.status] | translate }}
+                  </span>
+                  <span
+                    class="badge ml-auto text-white font-bold whitespace-nowrap"
+                    style="background-color: #3b82f6"
+                  >{{ 'TOURNAMENT_LIST.FORMAT_LABEL' | translate }}: {{ typeLabels[t.type] | translate }}</span>
                 </div>
               </div>
             </a>
@@ -94,7 +105,7 @@ export class TournamentListComponent {
 
   statusClasses(status: TournamentStatus): string {
     return status === 'completed'
-      ? 'bg-gray-100 text-gray-600'
-      : 'bg-amber-50 text-accent-amber';
+      ? 'bg-accent-red text-white'
+      : 'bg-accent-amber text-white';
   }
 }

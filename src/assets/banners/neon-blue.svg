@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 480" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#080c2e"/>
+      <stop offset=".5" stop-color="#3b1fa8"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <pattern id="hex" width="104" height="90" patternUnits="userSpaceOnUse">
+      <path d="M26 0 L78 0 L104 45 L78 90 L26 90 L0 45 Z" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="2"/>
+    </pattern>
+    <radialGradient id="orb" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#67e8f9" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#67e8f9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1920" height="480" fill="url(#bg)"/>
+  <rect width="1920" height="480" fill="url(#hex)"/>
+  <circle cx="1500" cy="120" r="320" fill="url(#orb)"/>
+  <circle cx="300" cy="420" r="260" fill="url(#orb)" opacity=".6"/>
+  <g fill="#fff" opacity=".09">
+    <polygon points="500,0 640,0 340,480 200,480"/>
+    <polygon points="900,0 960,0 660,480 600,480"/>
+    <polygon points="1300,0 1480,0 1180,480 1000,480"/>
+  </g>
+  <g fill="none" stroke="#67e8f9" stroke-opacity=".5" stroke-width="3">
+    <path d="M0 400 C400 300 700 460 1100 340 S1700 300 1920 360"/>
+    <path d="M0 440 C400 350 700 480 1100 390 S1700 360 1920 410" stroke-opacity=".25"/>
+  </g>
+</svg>

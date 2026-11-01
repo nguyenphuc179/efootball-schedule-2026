@@ -20,6 +20,11 @@ import { StandingsViewComponent } from '../../standings/standings-view/standings
 import { StandingsService } from '../../standings/standings.service';
 import { StatisticsComponent } from '../../statistics/statistics.component';
 import { TournamentPermissionsComponent } from '../tournament-permissions/tournament-permissions.component';
+import { TeamMatchComponent } from '../team-match/team-match.component';
+import { GroupStandingsComponent } from '../team-match/group-standings.component';
+import { FootballClubStatsComponent } from '../team-match/football-club-stats.component';
+import { HeadToHeadComponent } from '../team-match/head-to-head.component';
+import { StandingsExportComponent } from '../team-match/standings-export.component';
 import { SwipeDirective } from '../../../shared/directives/swipe.directive';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_TYPE_LABELS, TournamentStatus } from '../../../models/tournament.model';
 import { Match } from '../../../models/match.model';
@@ -32,6 +37,7 @@ type TabKey =
   | 'results'
   | 'groupStage'
   | 'finalStage'
+  | 'teamMatch'
   | 'standings'
   | 'statistics'
   | 'permissions';
@@ -48,6 +54,11 @@ type TabKey =
     FixturesListComponent,
     GroupStageComponent,
     FinalStageComponent,
+    TeamMatchComponent,
+    GroupStandingsComponent,
+    FootballClubStatsComponent,
+    HeadToHeadComponent,
+    StandingsExportComponent,
     StandingsViewComponent,
     StatisticsComponent,
     TournamentPermissionsComponent,
@@ -185,7 +196,7 @@ type TabKey =
               </div>
             }
             @case ('teams') {
-              <app-team-list [tournamentId]="tournament()!.id" [maxTeams]="tournament()!.numberOfTeams" />
+              <app-team-list [tournamentId]="tournament()!.id" [maxTeams]="tournament()!.numberOfTeams" [tournamentType]="tournament()!.type" />
             }
             @case ('lineup') {
               <app-lineup-view [tournamentId]="tournament()!.id" />
@@ -211,10 +222,31 @@ type TabKey =
                 [canGenerate]="canGenerateFixtures()"
               />
             }
+            @case ('teamMatch') {
+              <app-team-match
+                [tournamentId]="tournament()!.id"
+                [locked]="tournament()!.status === 'completed'"
+                [canGenerate]="canGenerateFixtures()"
+              />
+            }
             @case ('standings') {
-              <app-standings-view [tournamentId]="tournament()!.id" />
+              @if (tournament()!.type === 'team_match') {
+                <div class="flex flex-col gap-4">
+                  <app-standings-export [tournamentId]="tournament()!.id" />
+                  <app-group-standings [tournamentId]="tournament()!.id" />
+                  <app-standings-view [tournamentId]="tournament()!.id" />
+                  <app-standings-view [tournamentId]="tournament()!.id" club="A" />
+                  <app-standings-view [tournamentId]="tournament()!.id" club="B" />
+                </div>
+              } @else {
+                <app-standings-view [tournamentId]="tournament()!.id" />
+              }
             }
             @case ('statistics') {
+              @if (tournament()!.type === 'team_match') {
+                <app-head-to-head [tournamentId]="tournament()!.id" />
+                <app-football-club-stats [tournamentId]="tournament()!.id" />
+              }
               <app-statistics [tournamentId]="tournament()!.id" />
             }
             @case ('permissions') {
@@ -242,7 +274,7 @@ export class TournamentDetailComponent {
 
   /** Same orange/gray badge classes as the tournament list, for consistency. */
   statusClasses(status: TournamentStatus): string {
-    return status === 'completed' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-accent-amber';
+    return status === 'completed' ? 'bg-accent-red text-white' : 'bg-accent-amber text-white';
   }
 
   /** True for admin OR the one manager an admin designated (see "Phân quyền" tab) to click every
@@ -271,7 +303,7 @@ export class TournamentDetailComponent {
 
   /**
    * Can be ended once the Final is played. Knockout / group+knockout need an actual completed
-   * "Final" match; a plain round-robin (no Final) ends when every match is played.
+   * "Final" match; round-robin and team_match end when every match is played.
    */
   canEndTournament = computed(() => {
     const t = this.tournament();
@@ -279,7 +311,7 @@ export class TournamentDetailComponent {
     if (!t || ms.length === 0) return false;
     const final = ms.find((m) => m.round === 'Final');
     if (final) return final.status === 'completed';
-    return t.type === 'round_robin' && ms.every((m) => m.status === 'completed');
+    return (t.type === 'round_robin' || t.type === 'team_match') && ms.every((m) => m.status === 'completed');
   });
 
   activeTab = signal<TabKey>((this.route.snapshot.queryParamMap.get('tab') as TabKey) ?? 'overview');
@@ -288,8 +320,8 @@ export class TournamentDetailComponent {
    * `group_knockout` swaps Fixtures/Results for the dedicated Group Stage / Final Stage tabs.
    * Plain `knockout` has no fixtures pipeline of its own either — it's just a bracket from the
    * start, so it reuses the same Final Stage tab/component (relabelled "Bracket") instead of a
-   * separate Fixtures/Results pair. `short` is used on mobile so the bar fits without scrolling;
-   * `label` is the full desktop name.
+   * separate Fixtures/Results pair. `team_match` uses a dedicated TeamMatch tab.
+   * `short` is used on mobile so the bar fits without scrolling; `label` is the full desktop name.
    */
   tabs = computed<{ key: TabKey; label: string; short: string }[]>(() => {
     const type = this.tournament()?.type;
@@ -301,10 +333,12 @@ export class TournamentDetailComponent {
           ]
         : type === 'knockout'
           ? [{ key: 'finalStage', label: 'TOURNAMENT_DETAIL.TAB_BRACKET', short: 'TOURNAMENT_DETAIL.TAB_BRACKET' }]
-          : [
-              { key: 'fixtures', label: 'TOURNAMENT_DETAIL.TAB_FIXTURES', short: 'TOURNAMENT_DETAIL.TAB_FIXTURES' },
-              { key: 'results', label: 'TOURNAMENT_DETAIL.TAB_RESULTS', short: 'TOURNAMENT_DETAIL.TAB_RESULTS' },
-            ];
+          : type === 'team_match'
+            ? [{ key: 'teamMatch', label: 'TOURNAMENT_DETAIL.TAB_TEAM_MATCH', short: 'TOURNAMENT_DETAIL.TAB_TEAM_MATCH' }]
+            : [
+                { key: 'fixtures', label: 'TOURNAMENT_DETAIL.TAB_FIXTURES', short: 'TOURNAMENT_DETAIL.TAB_FIXTURES' },
+                { key: 'results', label: 'TOURNAMENT_DETAIL.TAB_RESULTS', short: 'TOURNAMENT_DETAIL.TAB_RESULTS' },
+              ];
     return [
       { key: 'overview', label: 'TOURNAMENT_DETAIL.TAB_OVERVIEW', short: 'TOURNAMENT_DETAIL.TAB_INFO_SHORT' },
       { key: 'teams', label: 'ADMIN_OVERVIEW.TEAMS', short: 'ADMIN_OVERVIEW.TEAMS' },

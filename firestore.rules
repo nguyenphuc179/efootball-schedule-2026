@@ -71,7 +71,7 @@ service cloud.firestore {
     }
 
     function validTournamentType(t) {
-      return t in ['round_robin', 'knockout', 'group_knockout'];
+      return t in ['round_robin', 'knockout', 'group_knockout', 'team_match'];
     }
 
     // -------------------------------------------------------------------
@@ -129,7 +129,7 @@ service cloud.firestore {
         (isSignedIn() && !isDisabled() &&
           (isTeamManager(resource.data.homeTeamId) || isTeamManager(resource.data.awayTeamId)) &&
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['homeScore', 'awayScore', 'penaltyHome', 'penaltyAway', 'status']));
+            .hasOnly(['homeScore', 'awayScore', 'penaltyHome', 'penaltyAway', 'status', 'homeClub', 'awayClub']));
       allow delete: if isAdmin() || isFixtureGenerator(resource.data.tournamentId);
     }
 

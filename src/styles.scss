@@ -154,3 +154,69 @@ html.dark {
   .mat-mdc-dialog-surface .mat-mdc-dialog-title,
   .mat-mdc-dialog-surface [mat-dialog-title] { color: #e8ecef; }
 }
+
+/* ---- Hover feedback --------------------------------------------------------------
+   Only on devices that really hover (mouse/trackpad) — touch screens keep their tap
+   behaviour. Everything below uses filter / transform / box-shadow rather than colours,
+   so it works in both light and dark mode without fighting the dark remap above.
+   Placed last so these win ties against the component classes. */
+a, button, .card, .badge {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, background-color 0.15s ease,
+    border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* Any clickable button / link: a gentle brighten. */
+  button:not(:disabled):hover,
+  a[href]:not(.card):hover,
+  a[routerLink]:not(.card):hover {
+    filter: brightness(1.12);
+  }
+
+  /* Primary / secondary buttons: lift + glow. */
+  .btn-primary:not(:disabled):hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+    box-shadow: 0 8px 18px -8px rgba(15, 168, 99, 0.65);
+  }
+  .btn-secondary:not(:disabled):hover {
+    transform: translateY(-1px);
+    filter: brightness(1.12);
+  }
+
+  /* Cards that are links (tournament list, etc.) or marked clickable: float up. */
+  a.card:hover,
+  .card.cursor-pointer:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px -12px rgba(15, 23, 32, 0.45);
+    filter: brightness(1.05);
+  }
+
+  /* Table rows: soft highlight under the pointer. */
+  tbody tr:hover {
+    background-color: rgba(15, 168, 99, 0.07);
+  }
+
+  /* Pills / chips that are buttons (filters, tabs). */
+  button.rounded-full:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+
+  /* Inputs: border hint before focus. */
+  .input-field:not(:disabled):not(:focus):hover {
+    border-color: #0fa863;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a, button, .card, .badge {
+    transition: none;
+  }
+  a.card:hover,
+  .card.cursor-pointer:hover,
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  button.rounded-full:hover {
+    transform: none;
+  }
+}

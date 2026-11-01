@@ -9,8 +9,9 @@ import { TeamService } from '../../teams/team.service';
 import { TeamAvatarService } from '../../teams/team-avatar.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { StandingRow } from '../../../models/standing.model';
-import { Team } from '../../../models/team.model';
+import { Team, teamGroup } from '../../../models/team.model';
 import { initialsAvatar } from '../../../shared/utils/avatar.util';
+import { playerLabel } from '../../../shared/utils/player-label.util';
 
 /**
  * Standings as one table per group (GiveTour-style): rank, team, played, W-D-L, goals +/-, points
@@ -41,7 +42,9 @@ import { initialsAvatar } from '../../../shared/utils/avatar.util';
       }
 
       @if (groups().length === 0) {
-        <app-empty-state icon="leaderboard" [title]="'STANDINGS_VIEW.EMPTY_TITLE' | translate" [subtitle]="'STANDINGS_VIEW.EMPTY_SUBTITLE' | translate" />
+        @if (!club()) {
+          <app-empty-state icon="leaderboard" [title]="'STANDINGS_VIEW.EMPTY_TITLE' | translate" [subtitle]="'STANDINGS_VIEW.EMPTY_SUBTITLE' | translate" />
+        }
       } @else {
         @for (group of groups(); track group.name) {
           <div class="flex flex-col gap-2">
@@ -116,6 +119,8 @@ import { initialsAvatar } from '../../../shared/utils/avatar.util';
 })
 export class StandingsViewComponent {
   readonly tournamentId = input<string>();
+  /** team_match only: show just the teams of this club, ranked among themselves. */
+  readonly club = input<'A' | 'B'>();
 
   private standingsService = inject(StandingsService);
   private tournamentService = inject(TournamentService);
@@ -166,11 +171,22 @@ export class StandingsViewComponent {
 
   teamLabel(row: StandingRow): string {
     const manager = this.managerByTeam()[row.teamId];
-    return manager ? `${row.teamName}_${manager}` : row.teamName;
+    return playerLabel(row.teamName, manager);
   }
 
   /** One block per group (a single unnamed block for non-group tournaments). */
   groups = computed(() => {
+    const club = this.club();
+    if (club) {
+      this.translate.currentLang();
+      const members = this.rows()
+        .filter((r) => teamGroup(this.teamById().get(r.teamId)) === club)
+        .sort((x, y) => x.position - y.position)
+        .map((r, i) => ({ ...r, position: i + 1 }));
+      if (members.length === 0) return [];
+      const name = this.translate.instant(club === 'A' ? 'TEAM_MATCH.GROUP_A' : 'TEAM_MATCH.GROUP_B');
+      return [{ name, rows: members, qualifiers: 0 }];
+    }
     const byGroup = new Map<string | null, StandingRow[]>();
     for (const row of this.rows()) {
       const bucket = byGroup.get(row.groupName) ?? [];

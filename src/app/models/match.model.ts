@@ -12,6 +12,9 @@ export interface Match {
   // Penalty shootout — only set on a knockout match that finished level.
   penaltyHome?: number | null;
   penaltyAway?: number | null;
+  // team_match only: the football club each side played with.
+  homeClub?: string | null;
+  awayClub?: string | null;
   matchDate: number; // epoch millis
   matchTime: string; // "HH:mm"
   location: string;
@@ -27,7 +30,7 @@ export interface Match {
 // for known teams (knockout placeholder slots simply leave them undefined → card shows "TBD").
 export type MatchDraft = Omit<
   Match,
-  'id' | 'homeScore' | 'awayScore' | 'status' | 'penaltyHome' | 'penaltyAway'
+  'id' | 'homeScore' | 'awayScore' | 'status' | 'penaltyHome' | 'penaltyAway' | 'homeClub' | 'awayClub'
 >;
 
 /** Winner of a finished match, deciding a level score on penalties. Null while undecided. */

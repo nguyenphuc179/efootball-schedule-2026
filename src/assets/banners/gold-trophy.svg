@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 480" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#080f26"/>
+      <stop offset="1" stop-color="#1e2b5c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fbbf24" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset=".5" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#b45309"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="480" fill="url(#bg)"/>
+  <g fill="#fbbf24" opacity=".08">
+    <polygon points="960,250 200,0 420,0"/><polygon points="960,250 700,0 860,0"/>
+    <polygon points="960,250 1060,0 1220,0"/><polygon points="960,250 1500,0 1720,0"/>
+    <polygon points="960,250 0,380 0,120"/><polygon points="960,250 1920,380 1920,120"/>
+  </g>
+  <ellipse cx="960" cy="250" rx="520" ry="260" fill="url(#glow)"/>
+  <g fill="url(#gold)">
+    <path d="M860 110 H1060 V190 C1060 250 1022 285 982 292 V338 H1024 V368 H896 V338 H938 V292 C898 285 860 250 860 190 Z"/>
+    <rect x="876" y="368" width="168" height="28" rx="6"/>
+  </g>
+  <g fill="none" stroke="url(#gold)" stroke-width="16" stroke-linecap="round">
+    <path d="M860 130 H812 C808 196 832 222 868 230"/>
+    <path d="M1060 130 H1108 C1112 196 1088 222 1052 230"/>
+  </g>
+  <g fill="#fff" opacity=".7">
+    <circle cx="560" cy="120" r="3"/><circle cx="1350" cy="90" r="4"/><circle cx="1500" cy="300" r="3"/>
+    <circle cx="420" cy="330" r="4"/><circle cx="1680" cy="160" r="3"/><circle cx="760" cy="400" r="3"/>
+  </g>
+</svg>

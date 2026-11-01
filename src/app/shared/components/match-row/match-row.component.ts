@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Match, matchScoreText, matchWinner } from '../../../models/match.model';
 import { initialsAvatar } from '../../utils/avatar.util';
+import { playerLabel } from '../../utils/player-label.util';
 import { TeamAvatar } from '../../utils/team-avatar.util';
 
 /**
@@ -36,35 +37,48 @@ import { TeamAvatar } from '../../utils/team-avatar.util';
         </div>
       }
 
-      <div class="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 min-w-0">
-        <span class="text-sm truncate" [class.font-bold]="winner() === 'home'">{{ sideLabel('home') }}</span>
+      <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
+        <div class="min-w-0 text-right leading-tight">
+          <div class="text-sm truncate" [class]="nameClass('home')">{{ sideLabel('home') }}</div>
+          @if (match().homeClub; as c) {
+            <div><span class="inline-flex max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 mt-0.5 text-xs font-bold bg-primary-50 text-primary-700"><span class="material-icons text-[12px]">shield</span><span class="truncate">{{ c }}</span></span></div>
+          }
+        </div>
         @if (homeAvatar().src; as src) {
-          <img [src]="src" alt="" class="w-5 h-5 rounded-full object-cover shrink-0" referrerpolicy="no-referrer" (error)="homeBad.set(true)" />
+          <img [src]="src" alt="" class="w-7 h-7 rounded-full object-cover shrink-0" referrerpolicy="no-referrer" (error)="homeBad.set(true)" />
         } @else {
           <span
-            class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
+            class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
             [style.background-color]="homeAvatar().bg"
             [style.color]="homeAvatar().fg"
           >{{ homeAvatar().initials }}</span>
         }
       </div>
 
-      <span class="shrink-0 min-w-[3rem] px-1 text-center text-sm font-extrabold text-primary-700 tabular-nums whitespace-nowrap">{{ scoreText() }}</span>
+      <span class="shrink-0 min-w-[3rem] px-1 text-center text-sm font-extrabold tabular-nums whitespace-nowrap" [class]="scoreClass()">{{ scoreText() }}</span>
 
-      <div class="flex-1 flex items-center gap-1.5 sm:gap-2 min-w-0">
+      <div class="flex-1 flex items-center gap-2 min-w-0">
         @if (awayAvatar().src; as src) {
-          <img [src]="src" alt="" class="w-5 h-5 rounded-full object-cover shrink-0" referrerpolicy="no-referrer" (error)="awayBad.set(true)" />
+          <img [src]="src" alt="" class="w-7 h-7 rounded-full object-cover shrink-0" referrerpolicy="no-referrer" (error)="awayBad.set(true)" />
         } @else {
           <span
-            class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
+            class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
             [style.background-color]="awayAvatar().bg"
             [style.color]="awayAvatar().fg"
           >{{ awayAvatar().initials }}</span>
         }
-        <span class="text-sm truncate" [class.font-bold]="winner() === 'away'">{{ sideLabel('away') }}</span>
+        <div class="min-w-0 leading-tight">
+          <div class="text-sm truncate" [class]="nameClass('away')">{{ sideLabel('away') }}</div>
+          @if (match().awayClub; as c) {
+            <div><span class="inline-flex max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 mt-0.5 text-xs font-bold bg-primary-50 text-primary-700"><span class="material-icons text-[12px]">shield</span><span class="truncate">{{ c }}</span></span></div>
+          }
+        </div>
       </div>
 
       <span class="badge shrink-0 !text-[10px] hidden sm:inline-flex" [class]="statusClass()">{{ statusLabel() }}</span>
+      @if (showResultLink()) {
+        <span class="material-icons text-[18px] text-gray-400 shrink-0">{{ played() ? 'edit' : 'add_circle_outline' }}</span>
+      }
     </a>
   `,
 })
@@ -74,7 +88,7 @@ export class MatchRowComponent {
   /** Show the round label for a non-group (knockout) match. Off where the parent already
    *  headings each round (e.g. the Final Stage tab). */
   readonly showRound = input(true);
-  /** teamId -> manager name; when present the label reads "Club_Manager". */
+  /** teamId -> manager name; when present the label reads "Club (Manager)". */
   readonly managers = input<Record<string, string>>({});
   /** teamId -> resolved avatar (logo / login photo / portrait / initials). Falls back to the
    *  match's denormalised crest, then initials from the team name, when a team isn't listed. */
@@ -97,7 +111,7 @@ export class MatchRowComponent {
         .replace(/^Loser /, this.translate.instant('MATCH.LOSER_ABBR') + ' ');
     }
     const manager = this.managers()[side === 'home' ? m.homeTeamId : m.awayTeamId];
-    return manager ? `${name}_${manager}` : name;
+    return playerLabel(name, manager);
   }
 
   groupLetter = computed(() => (this.match().groupName ?? '').replace(/^group\s+/i, '').trim() || '?');
@@ -146,12 +160,24 @@ export class MatchRowComponent {
     return this.roundLabel().replace(/[^a-z0-9]/gi, '').slice(0, 3).toUpperCase();
   });
 
-  private played = computed(() => {
+  protected played = computed(() => {
     const m = this.match();
     return m.homeScore != null && m.awayScore != null && (m.status === 'completed' || m.status === 'live');
   });
 
   scoreText = computed(() => (this.played() ? matchScoreText(this.match()) : '- : -'));
+
+  /** Winner bold, loser muted, a draw / unplayed match neutral. */
+  nameClass(side: 'home' | 'away'): string {
+    const w = this.winner();
+    if (!w) return '';
+    return w === side ? 'font-bold' : 'text-gray-500';
+  }
+
+  scoreClass(): string {
+    if (!this.played()) return 'text-gray-400';
+    return this.winner() ? 'text-primary-700' : 'text-gray-500';
+  }
 
   winner = computed<'home' | 'away' | null>(() =>
     this.played() ? matchWinner(this.match()) : null
@@ -196,7 +222,7 @@ export class MatchRowComponent {
       case 'postponed':
         return 'bg-amber-50 text-accent-amber';
       default:
-        return 'bg-red-50 text-accent-red';
+        return 'bg-gray-100 text-gray-500';
     }
   }
 }
