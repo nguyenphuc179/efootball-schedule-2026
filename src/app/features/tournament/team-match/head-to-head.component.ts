@@ -24,16 +24,16 @@ import { playerLabel } from '../../../shared/utils/player-label.util';
           <table class="text-sm">
             <thead class="text-gray-400 text-[11px]">
               <tr class="border-b border-gray-100">
-                <th class="text-left py-2 pl-3 pr-2 sticky left-0 bg-white">{{ 'TEAM_MATCH.GROUP_A' | translate }} ↓ / {{ 'TEAM_MATCH.GROUP_B' | translate }} →</th>
+                <th class="text-left py-2 pl-3 pr-2 sticky left-0 bg-white whitespace-nowrap">A ↓ / B →</th>
                 @for (col of matrix().cols; track col.id) {
-                  <th class="py-2 px-2 font-semibold whitespace-nowrap">{{ label(col) }}</th>
+                  <th class="py-2 px-2 font-semibold whitespace-nowrap" [title]="label(col)">{{ col.teamName }}</th>
                 }
               </tr>
             </thead>
             <tbody>
               @for (row of matrix().rows; track row.id) {
                 <tr class="border-b border-gray-50 last:border-0">
-                  <td class="py-2 pl-3 pr-2 font-medium whitespace-nowrap sticky left-0 bg-white">{{ label(row) }}</td>
+                  <td class="py-2 pl-3 pr-2 font-medium whitespace-nowrap sticky left-0 bg-white" [title]="label(row)">{{ row.teamName }}</td>
                   @for (col of matrix().cols; track col.id) {
                     <td class="py-2 px-2 text-center">
                       @if (cell(row.id, col.id); as c) {

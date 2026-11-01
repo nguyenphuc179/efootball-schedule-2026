@@ -1,4 +1,4 @@
-import { ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, ErrorHandler, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideNativeDateAdapter } from '@angular/material/core';
@@ -26,6 +26,8 @@ import {
 import { environment } from '../environments/environment';
 import { routes } from './app.routes';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
+import { AppErrorHandler } from './core/error-handler';
+import { APP_VERSION } from './core/app-version';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -35,12 +37,15 @@ export const appConfig: ApplicationConfig = {
     provideNativeDateAdapter(),
     provideHttpClient(withInterceptors([loadingInterceptor])),
     provideCharts(withDefaultRegisterables()),
+    { provide: ErrorHandler, useClass: AppErrorHandler },
 
     // --- i18n (Vietnamese default, English optional) ------------------------------------
     provideTranslateService({
       lang: getInitialLang(),
       fallbackLang: 'vi',
-      loader: provideTranslateHttpLoader({ prefix: '/assets/i18n/', suffix: '.json' }),
+      // Versioned URL: a cached vi.json from the previous deploy would otherwise pair new code
+      // with old strings, and every newly added key would render as its raw name.
+      loader: provideTranslateHttpLoader({ prefix: '/assets/i18n/', suffix: `.json?v=${APP_VERSION}` }),
     }),
 
     // --- Firebase -----------------------------------------------------------------------

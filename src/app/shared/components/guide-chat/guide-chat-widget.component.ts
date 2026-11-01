@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, effect, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { GuideChatService } from '../../../core/services/guide-chat.service';
@@ -109,7 +109,10 @@ import { GuideChatService } from '../../../core/services/guide-chat.service';
     @if (!open()) {
       <button
         type="button"
-        class="fixed z-40 bottom-20 md:bottom-6 right-4 md:right-6 w-14 h-14 rounded-full bg-primary-600 text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform"
+        class="fixed z-40 bottom-20 md:bottom-6 right-4 md:right-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-primary-600 text-white shadow-xl flex items-center justify-center active:scale-95 transition-all duration-200"
+        [class.translate-y-24]="fabHidden()"
+        [class.opacity-0]="fabHidden()"
+        [class.pointer-events-none]="fabHidden()"
         (click)="open.set(true)"
         [attr.aria-label]="'GUIDE_CHAT.OPEN' | translate"
       >
@@ -123,6 +126,20 @@ export class GuideChatWidgetComponent {
 
   open = signal(false);
   draft = '';
+
+  /** Tucked away while scrolling down so the bubble doesn't sit on top of the content being read;
+   *  back as soon as the user scrolls up (or reaches the very top). */
+  fabHidden = signal(false);
+  private lastScrollY = 0;
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    const y = window.scrollY;
+    const delta = y - this.lastScrollY;
+    if (Math.abs(delta) < 8) return;
+    this.fabHidden.set(delta > 0 && y > 80);
+    this.lastScrollY = y;
+  }
 
   private scrollArea = viewChild<ElementRef<HTMLDivElement>>('scrollArea');
 

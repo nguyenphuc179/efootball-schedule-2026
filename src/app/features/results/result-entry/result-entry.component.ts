@@ -23,6 +23,7 @@ import { DEFAULT_TEAM_MATCH_RULES, TeamMatchRules, TournamentType, resolveTeamMa
 import { toSignal } from "@angular/core/rxjs-interop";
 import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 import { AppSelectComponent, AppSelectOption } from "../../../shared/components/app-select/app-select.component";
+import { roundLabel } from "../../../shared/utils/round-label.util";
 
 /**
  * One-handed result entry: large +/- steppers (no keyboard), thumb-reachable Save button.
@@ -52,14 +53,14 @@ import { AppSelectComponent, AppSelectOption } from "../../../shared/components/
         <app-loading-spinner [label]="'RESULT_ENTRY.LOADING' | translate" />
       } @else {
         <div class="flex-1 px-3 sm:px-4 py-6 sm:py-10 flex flex-col items-center gap-6">
-          @if (match()!.round) {
-            <div class="text-[11px] sm:text-xs font-bold uppercase tracking-[0.25em] text-gray-400">{{ match()!.round }}</div>
+          @if (roundText()) {
+            <div class="text-[11px] sm:text-xs font-bold uppercase tracking-[0.25em] text-gray-400">{{ roundText() }}</div>
           }
 
           <div class="w-full max-w-3xl grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-6">
           <!-- Home -->
           <div
-            class="card !p-3 sm:!p-6 flex flex-col items-center gap-2.5 sm:gap-3 overflow-hidden"
+            class="card !p-3 sm:!p-6 flex flex-col items-center gap-2.5 sm:gap-3 min-w-0"
             [style.background-image]="panelBg('home')"
           >
             @if (isTeamMatch() && teamGroup(homeTeam())) {
@@ -128,7 +129,7 @@ import { AppSelectComponent, AppSelectOption } from "../../../shared/components/
 
           <!-- Away -->
           <div
-            class="card !p-3 sm:!p-6 flex flex-col items-center gap-2.5 sm:gap-3 overflow-hidden"
+            class="card !p-3 sm:!p-6 flex flex-col items-center gap-2.5 sm:gap-3 min-w-0"
             [style.background-image]="panelBg('away')"
           >
             @if (isTeamMatch() && teamGroup(awayTeam())) {
@@ -267,6 +268,14 @@ export class ResultEntryComponent {
 
   private matchId = this.route.snapshot.paramMap.get("id")!;
   match = signal<Match | undefined>(undefined);
+
+  /** Team-match fixtures store the home team's name in `round` — that's no round label, so skip it. */
+  roundText(): string {
+    this.translate.currentLang();
+    const m = this.match();
+    if (!m || m.round === m.homeTeamName || m.round === m.awayTeamName) return '';
+    return roundLabel(m.round, this.translate);
+  }
   /** True once `load()` has resolved the match's two teams and found the signed-in user is
    *  neither an admin nor the manager of either one — the route itself only requires being
    *  signed in (see app.routes.ts), so this is what actually keeps the edit form away from

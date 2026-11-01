@@ -35,10 +35,16 @@ body {
   color: #0f1720;
 }
 
-/* Mobile-first: reserve space for the fixed bottom navigation + safe area */
+/* Mobile-first: reserve space for the fixed bottom navigation + the floating chat bubble above it
+   + safe area, so the last row of a page can always scroll clear of both */
 .app-content-area {
-  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  padding-bottom: calc(64px + 72px + env(safe-area-inset-bottom));
   min-height: 100dvh;
+}
+@media (min-width: 768px) {
+  .app-content-area {
+    padding-bottom: 96px;
+  }
 }
 
 /* Touch-friendly tap targets everywhere (44px minimum per Apple/Google HIG) */
@@ -47,18 +53,45 @@ button, a, .tap-target {
 }
 
 /* Horizontal-scroll table helper (used by standings alt-view) */
+.overflow-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+  &:disabled { opacity: 0.5; }
+}
+
+/* Horizontal-scroll edge shadows: a soft shade appears on whichever side still has content to
+   scroll to, and disappears once you reach that end. The `local` cover layers scroll with the
+   content and hide the `scroll` shade layers at the ends. `--scroll-cover` must match the
+   element's own background. */
+@mixin scroll-shadows {
+  background:
+    linear-gradient(to right, var(--scroll-cover) 30%, transparent) left center / 32px 100% no-repeat local,
+    linear-gradient(to left, var(--scroll-cover) 30%, transparent) right center / 32px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(100, 116, 139, 0.45), transparent) left center / 14px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(100, 116, 139, 0.45), transparent) right center / 14px 100% no-repeat scroll,
+    var(--scroll-cover);
+}
+
 .hscroll-table {
+  --scroll-cover: #fff;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
+  @include scroll-shadows;
 }
 
 /* Sticky tabs helper (tournament detail) */
 .sticky-tabs {
+  --scroll-cover: #fff;
   position: sticky;
   top: 0;
   z-index: 20;
-  background: #fff;
+  @include scroll-shadows;
 }
 
 /* Swipeable tab-panel container */
@@ -147,7 +180,8 @@ html.dark {
     border-color: #324150;
     &::placeholder { color: #7c8996; }
   }
-  .sticky-tabs { background: #0f1720; }
+  .sticky-tabs { --scroll-cover: #0f1720; }
+  .hscroll-table { --scroll-cover: #182430; }
 
   /* Angular Material dialogs (confirm / team form) */
   .mat-mdc-dialog-surface { background-color: #182430 !important; color: #e8ecef; }

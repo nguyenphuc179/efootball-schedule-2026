@@ -52,16 +52,16 @@ import { playerLabel } from '../../../shared/utils/player-label.util';
               <h3 class="text-sm font-extrabold uppercase tracking-wide text-gray-700">{{ group.name }}</h3>
             }
             <div class="hscroll-table card !p-0">
-              <table class="w-full text-sm min-w-[460px]">
+              <table class="w-full text-sm">
                 <thead class="text-gray-400 text-[11px] uppercase">
                   <tr class="border-b border-gray-100">
                     <th class="text-left py-2 pl-3 pr-1 w-9">#</th>
                     <th class="text-left py-2 px-1">{{ 'STANDINGS_VIEW.TEAM' | translate }}</th>
-                    <th class="py-2 px-2">{{ 'STANDINGS_VIEW.PLD' | translate }}</th>
-                    <th class="py-2 px-2 whitespace-nowrap">{{ 'STANDINGS_VIEW.W_D_L' | translate }}</th>
-                    <th class="py-2 px-2">+/-</th>
-                    <th class="py-2 px-2 text-gray-500 font-bold">{{ 'STANDINGS.PTS_ABBR' | translate }}</th>
-                    <th class="py-2 px-3 text-left">{{ 'STANDINGS_VIEW.FORM' | translate }}</th>
+                    <th class="py-2 px-1 sm:px-2">{{ 'STANDINGS_VIEW.PLD' | translate }}</th>
+                    <th class="py-2 px-1 sm:px-2 whitespace-nowrap">{{ 'STANDINGS_VIEW.W_D_L' | translate }}</th>
+                    <th class="py-2 px-1 sm:px-2">+/-</th>
+                    <th class="py-2 pl-1 pr-3 sm:px-2 text-gray-500 font-bold">{{ 'STANDINGS.PTS_ABBR' | translate }}</th>
+                    <th class="hidden sm:table-cell py-2 px-3 text-left">{{ 'STANDINGS_VIEW.FORM' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -73,7 +73,7 @@ import { playerLabel } from '../../../shared/utils/player-label.util';
                           [class]="group.qualifiers && row.position <= group.qualifiers ? 'bg-amber-100 text-amber-700' : 'text-gray-500'"
                         >{{ row.position }}</span>
                       </td>
-                      <td class="py-2 px-1">
+                      <td class="py-2 px-1 w-full max-w-0">
                         <div class="flex items-center gap-2 min-w-0">
                           @if (avatar(row).src; as src) {
                             <img [src]="src" [alt]="row.teamName" class="w-6 h-6 rounded-full object-cover shrink-0" width="24" height="24" />
@@ -87,16 +87,16 @@ import { playerLabel } from '../../../shared/utils/player-label.util';
                           <span class="font-medium truncate">{{ teamLabel(row) }}</span>
                         </div>
                       </td>
-                      <td class="py-2 px-2 text-center text-gray-600">{{ row.played }}</td>
-                      <td class="py-2 px-2 text-center whitespace-nowrap">{{ row.won }} - {{ row.drawn }} - {{ row.lost }}</td>
-                      <td class="py-2 px-2 text-center whitespace-nowrap">
-                        {{ row.goalsFor }}/{{ row.goalsAgainst }}
+                      <td class="py-2 px-1 sm:px-2 text-center text-gray-600">{{ row.played }}</td>
+                      <td class="py-2 px-1 sm:px-2 text-center whitespace-nowrap">{{ row.won }}-{{ row.drawn }}-{{ row.lost }}</td>
+                      <td class="py-2 px-1 sm:px-2 text-center whitespace-nowrap">
+                        <span class="hidden sm:inline">{{ row.goalsFor }}/{{ row.goalsAgainst }}</span>
                         <span [class]="row.goalDifference > 0 ? 'text-primary-600' : row.goalDifference < 0 ? 'text-accent-red' : 'text-gray-400'">
-                          ({{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }})
+                          <span class="hidden sm:inline">(</span>{{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }}<span class="hidden sm:inline">)</span>
                         </span>
                       </td>
-                      <td class="py-2 px-2 text-center font-extrabold">{{ row.points }}</td>
-                      <td class="py-2 px-3">
+                      <td class="py-2 pl-1 pr-3 sm:px-2 text-center font-extrabold">{{ row.points }}</td>
+                      <td class="hidden sm:table-cell py-2 px-3">
                         <div class="flex gap-1">
                           @for (f of row.form; track $index) {
                             <span

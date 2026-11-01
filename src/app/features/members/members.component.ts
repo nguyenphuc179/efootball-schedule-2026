@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostListener, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
@@ -33,15 +33,19 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
   template: `
     @if (auth.isAdmin()) {
       <div class="card">
-        <button type="button" class="w-full flex items-center justify-between gap-3 text-left" (click)="toggle()">
-          <span>
-            <span class="block font-bold text-sm">{{ 'MEMBERS.TITLE' | translate }}</span>
-            <span class="block text-xs text-gray-400">{{ 'MEMBERS.SUBTITLE' | translate: { count: members().length } }}</span>
-          </span>
-          <span class="material-icons text-gray-400 shrink-0">{{ expanded() ? 'expand_less' : 'expand_more' }}</span>
-        </button>
+        @if (page()) {
+          <p class="text-xs text-gray-400">{{ 'MEMBERS.SUBTITLE' | translate: { count: members().length } }}</p>
+        } @else {
+          <button type="button" class="w-full flex items-center justify-between gap-3 text-left" (click)="toggle()">
+            <span>
+              <span class="block font-bold text-sm">{{ 'MEMBERS.TITLE' | translate }}</span>
+              <span class="block text-xs text-gray-400">{{ 'MEMBERS.SUBTITLE' | translate: { count: members().length } }}</span>
+            </span>
+            <span class="material-icons text-gray-400 shrink-0">{{ expanded() ? 'expand_less' : 'expand_more' }}</span>
+          </button>
+        }
 
-        @if (expanded()) {
+        @if (page() || expanded()) {
           <div class="mt-3">
             @if (members().length === 0) {
               <p class="text-sm text-gray-400">{{ 'MEMBERS.EMPTY' | translate }}</p>
@@ -273,6 +277,9 @@ export class MembersComponent {
   /** Which member's name is being edited inline, plus the seeded draft value. */
   editingUid = signal<string | null>(null);
   nameDraft = signal('');
+
+  /** Rendered as the whole `/members` page: always expanded, no collapse header. */
+  page = input(false);
 
   private readonly openKey = 'pitchpro-members-open';
   expanded = signal<boolean>(this.readOpen());

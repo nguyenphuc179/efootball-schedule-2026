@@ -121,7 +121,7 @@ export class AdminOverviewComponent {
     plugins: {
       legend: {
         position: "bottom",
-        labels: { boxWidth: 12, font: { size: 11 } },
+        labels: { boxWidth: 12, font: { size: 11 }, color: "#94a3b8" },
       },
     },
   };
@@ -143,7 +143,8 @@ export class AdminOverviewComponent {
       datasets: [
         {
           data: [this.completed().length, this.upcoming().length],
-          backgroundColor: ["#0fa863", "#e5e7eb"],
+          backgroundColor: ["#0fa863", "#64748b"],
+          borderWidth: 0,
         },
       ],
     };

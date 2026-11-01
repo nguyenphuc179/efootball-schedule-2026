@@ -9,6 +9,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { TeamService } from '../teams/team.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { OverflowMenuComponent } from '../../shared/components/overflow-menu/overflow-menu.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { AppSelectComponent, AppSelectOption } from '../../shared/components/app-select/app-select.component';
 import { ACTIVITY_MENUS, menuInfoForPath } from '../../shared/utils/activity-menu.util';
@@ -83,13 +84,13 @@ const ICONS: Record<ActivityAction, string> = {
 @Component({
   selector: 'app-activity-log',
   standalone: true,
-  imports: [EmptyStateComponent, AppSelectComponent, TranslatePipe],
+  imports: [EmptyStateComponent, AppSelectComponent, OverflowMenuComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="app-content-area px-4 pt-4 max-w-2xl mx-auto">
       <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
         <h1 class="text-xl font-extrabold">{{ (auth.isAdmin() ? 'ACTIVITY_LOG.TITLE' : 'ACTIVITY_LOG.MY_TITLE') | translate }}</h1>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1">
           <button
             type="button"
             class="text-xs font-semibold text-primary-600 disabled:opacity-50 shrink-0"
@@ -99,14 +100,17 @@ const ICONS: Record<ActivityAction, string> = {
             {{ 'ACTIVITY_LOG.MARK_ALL_SEEN' | translate }}
           </button>
           @if (auth.isAdmin()) {
-            <button
-              type="button"
-              class="text-xs font-semibold text-accent-red disabled:opacity-50 shrink-0"
-              [disabled]="deleting() || logs().length === 0"
-              (click)="deleteAll()"
-            >
-              {{ (hasActiveFilter() ? 'ACTIVITY_LOG.DELETE_FILTERED' : 'ACTIVITY_LOG.DELETE_ALL') | translate }}
-            </button>
+            <app-overflow-menu [label]="'COMMON.MORE_ACTIONS' | translate" align="left">
+              <button
+                type="button"
+                class="overflow-menu-item text-accent-red font-semibold hover:bg-gray-50"
+                [disabled]="deleting() || logs().length === 0"
+                (click)="deleteAll()"
+              >
+                <span class="material-icons text-[18px]">delete_sweep</span>
+                {{ (hasActiveFilter() ? 'ACTIVITY_LOG.DELETE_FILTERED' : 'ACTIVITY_LOG.DELETE_ALL') | translate }}
+              </button>
+            </app-overflow-menu>
           }
         </div>
       </div>

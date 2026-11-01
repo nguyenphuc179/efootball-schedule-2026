@@ -323,6 +323,8 @@ export function renderStandingsPng(title: string, tables: StandingsTable[]): Pro
 export interface RosterMember {
   name: string;
   sub: string;
+  /** Football clubs assigned to this member (shown as a third line when present). */
+  clubs?: string[];
   avatar: { src: string | null; bg: string; fg: string; initials: string };
 }
 
@@ -354,7 +356,8 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
 /** Draws the roster (Team A | Team B members with their avatars) as a dark, chat-friendly PNG. */
 export async function renderRosterPng(title: string, columns: RosterColumn[]): Promise<Blob | null> {
   const width = 1100;
-  const rowH = 70;
+  const hasClubs = columns.some((c) => c.members.some((m) => (m.clubs?.length ?? 0) > 0));
+  const rowH = hasClubs ? 92 : 70;
   const headH = 84;
   const colHeadH = 56;
   const pad = 24;
@@ -444,11 +447,22 @@ export async function renderRosterPng(title: string, columns: RosterColumn[]): P
       ctx.textAlign = 'left';
       ctx.fillStyle = '#ffffff';
       ctx.font = '700 19px Inter, Arial, sans-serif';
-      ctx.fillText(m.name, x + 84, cy - (m.sub ? 10 : 0));
+      const hasMemberClubs = (m.clubs?.length ?? 0) > 0;
+      const nameY = hasMemberClubs ? cy - 20 : cy - (m.sub ? 10 : 0);
+      ctx.fillText(m.name, x + 84, nameY);
       if (m.sub) {
         ctx.fillStyle = '#9aa7b8';
         ctx.font = '500 15px Inter, Arial, sans-serif';
-        ctx.fillText(m.sub, x + 84, cy + 13);
+        ctx.fillText(m.sub, x + 84, hasMemberClubs ? cy + 1 : cy + 13);
+      }
+      if (hasMemberClubs) {
+        const maxW = colW - 84 - 16;
+        let text = m.clubs!.join(' \u00B7 ');
+        ctx.fillStyle = '#34d27b';
+        ctx.font = '600 14px Inter, Arial, sans-serif';
+        while (text.length > 3 && ctx.measureText(text).width > maxW) text = text.slice(0, -2);
+        if (text !== m.clubs!.join(' \u00B7 ')) text = text.trimEnd() + '\u2026';
+        ctx.fillText(text, x + 84, cy + 22);
       }
     });
   });

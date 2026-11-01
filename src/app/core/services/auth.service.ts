@@ -23,8 +23,14 @@ export class AuthService {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
 
+  /** When the signed-in user last changed (sign-in / sign-out), in ms. */
+  lastAuthChangeAt = 0;
+
   private firebaseUser$ = new Observable<User | null>((subscriber) =>
-    onAuthStateChanged(this.auth, (user) => subscriber.next(user))
+    onAuthStateChanged(this.auth, (user) => {
+      this.lastAuthChangeAt = Date.now();
+      subscriber.next(user);
+    })
   );
 
   readonly firebaseUser = toSignal(this.firebaseUser$, { initialValue: undefined });
@@ -40,6 +46,11 @@ export class AuthService {
   readonly appUser = toSignal(this.appUser$, { initialValue: undefined });
 
   readonly isAuthResolved = computed(() => this.firebaseUser() !== undefined);
+  /** Auth resolved AND, when signed in, the `users/{uid}` profile (which carries the role) has
+   *  arrived — role checks like `isAdmin()` are only meaningful after this. */
+  readonly isProfileResolved = computed(
+    () => this.firebaseUser() === null || (!!this.firebaseUser() && this.appUser() !== undefined)
+  );
   readonly isSignedIn = computed(() => !!this.firebaseUser());
   readonly isAdmin = computed(() => this.appUser()?.role === 'admin' && !this.appUser()?.disabled);
   readonly displayName = computed(

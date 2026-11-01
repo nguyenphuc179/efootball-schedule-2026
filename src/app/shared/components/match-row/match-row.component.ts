@@ -4,6 +4,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { Match, matchScoreText, matchWinner } from '../../../models/match.model';
 import { initialsAvatar } from '../../utils/avatar.util';
 import { playerLabel } from '../../utils/player-label.util';
+import { roundLabel } from '../../utils/round-label.util';
 import { TeamAvatar } from '../../utils/team-avatar.util';
 
 /**
@@ -17,6 +18,40 @@ import { TeamAvatar } from '../../utils/team-avatar.util';
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (opponentSide(); as side) {
+      <a
+        [routerLink]="showResultLink() ? ['/matches', match().id, 'result'] : null"
+        class="flex items-center gap-3 bg-white rounded-lg border border-gray-100 px-3 py-2.5 no-underline text-inherit"
+      >
+        <span class="text-xs font-bold text-gray-400 shrink-0">VS</span>
+        @if (sideAvatarOf(side).src; as src) {
+          <img [src]="src" alt="" class="w-8 h-8 rounded-full object-cover shrink-0" referrerpolicy="no-referrer" (error)="markBad(side)" />
+        } @else {
+          <span
+            class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+            [style.background-color]="sideAvatarOf(side).bg"
+            [style.color]="sideAvatarOf(side).fg"
+          >{{ sideAvatarOf(side).initials }}</span>
+        }
+        <div class="flex-1 min-w-0 leading-tight">
+          <div class="text-sm font-semibold truncate">{{ sideLabel(side) }}</div>
+          @if (compactSubtitle()) {
+            <div class="text-[11px] text-gray-400 truncate">{{ compactSubtitle() }}</div>
+          }
+          @if (compactClubs(); as c) {
+            <div class="flex items-center gap-1 mt-0.5 text-[11px] font-bold min-w-0">
+              <span class="inline-flex items-center gap-0.5 rounded px-1 bg-primary-50 text-primary-700 truncate"><span class="material-icons text-[11px]">shield</span>{{ c.own || '?' }}</span>
+              <span class="text-gray-400 shrink-0">vs</span>
+              <span class="inline-flex items-center gap-0.5 rounded px-1 bg-gray-100 text-gray-600 truncate"><span class="material-icons text-[11px]">shield</span>{{ c.opp || '?' }}</span>
+            </div>
+          }
+        </div>
+        <span class="shrink-0 text-sm font-extrabold tabular-nums whitespace-nowrap" [class]="scoreClass()">{{ ownScoreText() }}</span>
+        @if (showResultLink()) {
+          <span class="material-icons text-[18px] text-gray-400 shrink-0">{{ played() ? 'edit' : 'add_circle_outline' }}</span>
+        }
+      </a>
+    } @else {
     <a
       [routerLink]="showResultLink() ? ['/matches', match().id, 'result'] : null"
       class="flex items-center gap-2 sm:gap-3 bg-white rounded-lg border border-gray-100 px-2.5 sm:px-3 py-2.5 no-underline text-inherit"
@@ -80,6 +115,7 @@ import { TeamAvatar } from '../../utils/team-avatar.util';
         <span class="material-icons text-[18px] text-gray-400 shrink-0">{{ played() ? 'edit' : 'add_circle_outline' }}</span>
       }
     </a>
+    }
   `,
 })
 export class MatchRowComponent {
@@ -93,11 +129,60 @@ export class MatchRowComponent {
   /** teamId -> resolved avatar (logo / login photo / portrait / initials). Falls back to the
    *  match's denormalised crest, then initials from the team name, when a team isn't listed. */
   readonly avatars = input<Record<string, TeamAvatar>>({});
+  /** The viewer's own team ids. When one side of the match is in here, the row collapses to just
+   *  the opponent — repeating the viewer's own name on every row adds nothing. */
+  readonly ownTeamIds = input<ReadonlySet<string> | null>(null);
+  /** Extra context for the collapsed row's second line, e.g. the tournament name. */
+  readonly context = input('');
 
   private translate = inject(TranslateService);
 
   homeBad = signal(false);
   awayBad = signal(false);
+
+  opponentSide = computed<'home' | 'away' | null>(() => {
+    const own = this.ownTeamIds();
+    if (!own) return null;
+    const m = this.match();
+    if (own.has(m.homeTeamId) && !own.has(m.awayTeamId)) return 'away';
+    if (own.has(m.awayTeamId) && !own.has(m.homeTeamId)) return 'home';
+    return null;
+  });
+
+  /** Team-match fixtures store the home team's name in `round`, which is no round label at all. */
+  compactSubtitle = computed(() => {
+    const m = this.match();
+    const roundIsTeamName = m.round === m.homeTeamName || m.round === m.awayTeamName;
+    return [this.context(), roundIsTeamName ? '' : this.roundLabel()].filter(Boolean).join(' · ');
+  });
+
+  /** Clubs picked for this match (team_match), own side first; null when neither side has one. */
+  compactClubs = computed(() => {
+    const m = this.match();
+    if (!m.homeClub && !m.awayClub) return null;
+    return this.opponentSide() === 'away'
+      ? { own: m.homeClub, opp: m.awayClub }
+      : { own: m.awayClub, opp: m.homeClub };
+  });
+
+  /** Score from the viewer's side (own goals first), so a win always reads like a win. */
+  ownScoreText = computed(() => {
+    const m = this.match();
+    if (!this.played()) return '- : -';
+    if (this.opponentSide() === 'away') return matchScoreText(m);
+    const base = `${m.awayScore} - ${m.homeScore}`;
+    return m.homeScore === m.awayScore && m.penaltyHome != null && m.penaltyAway != null
+      ? `${base} (${m.penaltyAway}-${m.penaltyHome} pen)`
+      : base;
+  });
+
+  sideAvatarOf(side: 'home' | 'away'): TeamAvatar {
+    return side === 'home' ? this.homeAvatar() : this.awayAvatar();
+  }
+
+  markBad(side: 'home' | 'away'): void {
+    (side === 'home' ? this.homeBad : this.awayBad).set(true);
+  }
 
   /** "Club" or "Club_Manager" for the given side (placeholder slots stay "W/L …"). */
   sideLabel(side: 'home' | 'away'): string {
@@ -118,31 +203,7 @@ export class MatchRowComponent {
 
   roundLabel = computed(() => {
     this.translate.currentLang();
-    const round = this.match().round;
-    const i = round.lastIndexOf(' - ');
-    if (i >= 0) {
-      // "Group A - Round 1" -> "Round 1" (the group name prefix is stripped, not translated)
-      const tail = round.slice(i + 3);
-      const n = /^Round (\d+)$/.exec(tail)?.[1];
-      return n ? this.translate.instant('MATCH.ROUND_N', { n }) : tail;
-    }
-    // Knockout round: "Quarter Final 2" -> "Quarter-final #2", "Final" -> "Final".
-    const base = round.replace(/ \d+$/, '');
-    const num = /(\d+)$/.exec(round)?.[1];
-    const roundOf = /^Round of (\d+)$/.exec(base);
-    const name =
-      base === 'Quarter Final'
-        ? this.translate.instant('MATCH.QUARTER_FINAL')
-        : base === 'Semi Final'
-          ? this.translate.instant('MATCH.SEMI_FINAL')
-          : base === 'Third Place'
-            ? this.translate.instant('MATCH.THIRD_PLACE')
-            : base === 'Final'
-              ? this.translate.instant('MATCH.FINAL')
-              : roundOf
-                ? this.translate.instant('MATCH.ROUND_OF', { n: roundOf[1] })
-                : base;
-    return num && base !== 'Final' ? `${name} #${num}` : name;
+    return roundLabel(this.match().round, this.translate);
   });
 
   /** Short chip shown on mobile where the full round label doesn't fit. */

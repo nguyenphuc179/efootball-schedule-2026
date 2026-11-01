@@ -54,7 +54,7 @@ export class RosterExportComponent {
 
   private columns = computed((): RosterColumn[] => {
     this.translate.currentLang();
-    const member = (t: Team) => ({ name: t.teamName, sub: t.manager, avatar: this.teamAvatars.resolve(t) });
+    const member = (t: Team) => ({ name: t.teamName, sub: t.manager, clubs: t.allowedClubs ?? [], avatar: this.teamAvatars.resolve(t) });
     const cols: RosterColumn[] = [
       { label: this.translate.instant('TEAM_MATCH.GROUP_A'), color: '#3b82f6', members: this.teams().filter((t) => teamGroup(t) === 'A').map(member) },
       { label: this.translate.instant('TEAM_MATCH.GROUP_B'), color: '#ec4899', members: this.teams().filter((t) => teamGroup(t) === 'B').map(member) },

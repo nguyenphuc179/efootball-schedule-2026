@@ -2,6 +2,11 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, EventEmitte
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
 
+const PANEL_MAX_HEIGHT = 288;
+const MIN_PANEL_HEIGHT = 140;
+/** Clearance kept from the viewport edge — enough for a sticky footer / the mobile bottom nav. */
+const VIEWPORT_MARGIN = 88;
+
 export interface AppSelectOption {
   value: string;
   label: string;
@@ -38,7 +43,7 @@ export interface AppSelectOption {
       </button>
 
       @if (open()) {
-        <div [class]="panelClass()">
+        <div [class]="panelClass()" [style.max-height.px]="panelMaxHeight()">
           @for (opt of options(); track opt.value) {
             <button
               type="button"
@@ -119,15 +124,33 @@ export class AppSelectComponent {
         : 'input-field flex items-center justify-between gap-2 text-left w-full disabled:opacity-50'
   );
 
-  panelClass = computed(() =>
-    this.compact()
-      ? 'absolute left-0 z-30 mt-1 min-w-full w-max max-w-[90vw] max-h-72 overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-100 py-1'
-      : 'absolute left-0 right-0 z-30 mt-1 max-h-72 overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-100 py-1'
-  );
+  /** Opens upward when there isn't room below the trigger (e.g. near a sticky footer / bottom nav). */
+  private dropUp = signal(false);
+  panelMaxHeight = signal(PANEL_MAX_HEIGHT);
+
+  panelClass = computed(() => {
+    const placement = this.dropUp() ? 'bottom-full mb-1' : 'top-full mt-1';
+    return this.compact()
+      ? `absolute left-0 z-30 ${placement} min-w-full w-max max-w-[90vw] overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-100 py-1`
+      : `absolute left-0 right-0 z-30 ${placement} overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-100 py-1`;
+  });
 
   toggle(): void {
     if (this.disabled()) return;
+    if (!this.open()) this.placePanel();
     this.open.update((v) => !v);
+  }
+
+  /** Picks the side with more room and caps the panel to the space actually visible there, so the
+   *  last option can always be scrolled to instead of ending up under the viewport edge. */
+  private placePanel(): void {
+    const rect = this.wrap()?.nativeElement.getBoundingClientRect();
+    if (!rect) return;
+    const below = window.innerHeight - rect.bottom - VIEWPORT_MARGIN;
+    const above = rect.top - VIEWPORT_MARGIN;
+    const up = below < PANEL_MAX_HEIGHT && above > below;
+    this.dropUp.set(up);
+    this.panelMaxHeight.set(Math.max(MIN_PANEL_HEIGHT, Math.min(PANEL_MAX_HEIGHT, up ? above : below)));
   }
 
   select(v: string): void {

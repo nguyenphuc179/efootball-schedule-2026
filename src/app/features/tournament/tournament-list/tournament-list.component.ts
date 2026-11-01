@@ -41,7 +41,20 @@ type FilterTab = 'all' | TournamentStatus;
         }
       </div>
 
-      @if (filtered().length === 0) {
+      @if (!loaded()) {
+        <div class="flex flex-col gap-3 mt-2" aria-busy="true">
+          @for (i of [1, 2, 3]; track i) {
+            <div class="card flex gap-3 animate-pulse">
+              <div class="w-16 h-16 rounded-xl bg-surface-muted shrink-0"></div>
+              <div class="flex-1 flex flex-col gap-2 py-1">
+                <div class="h-4 w-3/4 rounded bg-surface-muted"></div>
+                <div class="h-3 w-1/3 rounded bg-surface-muted"></div>
+                <div class="h-5 w-1/2 rounded-full bg-surface-muted"></div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (filtered().length === 0) {
         <app-empty-state icon="emoji_events" [title]="'TOURNAMENT_LIST.EMPTY_TITLE' | translate" [subtitle]="'TOURNAMENT_LIST.EMPTY_SUBTITLE' | translate" />
       } @else {
         <div class="flex flex-col gap-3 mt-2">
@@ -64,13 +77,13 @@ type FilterTab = 'all' | TournamentStatus;
                 <div class="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
                   <span class="material-icons text-[14px]">place</span>{{ t.location }}
                 </div>
-                <div class="flex items-center gap-2 mt-1.5 w-full">
-                  <span class="badge inline-flex items-center gap-1" [class]="statusClasses(t.status)">
+                <div class="flex flex-wrap items-center gap-1.5 mt-1.5 w-full">
+                  <span class="badge inline-flex items-center gap-1 whitespace-nowrap" [class]="statusClasses(t.status)">
                     @if (t.status === 'completed') { <span class="material-icons text-[12px]">flag</span> }
                     {{ statusLabels[t.status] | translate }}
                   </span>
                   <span
-                    class="badge ml-auto text-white font-bold whitespace-nowrap"
+                    class="badge text-white font-bold max-w-full truncate"
                     style="background-color: #3b82f6"
                   >{{ 'TOURNAMENT_LIST.FORMAT_LABEL' | translate }}: {{ typeLabels[t.type] | translate }}</span>
                 </div>
@@ -96,6 +109,7 @@ export class TournamentListComponent {
   ];
 
   tournaments = this.tournamentService.all;
+  loaded = this.tournamentService.loaded;
 
   filtered = computed(() => {
     const tab = this.activeTab();

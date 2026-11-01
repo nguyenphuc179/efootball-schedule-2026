@@ -44,7 +44,8 @@
     "YES": "Yes",
     "NO": "No",
     "LINK_COPIED": "Link copied!",
-    "SHARE_MANUAL_HINT": "Couldn't copy automatically — tap the box above and copy it manually."
+    "SHARE_MANUAL_HINT": "Couldn't copy automatically — tap the box above and copy it manually.",
+    "MORE_ACTIONS": "More actions"
   },
   "USER_MENU": {
     "SIGN_IN": "Sign In",
@@ -382,7 +383,9 @@
     "GOALS_PER_ROUND": "Goals per Round",
     "HOME_WINS": "Home Wins",
     "AWAY_WINS": "Away Wins",
-    "DRAWS": "Draws"
+    "DRAWS": "Draws",
+    "NO_RESULTS_TITLE": "No results yet",
+    "NO_RESULTS_SUBTITLE": "Charts appear once the first match result is entered."
   },
   "RANKING": {
     "EMPTY_TITLE": "No ranking yet",
@@ -440,7 +443,10 @@
     "ROLE_VIEWER": "viewer",
     "SIGN_OUT": "Sign Out",
     "UPLOAD_AVATAR": "Upload avatar",
-    "AVATAR_UPLOAD_FAILED": "Couldn't process that image — try another one."
+    "AVATAR_UPLOAD_FAILED": "Couldn't process that image — try another one.",
+    "MATCH_HISTORY": "Match history",
+    "NO_HISTORY": "You haven't played any matches yet.",
+    "SHOW_MORE": "Show more"
   },
   "MEMBERS": {
     "TITLE": "Members",
@@ -588,7 +594,10 @@
     "TOTAL_VOTES": "Total votes: {{count}}",
     "VOTE_FAILED": "Could not submit your vote — try again.",
     "DELETE_CONFIRM_TITLE": "Delete poll?",
-    "DELETE_CONFIRM_MESSAGE": "\"{{title}}\" and all of its votes will be permanently deleted. This cannot be undone."
+    "DELETE_CONFIRM_MESSAGE": "\"{{title}}\" and all of its votes will be permanently deleted. This cannot be undone.",
+    "VOTED": "Voted",
+    "NOT_VOTED": "Not voted yet",
+    "VOTE_COUNT": "{{count}} vote(s)"
   },
   "POLL_FORM": {
     "CREATE_TITLE": "Create poll",
@@ -630,5 +639,25 @@
     "AFFECTS": "Affects {{count}} member(s)",
     "MERGE": "Merge with existing list",
     "MERGE_HINT": "Unticked, these teams' current lists are fully replaced."
+  },
+  "ERRORS": {
+    "SAVE_FAILED": "Couldn't save your changes — please try again.",
+    "PERMISSION_DENIED": "You don't have permission to do that.",
+    "UNAUTHENTICATED": "Your session has expired — please sign in again.",
+    "UNAVAILABLE": "Can't reach the server — check your connection and try again.",
+    "QUOTA": "The service is busy right now — try again in a few minutes.",
+    "NOT_FOUND": "This item no longer exists (it may have been deleted)."
+  },
+  "TOURNAMENT_OVERVIEW": {
+    "CHAMPION": "Champion",
+    "PROGRESS": "Progress",
+    "MATCHES_PLAYED": "matches played",
+    "NO_FIXTURES": "No fixtures yet.",
+    "GOALS": "Goals",
+    "LEADERS": "Leaders",
+    "GROUP_LEADERS": "Group leaders",
+    "SEE_STANDINGS": "Standings",
+    "NEXT_MATCHES": "Next matches",
+    "SEE_ALL": "See all"
   }
 }

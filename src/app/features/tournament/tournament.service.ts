@@ -9,7 +9,7 @@ import {
   where,
   writeBatch,
 } from '@angular/fire/firestore';
-import { map } from 'rxjs';
+import { map, shareReplay } from 'rxjs';
 import { FirestoreBaseService } from '../../core/services/firestore-base.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivityLogService } from '../../core/services/activity-log.service';
@@ -25,13 +25,18 @@ export class TournamentService {
   private auth = inject(AuthService);
   private activityLog = inject(ActivityLogService);
 
+  private all$ = this.fs
+    .streamCollection<Tournament>(PATH, orderBy('startDate', 'desc'))
+    .pipe(
+      map((list) => list.map((t) => ({ ...t, status: normalizeStatus(t.status) }))),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+
   /** Realtime list, newest start date first — powers the Tournaments tab and Home's featured rail. */
-  readonly all = toSignal(
-    this.fs
-      .streamCollection<Tournament>(PATH, orderBy('startDate', 'desc'))
-      .pipe(map((list) => list.map((t) => ({ ...t, status: normalizeStatus(t.status) })))),
-    { initialValue: [] as Tournament[] }
-  );
+  readonly all = toSignal(this.all$, { initialValue: [] as Tournament[] });
+
+  /** False until the first snapshot arrives — lets a list tell "still loading" from "empty". */
+  readonly loaded = toSignal(this.all$.pipe(map(() => true)), { initialValue: false });
 
   streamOne(id: string) {
     return this.fs

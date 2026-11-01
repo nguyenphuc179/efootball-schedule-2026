@@ -26,7 +26,10 @@ import { FootballClubStatsComponent } from '../team-match/football-club-stats.co
 import { HeadToHeadComponent } from '../team-match/head-to-head.component';
 import { StandingsExportComponent } from '../team-match/standings-export.component';
 import { SwipeDirective } from '../../../shared/directives/swipe.directive';
-import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_TYPE_LABELS, TournamentStatus } from '../../../models/tournament.model';
+import { OverflowMenuComponent } from '../../../shared/components/overflow-menu/overflow-menu.component';
+import { dateLocale } from '../../../core/services/language.service';
+import { TournamentOverviewComponent } from '../tournament-overview/tournament-overview.component';
+import { TOURNAMENT_TYPE_LABELS } from '../../../models/tournament.model';
 import { Match } from '../../../models/match.model';
 
 type TabKey =
@@ -63,6 +66,8 @@ type TabKey =
     StatisticsComponent,
     TournamentPermissionsComponent,
     SwipeDirective,
+    OverflowMenuComponent,
+    TournamentOverviewComponent,
     TranslatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -120,28 +125,31 @@ type TabKey =
                 <span class="material-icons text-[16px]">emoji_events</span> {{ isSavingStatus() ? '…' : ('TOURNAMENT_DETAIL.END' | translate) }}
               </button>
             }
-            @if (matches().length > 0) {
-              <button
-                class="w-8 h-8 flex items-center justify-center text-gray-400 disabled:opacity-40"
-                [disabled]="isResetting()"
-                (click)="resetMatches()"
-                [attr.aria-label]="'TOURNAMENT_DETAIL.RESET' | translate"
-                [title]="'TOURNAMENT_DETAIL.RESET' | translate"
-              >
-                <span class="material-icons text-[18px]">{{ isResetting() ? 'hourglass_top' : 'restart_alt' }}</span>
-              </button>
-            }
-            <a [routerLink]="['/tournaments', tournament()!.id, 'edit']" class="w-8 h-8 flex items-center justify-center text-gray-400">
+            <a
+              [routerLink]="['/tournaments', tournament()!.id, 'edit']"
+              class="w-8 h-8 flex items-center justify-center text-gray-400"
+              [attr.aria-label]="'COMMON.EDIT' | translate"
+              [title]="'COMMON.EDIT' | translate"
+            >
               <span class="material-icons text-[18px]">edit</span>
             </a>
-            <button
-              class="w-8 h-8 flex items-center justify-center text-accent-red disabled:opacity-40"
-              [disabled]="isDeleting()"
-              (click)="deleteTournament()"
-              [attr.aria-label]="'TOURNAMENT_DETAIL.DELETE_TOURNAMENT' | translate"
-            >
-              <span class="material-icons text-[18px]">delete_outline</span>
-            </button>
+            <app-overflow-menu [label]="'COMMON.MORE_ACTIONS' | translate">
+              @if (matches().length > 0) {
+                <button type="button" class="overflow-menu-item hover:bg-gray-50" [disabled]="isResetting()" (click)="resetMatches()">
+                  <span class="material-icons text-[18px] text-gray-500">{{ isResetting() ? 'hourglass_top' : 'restart_alt' }}</span>
+                  {{ 'TOURNAMENT_DETAIL.RESET' | translate }}
+                </button>
+              }
+              <button
+                type="button"
+                class="overflow-menu-item hover:bg-gray-50 text-accent-red font-semibold"
+                [disabled]="isDeleting()"
+                (click)="deleteTournament()"
+              >
+                <span class="material-icons text-[18px]">delete_outline</span>
+                {{ 'TOURNAMENT_DETAIL.DELETE_TOURNAMENT' | translate }}
+              </button>
+            </app-overflow-menu>
           }
         </div>
 
@@ -186,14 +194,7 @@ type TabKey =
         <div class="swipe-panel p-4" appSwipe (swipeLeft)="nextTab()" (swipeRight)="prevTab()">
           @switch (visibleTab()) {
             @case ('overview') {
-              <div class="card">
-                <h3 class="font-bold mb-2">{{ 'TOURNAMENT_DETAIL.ABOUT' | translate }}</h3>
-                <p class="text-sm text-gray-600 whitespace-pre-line">{{ tournament()!.description || ('TOURNAMENT_DETAIL.NO_DESCRIPTION' | translate) }}</p>
-                <div class="grid grid-cols-2 gap-3 mt-4 text-sm">
-                  <div><span class="text-gray-400">{{ 'ADMIN_OVERVIEW.TEAMS' | translate }}</span><div class="font-semibold">{{ tournament()!.numberOfTeams }}</div></div>
-                  <div><span class="text-gray-400">{{ 'TOURNAMENT_DETAIL.STATUS' | translate }}</span><div class="mt-0.5"><span class="badge" [class]="statusClasses(tournament()!.status)">{{ statusLabels[tournament()!.status] | translate }}</span></div></div>
-                </div>
-              </div>
+              <app-tournament-overview [tournament]="tournament()!" [matches]="matches()" (goToTab)="openTab($event)" />
             }
             @case ('teams') {
               <app-team-list [tournamentId]="tournament()!.id" [maxTeams]="tournament()!.numberOfTeams" [tournamentType]="tournament()!.type" />
@@ -270,12 +271,6 @@ export class TournamentDetailComponent {
   private translate = inject(TranslateService);
   auth = inject(AuthService);
   typeLabels = TOURNAMENT_TYPE_LABELS;
-  statusLabels = TOURNAMENT_STATUS_LABELS;
-
-  /** Same orange/gray badge classes as the tournament list, for consistency. */
-  statusClasses(status: TournamentStatus): string {
-    return status === 'completed' ? 'bg-accent-red text-white' : 'bg-accent-amber text-white';
-  }
 
   /** True for admin OR the one manager an admin designated (see "Phân quyền" tab) to click every
    *  Generate button themselves — for visible transparency around the fixture/bracket draw. Passed
@@ -360,9 +355,16 @@ export class TournamentDetailComponent {
   dateRange = computed(() => {
     const t = this.tournament();
     if (!t) return '';
-    const fmt = (ms: number) => new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const locale = dateLocale(this.translate.currentLang());
+    const fmt = (ms: number) => new Date(ms).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
     return `${fmt(t.startDate)} – ${fmt(t.endDate)}`;
   });
+
+  /** Tab switch requested by a child (e.g. Overview's "See standings"); ignored if this
+   *  tournament type has no such tab. */
+  openTab(key: string): void {
+    if (this.tabs().some((t) => t.key === key)) this.activeTab.set(key as TabKey);
+  }
 
   nextTab(): void {
     const order = this.tabs().map((t) => t.key);

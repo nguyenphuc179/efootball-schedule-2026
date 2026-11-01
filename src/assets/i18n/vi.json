@@ -44,7 +44,8 @@
     "YES": "Có",
     "NO": "Không",
     "LINK_COPIED": "Đã copy link!",
-    "SHARE_MANUAL_HINT": "Không tự động copy được — chạm vào ô trên rồi copy thủ công."
+    "SHARE_MANUAL_HINT": "Không tự động copy được — chạm vào ô trên rồi copy thủ công.",
+    "MORE_ACTIONS": "Thêm tuỳ chọn"
   },
   "USER_MENU": {
     "SIGN_IN": "Đăng nhập",
@@ -382,7 +383,9 @@
     "GOALS_PER_ROUND": "Bàn thắng theo vòng",
     "HOME_WINS": "Chủ thắng",
     "AWAY_WINS": "Khách thắng",
-    "DRAWS": "Hòa"
+    "DRAWS": "Hòa",
+    "NO_RESULTS_TITLE": "Chưa có kết quả nào",
+    "NO_RESULTS_SUBTITLE": "Biểu đồ sẽ hiện khi có trận đấu đầu tiên được nhập kết quả."
   },
   "RANKING": {
     "EMPTY_TITLE": "Chưa có xếp hạng",
@@ -440,7 +443,10 @@
     "ROLE_VIEWER": "người xem",
     "SIGN_OUT": "Đăng xuất",
     "UPLOAD_AVATAR": "Tải ảnh đại diện",
-    "AVATAR_UPLOAD_FAILED": "Không thể xử lý ảnh này — thử ảnh khác."
+    "AVATAR_UPLOAD_FAILED": "Không thể xử lý ảnh này — thử ảnh khác.",
+    "MATCH_HISTORY": "Lịch sử thi đấu",
+    "NO_HISTORY": "Bạn chưa đá trận nào.",
+    "SHOW_MORE": "Xem thêm"
   },
   "MEMBERS": {
     "TITLE": "Thành viên",
@@ -588,7 +594,10 @@
     "TOTAL_VOTES": "Tổng số lượt bình chọn: {{count}}",
     "VOTE_FAILED": "Không thể gửi bình chọn — thử lại.",
     "DELETE_CONFIRM_TITLE": "Xóa bình chọn?",
-    "DELETE_CONFIRM_MESSAGE": "\"{{title}}\" sẽ bị xóa vĩnh viễn cùng toàn bộ kết quả. Không thể hoàn tác."
+    "DELETE_CONFIRM_MESSAGE": "\"{{title}}\" sẽ bị xóa vĩnh viễn cùng toàn bộ kết quả. Không thể hoàn tác.",
+    "VOTED": "Đã bình chọn",
+    "NOT_VOTED": "Chưa bình chọn",
+    "VOTE_COUNT": "{{count}} lượt bình chọn"
   },
   "POLL_FORM": {
     "CREATE_TITLE": "Tạo bình chọn",
@@ -630,5 +639,25 @@
     "AFFECTS": "Ảnh hưởng {{count}} thành viên",
     "MERGE": "Gộp với danh sách hiện có",
     "MERGE_HINT": "Không tick thì danh sách cũ của các team này bị thay hoàn toàn."
+  },
+  "ERRORS": {
+    "SAVE_FAILED": "Không lưu được thay đổi — vui lòng thử lại.",
+    "PERMISSION_DENIED": "Bạn không có quyền thực hiện thao tác này.",
+    "UNAUTHENTICATED": "Phiên đăng nhập đã hết hạn — hãy đăng nhập lại.",
+    "UNAVAILABLE": "Không kết nối được tới máy chủ — kiểm tra mạng rồi thử lại.",
+    "QUOTA": "Hệ thống đang quá tải — thử lại sau ít phút.",
+    "NOT_FOUND": "Dữ liệu này không còn tồn tại (có thể đã bị xoá)."
+  },
+  "TOURNAMENT_OVERVIEW": {
+    "CHAMPION": "Nhà vô địch",
+    "PROGRESS": "Tiến độ giải",
+    "MATCHES_PLAYED": "trận đã đấu",
+    "NO_FIXTURES": "Chưa có lịch thi đấu.",
+    "GOALS": "Bàn thắng",
+    "LEADERS": "Dẫn đầu",
+    "GROUP_LEADERS": "Đầu bảng",
+    "SEE_STANDINGS": "Xem BXH",
+    "NEXT_MATCHES": "Trận sắp tới",
+    "SEE_ALL": "Xem tất cả"
   }
 }

@@ -17,11 +17,11 @@ import { ActivityLogBellComponent } from '../../../features/activity-log/activit
   template: `
     <header class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-100">
       <div class="flex items-center justify-between h-14 px-4 max-w-6xl mx-auto">
-        <a routerLink="/" class="flex items-center gap-2 font-extrabold text-lg text-surface-dark">
+        <a routerLink="/" class="flex items-center gap-2 font-extrabold text-lg text-surface-dark shrink-0">
           <img src="assets/images/logo-mark.png" alt="" class="w-6 h-6" />
           Pession
         </a>
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-1 min-w-0">
           <button
             class="w-9 h-9 flex items-center justify-center rounded-full active:bg-gray-100 text-xs font-extrabold text-gray-500"
             (click)="lang.toggle()"

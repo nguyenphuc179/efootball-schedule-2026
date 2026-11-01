@@ -98,6 +98,15 @@ import { Team, teamGroup } from '../../../models/team.model';
                 <div class="text-xs text-gray-400 truncate">
                   {{ team.manager || ('TEAM_LIST.NO_MANAGER' | translate) }}
                 </div>
+                @if (tournamentType() === 'team_match' && team.allowedClubs?.length) {
+                  <div class="flex flex-wrap gap-1 mt-1.5">
+                    @for (c of team.allowedClubs; track c) {
+                      <span class="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-bold bg-primary-50 text-primary-700">
+                        <span class="material-icons text-[11px]">shield</span>{{ c }}
+                      </span>
+                    }
+                  </div>
+                }
                 @if (auth.isAdmin() && tournamentType() === 'team_match' && !(team.allowedClubs?.length)) {
                   <div class="text-[11px] text-amber-600 truncate">{{ 'TEAM_LIST.NO_CLUBS_BADGE' | translate }}</div>
                 }

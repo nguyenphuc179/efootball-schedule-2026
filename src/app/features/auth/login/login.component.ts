@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
@@ -12,6 +12,15 @@ import { friendlyAuthErrorKey } from '../../../core/utils/auth-error.util';
   imports: [CommonModule, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <button
+      type="button"
+      class="fixed top-3 left-3 w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100"
+      (click)="goBack()"
+      [attr.aria-label]="'COMMON.BACK' | translate"
+      [title]="'COMMON.BACK' | translate"
+    >
+      <span class="material-icons">arrow_back</span>
+    </button>
     <div class="min-h-dvh flex flex-col justify-center px-6 py-10 max-w-md mx-auto">
       <div class="text-center mb-8">
         <span class="material-icons text-primary-500 text-5xl">sports_soccer</span>
@@ -40,8 +49,19 @@ export class LoginComponent {
   private route = inject(ActivatedRoute);
   private translate = inject(TranslateService);
 
+  private location = inject(Location);
+
   isLoading = signal(false);
   errorMessage = signal('');
+
+  /** Whether we got here from another page of the app (vs. opening /login directly), read while
+   *  the navigation that created this component is still in flight. */
+  private cameFromApp = !!this.router.getCurrentNavigation()?.previousNavigation;
+
+  goBack(): void {
+    if (this.cameFromApp) this.location.back();
+    else this.router.navigateByUrl('/');
+  }
 
   private redirect(): void {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/';

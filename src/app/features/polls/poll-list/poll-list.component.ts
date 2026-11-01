@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { combineLatest, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { PollService } from '../poll.service';
@@ -36,10 +38,22 @@ import { timeAgoKey } from '../../../shared/utils/time-ago.util';
                 <span class="material-icons text-[20px]">how_to_vote</span>
               </span>
               <div class="flex-1 min-w-0">
-                <div class="font-semibold text-sm truncate">{{ p.title }}</div>
-                <div class="text-xs text-gray-400 truncate">
+                <div class="font-semibold text-sm line-clamp-2">{{ p.title }}</div>
+                <div class="text-xs text-gray-400 truncate mt-0.5">
                   {{ 'POLLS.CREATED_BY' | translate: { name: p.createdByName } }} · {{ timeAgo(p.createdDate) }}
                 </div>
+                @if (voteInfo().get(p.id); as v) {
+                  <div class="flex items-center gap-2 mt-1.5">
+                    <span
+                      class="badge inline-flex items-center gap-1 !text-[11px]"
+                      [class]="v.mine ? 'bg-primary-50 text-primary-700' : 'bg-amber-50 text-amber-700'"
+                    >
+                      <span class="material-icons text-[13px]">{{ v.mine ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                      {{ (v.mine ? 'POLLS.VOTED' : 'POLLS.NOT_VOTED') | translate }}
+                    </span>
+                    <span class="text-[11px] text-gray-400">{{ 'POLLS.VOTE_COUNT' | translate: { count: v.count } }}</span>
+                  </div>
+                }
               </div>
               <span class="material-icons text-gray-300 shrink-0">chevron_right</span>
             </a>
@@ -55,6 +69,27 @@ export class PollListComponent {
   auth = inject(AuthService);
 
   polls = this.pollService.allResolved;
+
+  private pollIdsKey = computed(() => this.polls().map((p) => p.id).join('|'));
+
+  /** pollId -> { total votes, whether the viewer has voted } — live, so a fresh vote shows up
+   *  in the list without a reload. A vote doc's id is always the voter's uid. */
+  voteInfo = toSignal(
+    toObservable(this.pollIdsKey).pipe(
+      distinctUntilChanged(),
+      switchMap((key) => {
+        const ids = key ? key.split('|') : [];
+        if (!ids.length) return of(new Map<string, { count: number; mine: boolean }>());
+        return combineLatest(ids.map((id) => this.pollService.streamVotes(id))).pipe(
+          map((all) => {
+            const uid = this.auth.firebaseUser()?.uid;
+            return new Map(ids.map((id, i) => [id, { count: all[i].length, mine: !!uid && all[i].some((v) => v.id === uid) }]));
+          })
+        );
+      })
+    ),
+    { initialValue: new Map<string, { count: number; mine: boolean }>() }
+  );
 
   timeAgo(ms: number): string {
     this.translate.currentLang();

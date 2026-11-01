@@ -27,6 +27,11 @@ interface ManagerOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-3 max-w-md">
+      <div class="card !p-3.5 flex gap-3">
+        <span class="material-icons text-primary-600 text-[20px] shrink-0">info</span>
+        <p class="text-sm text-gray-600">{{ 'TOURNAMENT_PERMISSIONS.DESCRIPTION' | translate }}</p>
+      </div>
+
       @if (managers().length === 0) {
         <p class="text-sm text-gray-400">{{ 'TOURNAMENT_PERMISSIONS.NO_MANAGERS' | translate }}</p>
       } @else {

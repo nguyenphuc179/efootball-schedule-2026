@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, Input, OnChanges, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { StatisticsService, TournamentStatistics } from './statistics.service';
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
+import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { roundLabel } from '../../shared/utils/round-label.util';
 
 /**
  * Doughnut (win distribution) + Bar (goals per round) charts, sized and configured for
@@ -14,7 +16,7 @@ import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner
 @Component({
   selector: 'app-statistics',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, LoadingSpinnerComponent, TranslatePipe],
+  imports: [CommonModule, BaseChartDirective, LoadingSpinnerComponent, EmptyStateComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (!stats()) {
@@ -39,19 +41,27 @@ import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner
         </div>
       </div>
 
-      <div class="card mb-4">
-        <h3 class="font-bold text-sm mb-3">{{ 'STATISTICS.WIN_DISTRIBUTION' | translate }}</h3>
-        <div class="h-52">
-          <canvas baseChart [data]="doughnutData()" type="doughnut" [options]="doughnutOptions"></canvas>
+      @if (hasResults()) {
+        <div class="card mb-4">
+          <h3 class="font-bold text-sm mb-3">{{ 'STATISTICS.WIN_DISTRIBUTION' | translate }}</h3>
+          <div class="h-52">
+            <canvas baseChart [data]="doughnutData()" type="doughnut" [options]="doughnutOptions"></canvas>
+          </div>
         </div>
-      </div>
 
-      <div class="card">
-        <h3 class="font-bold text-sm mb-3">{{ 'STATISTICS.GOALS_PER_ROUND' | translate }}</h3>
-        <div class="h-52">
-          <canvas baseChart [data]="barData()" type="bar" [options]="barOptions"></canvas>
+        <div class="card">
+          <h3 class="font-bold text-sm mb-3">{{ 'STATISTICS.GOALS_PER_ROUND' | translate }}</h3>
+          <div class="h-52">
+            <canvas baseChart [data]="barData()" type="bar" [options]="barOptions"></canvas>
+          </div>
         </div>
-      </div>
+      } @else {
+        <app-empty-state
+          icon="insights"
+          [title]="'STATISTICS.NO_RESULTS_TITLE' | translate"
+          [subtitle]="'STATISTICS.NO_RESULTS_SUBTITLE' | translate"
+        />
+      }
     }
   `,
 })
@@ -61,6 +71,11 @@ export class StatisticsComponent implements OnChanges {
   private statisticsService = inject(StatisticsService);
   private translate = inject(TranslateService);
   stats = signal<TournamentStatistics | null>(null);
+
+  hasResults = computed(() => {
+    const w = this.stats()?.winDistribution;
+    return !!w && w.homeWins + w.awayWins + w.draws > 0;
+  });
 
   doughnutOptions: ChartConfiguration<'doughnut'>['options'] = {
     responsive: true,
@@ -102,14 +117,8 @@ export class StatisticsComponent implements OnChanges {
   barData(): ChartConfiguration<'bar'>['data'] {
     const s = this.stats()!;
     return {
-      labels: s.goalDistributionByRound.map((r) => this.roundLabel(r.round)),
+      labels: s.goalDistributionByRound.map((r) => roundLabel(r.round, this.translate)),
       datasets: [{ data: s.goalDistributionByRound.map((r) => r.goals), backgroundColor: '#0fa863', borderRadius: 6 }],
     };
-  }
-
-  /** "Round 1" -> localized "Round 1"; other round strings (knockout, "Group A - Round 2") pass through untranslated. */
-  private roundLabel(round: string): string {
-    const n = /^Round (\d+)$/.exec(round)?.[1];
-    return n ? this.translate.instant('MATCH.ROUND_N', { n }) : round;
   }
 }

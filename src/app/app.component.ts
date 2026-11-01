@@ -9,6 +9,7 @@ import { HeaderComponent } from './shared/components/header/header.component';
 import { UserMenuComponent } from './shared/components/user-menu/user-menu.component';
 import { ActivityLogBellComponent } from './features/activity-log/activity-log-bell.component';
 import { GuideChatWidgetComponent } from './shared/components/guide-chat/guide-chat-widget.component';
+import { ToastHostComponent } from './shared/components/toast-host/toast-host.component';
 import { AuthService } from './core/services/auth.service';
 import { LanguageService } from './core/services/language.service';
 import { OfflineSyncService } from './core/services/offline-sync.service';
@@ -31,6 +32,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
     UserMenuComponent,
     ActivityLogBellComponent,
     GuideChatWidgetComponent,
+    ToastHostComponent,
     TranslatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,7 +46,7 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
           </div>
           <nav class="flex flex-col gap-1 p-3">
             @for (item of desktopNavItems; track item.route) {
-              @if (!item.requiresAuth || auth.isSignedIn()) {
+              @if ((!item.requiresAuth || auth.isSignedIn()) && (!item.requiresAdmin || auth.isAdmin())) {
                 <a
                   [routerLink]="item.route"
                   routerLinkActive
@@ -107,6 +109,8 @@ import { OfflineSyncService } from './core/services/offline-sync.service';
           <app-guide-chat-widget />
         }
       }
+
+      <app-toast-host />
     </div>
   `,
 })
@@ -137,7 +141,7 @@ export class AppComponent {
 
   /** `requiresAuth` items (currently just Polls, which redirects to /login for a guest anyway)
    *  are hidden from the sidebar until signed in, rather than shown as a dead end. */
-  desktopNavItems: { label: string; icon: string; route: string; requiresAuth?: boolean }[] = [
+  desktopNavItems: { label: string; icon: string; route: string; requiresAuth?: boolean; requiresAdmin?: boolean }[] = [
     { label: 'NAV.HOME', icon: 'home', route: '/' },
     { label: 'NAV.TOURNAMENTS', icon: 'emoji_events', route: '/tournaments' },
     { label: 'NAV.RANKING', icon: 'leaderboard', route: '/ranking' },
@@ -145,5 +149,6 @@ export class AppComponent {
     { label: 'POLLS.NAV_LABEL', icon: 'how_to_vote', route: '/polls', requiresAuth: true },
     { label: 'NAV.SKILLS', icon: 'auto_awesome', route: '/skills' },
     { label: 'NAV.GUIDE', icon: 'menu_book', route: '/guide' },
+    { label: 'MEMBERS.TITLE', icon: 'group', route: '/members', requiresAdmin: true },
   ];
 }

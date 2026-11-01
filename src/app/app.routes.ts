@@ -120,6 +120,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/profile/profile.component').then((m) => m.ProfileComponent),
     canActivate: [authGuard],
   },
+  {
+    path: 'members',
+    loadComponent: () => import('./features/members/members-page.component').then((m) => m.MembersPageComponent),
+    canActivate: [authGuard, adminGuard],
+  },
   { path: 't/:id', redirectTo: 'tournaments/:id' },
   { path: '**', redirectTo: '' },
 ];

@@ -4,7 +4,7 @@ import { Injectable } from '@angular/core';
 @Injectable({ providedIn: 'root' })
 export class QrService {
   private get origin(): string {
-    return typeof window !== 'undefined' ? window.location.origin : 'https://pitchpro.app';
+    return typeof window !== 'undefined' ? window.location.origin : 'https://pession2026.site';
   }
 
   tournamentShareUrl(tournamentId: string): string {

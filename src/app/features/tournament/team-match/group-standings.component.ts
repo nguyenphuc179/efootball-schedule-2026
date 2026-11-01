@@ -26,7 +26,7 @@ interface GroupRow extends GroupStats {
       <div class="flex flex-col gap-2">
         <h3 class="text-sm font-extrabold uppercase tracking-wide text-gray-700">{{ 'TEAM_MATCH.GROUP_STANDINGS' | translate }}</h3>
         <div class="hscroll-table card !p-0">
-          <table class="w-full text-sm min-w-[420px]">
+          <table class="w-full text-sm">
             <thead class="text-gray-400 text-[11px] uppercase">
               <tr class="border-b border-gray-100">
                 <th class="text-left py-2 pl-3 pr-1 w-9">#</th>
@@ -46,16 +46,16 @@ interface GroupRow extends GroupStats {
                       [class]="row.position === 1 && row.played > 0 ? 'bg-amber-100 text-amber-700' : 'text-gray-500'"
                     >{{ row.position }}</span>
                   </td>
-                  <td class="py-2 px-1 font-medium">
+                  <td class="py-2 px-1 font-medium whitespace-nowrap">
                     {{ (row.key === 'A' ? 'TEAM_MATCH.GROUP_A' : 'TEAM_MATCH.GROUP_B') | translate }}
                     <span class="text-xs text-gray-400">({{ row.members }})</span>
                   </td>
                   <td class="py-2 px-2 text-center text-gray-600">{{ row.played }}</td>
-                  <td class="py-2 px-2 text-center whitespace-nowrap">{{ row.wins }} - {{ row.draws }} - {{ row.losses }}</td>
+                  <td class="py-2 px-2 text-center whitespace-nowrap">{{ row.wins }}-{{ row.draws }}-{{ row.losses }}</td>
                   <td class="py-2 px-2 text-center whitespace-nowrap">
-                    {{ row.goalsFor }}/{{ row.goalsAgainst }}
+                    <span class="hidden sm:inline">{{ row.goalsFor }}/{{ row.goalsAgainst }}</span>
                     <span [class]="row.goalDifference > 0 ? 'text-primary-600' : row.goalDifference < 0 ? 'text-accent-red' : 'text-gray-400'">
-                      ({{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }})
+                      <span class="hidden sm:inline">(</span>{{ row.goalDifference > 0 ? '+' : '' }}{{ row.goalDifference }}<span class="hidden sm:inline">)</span>
                     </span>
                   </td>
                   <td class="py-2 px-3 text-center font-extrabold">{{ row.points }}</td>

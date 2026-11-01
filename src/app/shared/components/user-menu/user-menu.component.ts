@@ -50,8 +50,9 @@ import { APP_VERSION } from '../../../core/app-version';
       <div class="relative">
         <button
           type="button"
-          class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-gray-100 active:bg-gray-100"
+          class="flex items-center gap-1 sm:gap-2 pl-1 pr-1 sm:pr-2 py-1 rounded-full hover:bg-gray-100 active:bg-gray-100"
           [attr.aria-expanded]="open()"
+          [attr.aria-label]="'USER_MENU.GREETING' | translate: { name: firstName() }"
           (click)="open.set(!open())"
         >
           <span
@@ -72,7 +73,7 @@ import { APP_VERSION } from '../../../core/app-version';
               <span class="text-xs font-bold" [style.color]="avatar().fg">{{ avatar().initials }}</span>
             }
           </span>
-          <span class="text-sm font-semibold text-surface-dark truncate max-w-[7rem] sm:max-w-[10rem]">
+          <span class="hidden sm:inline text-sm font-semibold text-surface-dark truncate max-w-[10rem]">
             {{ 'USER_MENU.GREETING' | translate: { name: firstName() } }}
           </span>
           <span
@@ -97,6 +98,11 @@ import { APP_VERSION } from '../../../core/app-version';
             <a routerLink="/profile" class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50" (click)="open.set(false)">
               <span class="material-icons text-[18px] text-gray-500">person</span> {{ 'USER_MENU.PROFILE' | translate }}
             </a>
+            @if (auth.isAdmin()) {
+              <a routerLink="/members" class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50" (click)="open.set(false)">
+                <span class="material-icons text-[18px] text-gray-500">group</span> {{ 'MEMBERS.TITLE' | translate }}
+              </a>
+            }
 
             <div class="px-3 py-2 border-t border-gray-100">
               <div class="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
